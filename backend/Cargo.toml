@@ -1,0 +1,13 @@
+[package]
+name = "static-next-server"
+version = "0.1.0"
+edition = "2021"
+publish = false
+
+[dependencies]
+axum = "0.6.10"
+axum-extra = { version = "0.4.2", features = ["spa"] }
+shuttle-axum = { version = "0.13.0" }
+shuttle-runtime = { version = "0.13.0" }
+shuttle-static-folder = "0.13.1"
+tokio = { version = "1.26.0" }
