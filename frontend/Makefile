@@ -2,7 +2,7 @@ build:
 	npm run build
 
 e2e:
-	npm cypress run --headless
+	npm run cypress run --headless
 
 dev:
 	npm run dev
@@ -12,6 +12,9 @@ check:
 	npm tsc
 
 check-pre-push: check
+
+install:
+	npm install
 
 start:
 	npm run start
