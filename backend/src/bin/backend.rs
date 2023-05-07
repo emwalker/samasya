@@ -1,29 +1,44 @@
-use axum::{routing::get, Router};
-use std::net::SocketAddr;
+use axum::{routing::get, Json, Router};
+use serde::Serialize;
+
+#[derive(Serialize)]
+struct Skill {
+    description: String,
+}
+
+#[derive(Serialize)]
+struct SkillsListResponse {
+    data: Vec<Skill>,
+}
+
+async fn root() -> &'static str {
+    "Hello, World!"
+}
+
+#[axum_macros::debug_handler]
+async fn list_skills() -> Json<SkillsListResponse> {
+    Json(SkillsListResponse {
+        data: vec![
+            Skill {
+                description: "Basic statistics".into(),
+            },
+            Skill {
+                description: "Addition of complex numbers".into(),
+            },
+        ],
+    })
+}
 
 #[tokio::main]
 async fn main() {
-    // Route all requests on "/" endpoint to anonymous handler.
-    //
-    // A handler is an async function which returns something that implements
-    // `axum::response::IntoResponse`.
+    tracing_subscriber::fmt::init();
 
-    // A closure or a function can be used as handler.
+    let app = Router::new()
+        .route("/", get(root))
+        .route("/skills", get(list_skills));
 
-    let app = Router::new().route("/", get(handler));
-    //        Router::new().route("/", get(|| async { "Hello, world!" }));
-
-    // Address that server will bind to.
-    let addr = SocketAddr::from(([127, 0, 0, 1], 8000));
-
-    // Use `hyper::server::Server` which is re-exported through `axum::Server` to serve the app.
-    axum::Server::bind(&addr)
-        // Hyper server takes a make service.
+    axum::Server::bind(&"0.0.0.0:8000".parse().unwrap())
         .serve(app.into_make_service())
         .await
         .unwrap();
-}
-
-async fn handler() -> &'static str {
-    "Hello, world!"
 }
