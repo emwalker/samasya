@@ -1,11 +1,20 @@
 build:
-	pnpm run build
+	npm run build
+
+e2e:
+	npm cypress run --headless
 
 dev:
-	pnpm run dev
+	npm run dev
 
-lint:
-	pnpm run lint
+check:
+	npm run lint
+	npm tsc
+
+check-pre-push: check
 
 start:
-	pnpm run start
+	npm run start
+
+test:
+	npm run test

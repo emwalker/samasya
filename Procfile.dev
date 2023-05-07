@@ -1,2 +1,0 @@
-frontend: make -C frontend dev
-backend: make -C backend dev
