@@ -17,6 +17,9 @@ e2e:
 install:
 	make -C frontend install
 
+lint:
+	make -C frontend lint
+
 setup:
 	npm install pm2 -g
 

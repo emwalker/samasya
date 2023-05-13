@@ -9,7 +9,7 @@ type Response = {
 }
 
 async function getData(): Promise<Response> {
-  const res = await fetch('http://localhost:8000/skills', { cache: 'no-store' })
+  const res = await fetch('http://localhost:8000/api/v1/skills', { cache: 'no-store' })
  
   if (!res.ok) {
     throw new Error('Failed to fetch data')
@@ -30,9 +30,13 @@ export default async function Page() {
       Available skills:
       {
         skills.map((skill) =>
-          <div>{ skill.description }</div>
+          <div key={skill.description}>{ skill.description }</div>
         )
       }
+
+      <p>
+        <a href="/skills/new">Add a skill</a>
+      </p>
     </main>
   )
 }

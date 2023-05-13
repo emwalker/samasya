@@ -16,6 +16,9 @@ check-pre-push: check
 install:
 	npm install
 
+lint:
+	npm run lint --fix
+
 start:
 	npm run start
 
