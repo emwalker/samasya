@@ -1,4 +1,5 @@
 import React from 'react'
+import Link from 'next/link'
 import styles from './page.module.css'
 
 export default function Home() {
@@ -11,7 +12,7 @@ export default function Home() {
       <p>
         Go to the
         {' '}
-        <a href="/skills">skills</a>
+        <Link href="/skills">skills</Link>
         {' '}
         page.
       </p>
@@ -19,7 +20,7 @@ export default function Home() {
       <p>
         Go to the
         {' '}
-        <a href="/problems">problems</a>
+        <Link href="/problems">problems</Link>
         {' '}
         page.
       </p>

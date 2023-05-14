@@ -7,7 +7,7 @@ check:
 	make -C frontend check
 
 dev: stop
-	pm2 start dev.config.yaml
+	pm2 start development.config.yaml
 	pm2 logs
 
 e2e:
@@ -31,7 +31,7 @@ setup:
 	npm install pm2 -g
 
 start: build stop
-	pm2 start prod.config.yaml
+	pm2 start production.config.yaml --wait-ready
 	pm2 logs
 
 stop:

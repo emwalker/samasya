@@ -1,5 +1,5 @@
 use axum::{
-    extract::Extension,
+    extract::{Extension, Path, Query},
     response::IntoResponse,
     routing::{get, post},
     Json, Router,
@@ -8,6 +8,7 @@ use hyper::StatusCode;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 use sqlx::{sqlite::SqlitePoolOptions, SqlitePool};
+use std::env;
 use std::sync::Arc;
 use thiserror::Error;
 use tower_http::cors::CorsLayer;
@@ -15,16 +16,18 @@ use tracing::info;
 
 #[derive(Error, Debug)]
 pub enum Error {
-    #[error("not found")]
-    NotFound,
+    #[error("failed to load config")]
+    Config(String),
     #[error("failed to connect to database: {0}")]
     Database(String),
+    #[error("not found")]
+    NotFound,
 }
 
 impl IntoResponse for Error {
     fn into_response(self) -> axum::response::Response {
         let (status, error_message) = match self {
-            Self::Database(message) => (
+            Self::Database(message) | Self::Config(message) => (
                 StatusCode::INTERNAL_SERVER_ERROR,
                 format!("Internal server error: {}", message),
             ),
@@ -36,8 +39,18 @@ impl IntoResponse for Error {
 
 pub type Result<T, E = Error> = std::result::Result<T, E>;
 
+#[derive(Deserialize, Serialize)]
 struct Config {
     db_filename: String,
+}
+
+impl Config {
+    fn load() -> Result<Self> {
+        let profile = env::var("ENV").unwrap_or("development".into());
+        dotenv::from_filename(format!(".env.{}.local", profile)).ok();
+        dotenv::dotenv().ok();
+        envy::from_env::<Self>().map_err(|err| Error::Config(err.to_string()))
+    }
 }
 
 #[derive(Clone)]
@@ -47,13 +60,14 @@ struct ApiContext {
     db: SqlitePool,
 }
 
-#[derive(Serialize, sqlx::FromRow)]
+#[derive(Clone, Serialize, sqlx::FromRow)]
 struct Skill {
     id: String,
     description: String,
 }
 
 #[derive(Deserialize, Serialize, Debug)]
+#[serde(rename_all = "camelCase")]
 struct AddSkill {
     description: String,
 }
@@ -63,15 +77,24 @@ struct SkillsListResponse {
     data: Vec<Skill>,
 }
 
-#[derive(Serialize, sqlx::FromRow)]
-struct Problem {
+#[derive(sqlx::FromRow)]
+struct ProblemRow {
     id: String,
     description: String,
 }
 
+#[derive(Clone, Serialize)]
+struct Problem {
+    id: String,
+    description: String,
+    skills: Vec<Skill>,
+}
+
 #[derive(Deserialize, Serialize, Debug)]
+#[serde(rename_all = "camelCase")]
 struct AddProblem {
     description: String,
+    skill_ids: Vec<String>,
 }
 
 #[derive(Serialize)]
@@ -83,11 +106,27 @@ async fn root() -> &'static str {
     "Hello, World!"
 }
 
-async fn get_skills(ctx: Extension<ApiContext>) -> Result<Json<SkillsListResponse>> {
-    let data = sqlx::query_as::<_, Skill>("select * from skills")
-        .fetch_all(&ctx.db)
-        .await
-        .map_err(|err| Error::Database(err.to_string()))?;
+#[derive(Deserialize)]
+struct Filter {
+    q: Option<String>,
+}
+
+async fn get_skills(
+    ctx: Extension<ApiContext>,
+    query: Query<Filter>,
+) -> Result<Json<SkillsListResponse>> {
+    let filter = query.0;
+
+    let data = if let Some(filter) = filter.q {
+        let filter = format!("%{}%", filter);
+        sqlx::query_as::<_, Skill>("select * from skills where description like $1").bind(filter)
+    } else {
+        sqlx::query_as::<_, Skill>("select * from skills")
+    }
+    .fetch_all(&ctx.db)
+    .await
+    .map_err(|err| Error::Database(err.to_string()))?;
+
     Ok(Json(SkillsListResponse { data }))
 }
 
@@ -108,13 +147,72 @@ async fn post_skill(
     Ok(Json(json!({})))
 }
 
-#[axum_macros::debug_handler]
-async fn get_problems(ctx: Extension<ApiContext>) -> Result<Json<ProblemsListResponse>> {
-    let data = sqlx::query_as::<_, Problem>("select * from problems")
-        .fetch_all(&ctx.db)
+async fn add_skills(db: &SqlitePool, rows: Vec<ProblemRow>) -> Result<Vec<Problem>> {
+    let mut problems: Vec<Problem> = vec![];
+
+    for row in rows {
+        let skills = sqlx::query_as::<_, Skill>(
+            "select s.*
+         from skills s join problems_skills ps on s.id = ps.skill_id
+         where ps.problem_id = $1",
+        )
+        .bind(&row.id)
+        .fetch_all(db)
         .await
         .map_err(|err| Error::Database(err.to_string()))?;
+
+        problems.push(Problem {
+            id: row.id,
+            description: row.description,
+            skills,
+        })
+    }
+
+    Ok(problems)
+}
+
+async fn fetch_all(db: &SqlitePool, limit: i32) -> Result<Vec<Problem>> {
+    let rows = sqlx::query_as::<_, ProblemRow>("select * from problems limit ?")
+        .bind(limit)
+        .fetch_all(db)
+        .await
+        .map_err(|err| Error::Database(err.to_string()))?;
+    add_skills(db, rows).await
+}
+
+async fn fetch_one(db: &SqlitePool, id: &str) -> Result<Problem> {
+    let rows = sqlx::query_as::<_, ProblemRow>("select * from problems where id = ? limit 1")
+        .bind(id)
+        .fetch_all(db)
+        .await
+        .map_err(|err| Error::Database(err.to_string()))?;
+
+    let mut problems = add_skills(db, rows).await?;
+    if problems.len() == 1 {
+        let problem = problems.pop().unwrap();
+        return Ok(problem);
+    }
+
+    Err(Error::NotFound)
+}
+
+#[axum_macros::debug_handler]
+async fn get_problems(ctx: Extension<ApiContext>) -> Result<Json<ProblemsListResponse>> {
+    let data = fetch_all(&ctx.db, 20).await?;
     Ok(Json(ProblemsListResponse { data }))
+}
+
+#[derive(Serialize)]
+struct ProblemResponse {
+    data: Problem,
+}
+
+async fn get_problem(
+    ctx: Extension<ApiContext>,
+    Path(id): Path<String>,
+) -> Result<Json<ProblemResponse>> {
+    let data = fetch_one(&ctx.db, &id).await?;
+    Ok(Json(ProblemResponse { data }))
 }
 
 #[axum_macros::debug_handler]
@@ -132,18 +230,23 @@ async fn post_problem(
         .await
         .map_err(|err| Error::Database(err.to_string()))?;
 
+    for skill_id in payload.skill_ids {
+        sqlx::query("insert into problems_skills (problem_id, skill_id) values ($1, $2)")
+            .bind(&id)
+            .bind(&skill_id)
+            .execute(&ctx.db)
+            .await
+            .map_err(|err| Error::Database(err.to_string()))?;
+    }
+
     Ok(Json(json!({})))
 }
 
 #[tokio::main]
 async fn main() -> Result<()> {
     tracing_subscriber::fmt::init();
-
-    let db_filename = "./database.db";
-
-    let config = Config {
-        db_filename: db_filename.into(),
-    };
+    let config = Config::load()?;
+    info!("using {}", config.db_filename);
 
     let db = SqlitePoolOptions::new()
         .max_connections(1)
@@ -167,6 +270,7 @@ async fn main() -> Result<()> {
         .route("/api/v1/skills", post(post_skill))
         .route("/api/v1/problems", get(get_problems))
         .route("/api/v1/problems", post(post_problem))
+        .route("/api/v1/problems/:id", get(get_problem))
         .layer(Extension(ctx))
         .layer(CorsLayer::permissive());
 

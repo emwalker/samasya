@@ -1,4 +1,5 @@
 import React from 'react'
+import Link from 'next/link'
 
 type Skill = {
   description: string,
@@ -27,12 +28,15 @@ export default async function Page() {
       <h1 data-testid="page-name">Skills</h1>
 
       Available skills:
-      {
-        skills.map((skill) => <div key={skill.description}>{ skill.description }</div>)
-      }
+
+      <ul>
+        {
+          skills.map((skill) => <li><div key={skill.description}>{skill.description}</div></li>)
+        }
+      </ul>
 
       <p>
-        <a href="/skills/new">Add a skill</a>
+        <Link href="/skills/new">Add a skill</Link>
       </p>
     </main>
   )

@@ -7,7 +7,7 @@ dev:
 	cargo run --bin backend
 
 fix:
-	cargo clippy --fix
+	cargo clippy --fix --allow-dirty
 
 lint:
 	cargo clippy -- -D warnings

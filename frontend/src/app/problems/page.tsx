@@ -1,18 +1,66 @@
 import React from 'react'
+import Link from 'next/link'
 
-type Problem = {
+type SkillType = {
+  id: string,
   description: string,
 }
 
+type ProblemType = {
+  id: string,
+  description: string,
+  skills: SkillType[],
+}
+
 type Response = {
-  data: Problem[],
+  data: ProblemType[],
+}
+
+function Skills({ problem }: { problem: ProblemType }) {
+  if (problem.skills.length === 0) {
+    return <span>(no skills)</span>
+  }
+
+  return (
+    <>
+      (
+      <span>
+        {problem.skills.map(({ description }) => description).join(', ')}
+      </span>
+      )
+    </>
+  )
+}
+
+function Problem({ problem }: { problem: ProblemType }) {
+  return (
+    <Link href={`/problems/${problem.id}`}>
+      {problem.description}
+      {' '}
+      <Skills problem={problem} />
+    </Link>
+  )
+}
+
+function Problems({ problems }: { problems: ProblemType[] }) {
+  if (problems.length === 0) {
+    return <div>No problems</div>
+  }
+
+  return (
+    <ul>
+      {
+        problems.map((problem) => <li key={problem.description}><Problem problem={problem} /></li>)
+      }
+    </ul>
+  )
 }
 
 async function getData(): Promise<Response> {
   const res = await fetch('http://localhost:8000/api/v1/problems', { cache: 'no-store' })
 
   if (!res.ok) {
-    throw new Error('Failed to fetch data')
+    return Promise.resolve({ data: [] })
   }
 
   return res.json()
@@ -20,19 +68,18 @@ async function getData(): Promise<Response> {
 
 export default async function Page() {
   const json = await getData()
-  const skills = json.data || []
+  const problems = json.data || []
 
   return (
     <main>
       <h1 data-testid="page-name">Problems</h1>
 
       Available problems:
-      {
-        skills.map((problem) => <div key={problem.description}>{ problem.description }</div>)
-      }
+
+      <Problems problems={problems} />
 
       <p>
-        <a href="/problems/new">Add a problem</a>
+        <Link href="/problems/new">Add a problem</Link>
       </p>
     </main>
   )
