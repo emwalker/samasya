@@ -1,3 +1,4 @@
+import React from 'react'
 import styles from './page.module.css'
 
 export default function Home() {
@@ -8,7 +9,19 @@ export default function Home() {
       </div>
 
       <p>
-        Go to the <a href="/skills">skills</a> page.
+        Go to the
+        {' '}
+        <a href="/skills">skills</a>
+        {' '}
+        page.
+      </p>
+
+      <p>
+        Go to the
+        {' '}
+        <a href="/problems">problems</a>
+        {' '}
+        page.
       </p>
     </main>
   )

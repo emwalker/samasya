@@ -1,4 +1,4 @@
-create table if not exists skills (
+create table if not exists problems (
   id primary key,
   description text
 );

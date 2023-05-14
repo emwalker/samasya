@@ -1,15 +1,15 @@
 import React from 'react'
 
-type Skill = {
+type Problem = {
   description: string,
 }
 
 type Response = {
-  data: Skill[],
+  data: Problem[],
 }
 
 async function getData(): Promise<Response> {
-  const res = await fetch('http://localhost:8000/api/v1/skills', { cache: 'no-store' })
+  const res = await fetch('http://localhost:8000/api/v1/problems', { cache: 'no-store' })
 
   if (!res.ok) {
     throw new Error('Failed to fetch data')
@@ -24,15 +24,15 @@ export default async function Page() {
 
   return (
     <main>
-      <h1 data-testid="page-name">Skills</h1>
+      <h1 data-testid="page-name">Problems</h1>
 
-      Available skills:
+      Available problems:
       {
-        skills.map((skill) => <div key={skill.description}>{ skill.description }</div>)
+        skills.map((problem) => <div key={problem.description}>{ problem.description }</div>)
       }
 
       <p>
-        <a href="/skills/new">Add a skill</a>
+        <a href="/problems/new">Add a problem</a>
       </p>
     </main>
   )

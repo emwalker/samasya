@@ -14,11 +14,18 @@ e2e:
 	ps ax | grep frontend | grep -v grep >/dev/null || ( echo "app not started" ; false )
 	make -C frontend e2e
 
+fix:
+	make -C backend fix
+	make -C frontend fix
+
 install:
 	make -C frontend install
 
 lint:
 	make -C frontend lint
+
+logs:
+	pm2 logs
 
 setup:
 	npm install pm2 -g

@@ -7,20 +7,20 @@ type Skill = {
   description: string,
 }
 
-function AddButton({ skill }: { skill: Skill }) {
+function AddButton({ problem }: { problem: Skill }) {
   const router = useRouter()
 
   const onClick = useCallback(async () => {
-    const res = await fetch('http://localhost:8000/api/v1/skills', {
+    const res = await fetch('http://localhost:8000/api/v1/problems', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(skill),
+      body: JSON.stringify(problem),
     })
 
     if (res.ok) {
-      router.push('/skills')
+      router.push('/problems')
     }
-  }, [skill, router])
+  }, [problem, router])
 
   return (
     <button onClick={onClick} type="submit">Add</button>
@@ -38,7 +38,7 @@ export default function Page() {
   return (
     <main>
       <div>
-        <h1>Add a skill</h1>
+        <h1>Add a problem</h1>
 
         <p>
           <input
@@ -50,7 +50,7 @@ export default function Page() {
         </p>
 
         <p>
-          <AddButton skill={{ description }} />
+          <AddButton problem={{ description }} />
         </p>
       </div>
     </main>

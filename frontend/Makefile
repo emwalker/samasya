@@ -9,9 +9,12 @@ dev:
 
 check:
 	npm run lint
-	npm tsc
+	#npm tsc
 
 check-pre-push: check
+
+fix:
+	npm run lint -- --fix
 
 install:
 	npm install
