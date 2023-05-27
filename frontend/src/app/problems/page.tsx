@@ -34,11 +34,13 @@ function Skills({ problem }: { problem: ProblemType }) {
 
 function Problem({ problem }: { problem: ProblemType }) {
   return (
-    <Link href={`/problems/${problem.id}`}>
-      {problem.description}
+    <>
+      <Link href={`/problems/${problem.id}`}>
+        {problem.description}
+      </Link>
       {' '}
       <Skills problem={problem} />
-    </Link>
+    </>
   )
 }
 

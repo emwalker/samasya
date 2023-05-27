@@ -1,8 +1,44 @@
 {
-  "extends": ["eslint:recommended", "next", "airbnb"],
+  "extends": [
+    "eslint:recommended",
+    "next",
+    "airbnb"
+  ],
+  "plugins": ["@typescript-eslint"],
   "rules": {
-    "semi": [2, "never"],
-    "react/jsx-filename-extension": [2, { "extensions": [".js", ".jsx", ".ts", ".tsx"] }],
-    "comma-dangle": ["error", "always-multiline"]
+    "semi": [
+      2,
+      "never"
+    ],
+    "react/jsx-filename-extension": [
+      2,
+      {
+        "extensions": [
+          ".js",
+          ".jsx",
+          ".ts",
+          ".tsx"
+        ]
+      }
+    ],
+    "comma-dangle": [
+      "error",
+      "always-multiline"
+    ],
+    "no-shadow": 0,
+    "import/extensions": [
+      "error",
+      "ignorePackages",
+      {
+        "js": "never",
+        "jsx": "never",
+        "ts": "never",
+        "tsx": "never"
+      }
+    ],
+    "no-unused-vars": "off",
+    "@typescript-eslint/no-unused-vars": [
+      "error"
+    ]
   }
 }

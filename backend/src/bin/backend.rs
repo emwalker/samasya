@@ -1,7 +1,7 @@
 use axum::{
     extract::{Extension, Path, Query},
     response::IntoResponse,
-    routing::{get, post},
+    routing::{get, post, put},
     Json, Router,
 };
 use hyper::StatusCode;
@@ -92,7 +92,7 @@ struct Problem {
 
 #[derive(Deserialize, Serialize, Debug)]
 #[serde(rename_all = "camelCase")]
-struct AddProblem {
+struct ProblemUpdate {
     description: String,
     skill_ids: Vec<String>,
 }
@@ -147,7 +147,7 @@ async fn post_skill(
     Ok(Json(json!({})))
 }
 
-async fn add_skills(db: &SqlitePool, rows: Vec<ProblemRow>) -> Result<Vec<Problem>> {
+async fn include_skills(db: &SqlitePool, rows: Vec<ProblemRow>) -> Result<Vec<Problem>> {
     let mut problems: Vec<Problem> = vec![];
 
     for row in rows {
@@ -177,7 +177,7 @@ async fn fetch_all(db: &SqlitePool, limit: i32) -> Result<Vec<Problem>> {
         .fetch_all(db)
         .await
         .map_err(|err| Error::Database(err.to_string()))?;
-    add_skills(db, rows).await
+    include_skills(db, rows).await
 }
 
 async fn fetch_one(db: &SqlitePool, id: &str) -> Result<Problem> {
@@ -187,7 +187,7 @@ async fn fetch_one(db: &SqlitePool, id: &str) -> Result<Problem> {
         .await
         .map_err(|err| Error::Database(err.to_string()))?;
 
-    let mut problems = add_skills(db, rows).await?;
+    let mut problems = include_skills(db, rows).await?;
     if problems.len() == 1 {
         let problem = problems.pop().unwrap();
         return Ok(problem);
@@ -196,7 +196,6 @@ async fn fetch_one(db: &SqlitePool, id: &str) -> Result<Problem> {
     Err(Error::NotFound)
 }
 
-#[axum_macros::debug_handler]
 async fn get_problems(ctx: Extension<ApiContext>) -> Result<Json<ProblemsListResponse>> {
     let data = fetch_all(&ctx.db, 20).await?;
     Ok(Json(ProblemsListResponse { data }))
@@ -215,17 +214,48 @@ async fn get_problem(
     Ok(Json(ProblemResponse { data }))
 }
 
-#[axum_macros::debug_handler]
 async fn post_problem(
     ctx: Extension<ApiContext>,
-    Json(payload): Json<AddProblem>,
+    Json(payload): Json<ProblemUpdate>,
 ) -> Result<Json<serde_json::Value>> {
-    info!("payload: {:?}", payload);
+    info!("adding problem: {:?}", payload);
     let id = uuid::Uuid::new_v4().to_string();
 
     sqlx::query("insert into problems (id, description) values ($1, $2)")
         .bind(&id)
         .bind(&payload.description)
+        .execute(&ctx.db)
+        .await
+        .map_err(|err| Error::Database(err.to_string()))?;
+
+    for skill_id in payload.skill_ids {
+        sqlx::query("insert into problems_skills (problem_id, skill_id) values ($1, $2)")
+            .bind(&id)
+            .bind(&skill_id)
+            .execute(&ctx.db)
+            .await
+            .map_err(|err| Error::Database(err.to_string()))?;
+    }
+
+    Ok(Json(json!({})))
+}
+
+async fn put_problem(
+    ctx: Extension<ApiContext>,
+    Path(id): Path<String>,
+    Json(payload): Json<ProblemUpdate>,
+) -> Result<Json<serde_json::Value>> {
+    info!("updating problem: {:?}", payload);
+
+    sqlx::query("update problems set description = $1 where id = $2")
+        .bind(&payload.description)
+        .bind(&id)
+        .execute(&ctx.db)
+        .await
+        .map_err(|err| Error::Database(err.to_string()))?;
+
+    sqlx::query("delete from problems_skills where problem_id = $1")
+        .bind(&id)
         .execute(&ctx.db)
         .await
         .map_err(|err| Error::Database(err.to_string()))?;
@@ -270,6 +300,7 @@ async fn main() -> Result<()> {
         .route("/api/v1/skills", post(post_skill))
         .route("/api/v1/problems", get(get_problems))
         .route("/api/v1/problems", post(post_problem))
+        .route("/api/v1/problems/:id", put(put_problem))
         .route("/api/v1/problems/:id", get(get_problem))
         .layer(Extension(ctx))
         .layer(CorsLayer::permissive());

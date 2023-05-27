@@ -1,10 +1,13 @@
 'use client'
 
 import React from 'react'
+import Link from 'next/link'
+import { Skill } from '../SkillDropdown'
 
 type Problem = {
+  id: string,
   description: string,
-  skillIds: string[]
+  skills: Skill[]
 }
 
 type Response = {
@@ -32,14 +35,33 @@ export default async function Page(params: Params) {
 
   const { id } = params.params
   const problem = (await getData({ id })).data
+  if (problem == null) {
+    return (
+      <div>
+        Problem not found:
+        {id}
+      </div>
+    )
+  }
 
   return (
     <main>
       <div>
         <h1>
-          Problem:
-          { problem?.description || 'not found' }
+          Problem
         </h1>
+
+        <p>
+          { problem.description || 'No problem found' }
+        </p>
+
+        <ul>
+          {
+            problem.skills.map(({ description }) => <li key={description}>{ description }</li>)
+          }
+        </ul>
+
+        { problem && <Link href={`/problems/${problem.id}/edit`}>Edit</Link> }
       </div>
     </main>
   )

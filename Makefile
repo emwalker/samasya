@@ -24,8 +24,15 @@ install:
 lint:
 	make -C frontend lint
 
+load:
+	rm -f backend/development.db
+	sqlite3 backend/development.db < data/fixtures.sql
+
 logs:
 	pm2 logs
+
+save:
+	sqlite3 backend/development.db .dump > data/fixtures.sql
 
 setup:
 	npm install pm2 -g

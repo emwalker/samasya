@@ -31,7 +31,7 @@ export default function Page() {
   const [description, setDescription] = useState('')
 
   const onChange = useCallback(
-    (event: React.ChangeEvent<HTMLInputElement>) => setDescription(event.target.value),
+    (event: React.ChangeEvent<HTMLTextAreaElement>) => setDescription(event.target.value),
     [setDescription],
   )
 
@@ -41,8 +41,9 @@ export default function Page() {
         <h1>Add a skill</h1>
 
         <p>
-          <input
-            type="text"
+          <textarea
+            cols={80}
+            rows={3}
             placeholder="Description"
             value={description}
             onChange={onChange}
