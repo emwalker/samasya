@@ -1,8 +1,8 @@
 # Samasya
 
-This project exists to help me work through the domain model for a web app that would use spaced repetition to guide leaners through a series of challenge problems on the way to acquiring the ability to analyze, for example, a complex physical system and then derive a partial derivative that can help to model it, without assuming much about what the learner has already mastered.
+Samasya means "problem" in Hindi related languages.  It's being used here in the sense of a challenge problem of the kind you might work through to prepare for an exam.
 
-Samasya means "problem" in Hindi related languages.  It's being used here in the sense of a "challenge problem," of the kind you might work through to prepare for an exam.
+This project exists to help me work through the domain model for a web app that would use spaced repetition to guide leaners through a series of challenge problems on the way to acquiring a new skill.  For example, the ability to analyze a complex physical system and then work out a partial derivative that can help to model it.  The web app should not assume too much about what the learner has already mastered.
 
 ## Screenshots
 
