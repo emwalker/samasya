@@ -2,17 +2,7 @@
 
 import React from 'react'
 import Link from 'next/link'
-import { GetProblemResponse } from '@/types'
-
-async function getData({ id }: { id: string }): Promise<GetProblemResponse> {
-  const res = await fetch(`http://localhost:8000/api/v1/problems/${id}`, { cache: 'no-store' })
-
-  if (!res.ok) {
-    return Promise.resolve({ data: null })
-  }
-
-  return res.json()
-}
+import { getProblem } from '@/services/problems'
 
 type Params = {
   params?: { id: string } | null
@@ -24,7 +14,7 @@ export default async function Page(params: Params) {
   }
 
   const { id } = params.params
-  const problem = (await getData({ id })).data
+  const problem = (await getProblem({ id })).data
   if (problem == null) {
     return (
       <div>
@@ -45,13 +35,27 @@ export default async function Page(params: Params) {
           { problem.description || 'No problem found' }
         </p>
 
-        <ul>
-          {
-            problem.prerequisiteSkills.map(({ description }) => (
-              <li key={description}>{ description }</li>
-            ))
-          }
-        </ul>
+        <p>
+          <h3>Prerequisite skills</h3>
+          <ul>
+            {
+              problem.prerequisiteSkills.map(({ description }) => (
+                <li key={description}>{ description }</li>
+              ))
+            }
+          </ul>
+        </p>
+
+        <p>
+          <h3>Prerequisite problems</h3>
+          <ul>
+            {
+              problem.prerequisiteProblems.map(({ description }) => (
+                <li key={description}>{ description }</li>
+              ))
+            }
+          </ul>
+        </p>
 
         { problem && <Link href={`/problems/${problem.id}/edit`}>Edit</Link> }
       </div>

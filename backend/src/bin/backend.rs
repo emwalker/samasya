@@ -86,8 +86,9 @@ struct ProblemRow {
 #[derive(Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
 struct Problem {
-    id: String,
     description: String,
+    id: String,
+    prerequisite_problems: Vec<Problem>,
     prerequisite_skills: Vec<Skill>,
 }
 
@@ -95,7 +96,8 @@ struct Problem {
 #[serde(rename_all = "camelCase")]
 struct ProblemUpdate {
     description: String,
-    prequisite_skill_ids: Vec<String>,
+    prerequisite_problem_ids: Vec<String>,
+    prerequisite_skill_ids: Vec<String>,
 }
 
 #[derive(Serialize)]
@@ -148,7 +150,7 @@ async fn post_skill(
     Ok(Json(json!({})))
 }
 
-async fn include_skills(db: &SqlitePool, rows: Vec<ProblemRow>) -> Result<Vec<Problem>> {
+async fn add_relations(db: &SqlitePool, rows: Vec<ProblemRow>) -> Result<Vec<Problem>> {
     let mut problems: Vec<Problem> = vec![];
 
     for row in rows {
@@ -162,10 +164,31 @@ async fn include_skills(db: &SqlitePool, rows: Vec<ProblemRow>) -> Result<Vec<Pr
         .await
         .map_err(|err| Error::Database(err.to_string()))?;
 
+        let prerequisite_problem_rows = sqlx::query_as::<_, ProblemRow>(
+            "select p.*
+             from problems p join prerequisite_problems pp on p.id = pp.prerequisite_problem_id
+             where pp.problem_id = $1",
+        )
+        .bind(&row.id)
+        .fetch_all(db)
+        .await
+        .map_err(|err| Error::Database(err.to_string()))?;
+
+        let prerequisite_problems = prerequisite_problem_rows
+            .into_iter()
+            .map(|row| Problem {
+                id: row.id,
+                description: row.description,
+                prerequisite_skills: vec![],
+                prerequisite_problems: vec![],
+            })
+            .collect::<Vec<Problem>>();
+
         problems.push(Problem {
             id: row.id,
             description: row.description,
             prerequisite_skills,
+            prerequisite_problems,
         })
     }
 
@@ -178,7 +201,7 @@ async fn fetch_all(db: &SqlitePool, limit: i32) -> Result<Vec<Problem>> {
         .fetch_all(db)
         .await
         .map_err(|err| Error::Database(err.to_string()))?;
-    include_skills(db, rows).await
+    add_relations(db, rows).await
 }
 
 async fn fetch_one(db: &SqlitePool, id: &str) -> Result<Problem> {
@@ -188,7 +211,7 @@ async fn fetch_one(db: &SqlitePool, id: &str) -> Result<Problem> {
         .await
         .map_err(|err| Error::Database(err.to_string()))?;
 
-    let mut problems = include_skills(db, rows).await?;
+    let mut problems = add_relations(db, rows).await?;
     if problems.len() == 1 {
         let problem = problems.pop().unwrap();
         return Ok(problem);
@@ -229,13 +252,25 @@ async fn post_problem(
         .await
         .map_err(|err| Error::Database(err.to_string()))?;
 
-    for skill_id in payload.prequisite_skill_ids {
+    for prereq_id in payload.prerequisite_skill_ids {
         sqlx::query("insert into prerequisite_skills (problem_id, skill_id) values ($1, $2)")
             .bind(&id)
-            .bind(&skill_id)
+            .bind(&prereq_id)
             .execute(&ctx.db)
             .await
             .map_err(|err| Error::Database(err.to_string()))?;
+    }
+
+    for prereq_id in payload.prerequisite_problem_ids {
+        sqlx::query(
+            "insert into prerequisite_problems (problem_id, prerequisite_problem_id)
+             values ($1, $2)",
+        )
+        .bind(&id)
+        .bind(&prereq_id)
+        .execute(&ctx.db)
+        .await
+        .map_err(|err| Error::Database(err.to_string()))?;
     }
 
     Ok(Json(json!({})))
@@ -261,13 +296,31 @@ async fn put_problem(
         .await
         .map_err(|err| Error::Database(err.to_string()))?;
 
-    for skill_id in payload.prequisite_skill_ids {
+    for skill_id in payload.prerequisite_skill_ids {
         sqlx::query("insert into prerequisite_skills (problem_id, skill_id) values ($1, $2)")
             .bind(&id)
             .bind(&skill_id)
             .execute(&ctx.db)
             .await
             .map_err(|err| Error::Database(err.to_string()))?;
+    }
+
+    sqlx::query("delete from prerequisite_problems where problem_id = $1")
+        .bind(&id)
+        .execute(&ctx.db)
+        .await
+        .map_err(|err| Error::Database(err.to_string()))?;
+
+    for prereq_id in payload.prerequisite_problem_ids {
+        sqlx::query(
+            "insert into prerequisite_problems (problem_id, prerequisite_problem_id)
+             values ($1, $2)",
+        )
+        .bind(&id)
+        .bind(&prereq_id)
+        .execute(&ctx.db)
+        .await
+        .map_err(|err| Error::Database(err.to_string()))?;
     }
 
     Ok(Json(json!({})))

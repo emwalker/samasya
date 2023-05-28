@@ -7,47 +7,41 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import SkillMultiSelect from '@/components/SkillMultiSelect'
 import PrerequisiteProblemList from '@/components/PrerequisiteProblemList'
-import { Skill, Problem, GetProblemResponse } from '@/types'
+import { Skill, Problem } from '@/types'
+import { getProblem, putProblem, ProblemUpdate } from '@/services/problems'
+import styles from './style.module.css'
 
 type SaveButtonProps = {
   description: string,
   disabled: boolean,
   id: string,
   prequisiteSkills: Skill[],
+  prerequisiteProblems: Problem[],
 }
 
 function SaveButton({
-  disabled, id, description, prequisiteSkills,
+  disabled, id, description, prequisiteSkills, prerequisiteProblems,
 }: SaveButtonProps) {
   const router = useRouter()
-  const skillIds = prequisiteSkills.map(({ id }) => id)
+  const prerequisiteSkillIds = prequisiteSkills.map(({ id }) => id)
+  const prerequisiteProblemIds = prerequisiteProblems.map(({ id }) => id)
 
   const onClick = useCallback(async () => {
-    const problemUpdate = { description, skillIds }
-    const res = await fetch(`http://localhost:8000/api/v1/problems/${id}`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(problemUpdate),
-    })
+    const update: ProblemUpdate = {
+      description,
+      prerequisiteProblemIds,
+      prerequisiteSkillIds,
+    }
+    const res = await putProblem({ id, update })
 
     if (res.ok) {
       router.push(`/problems/${id}`)
     }
-  }, [id, description, skillIds, router])
+  }, [id, description, prerequisiteProblemIds, prerequisiteSkillIds, router])
 
   return (
     <button disabled={disabled} onClick={onClick} type="submit">Update</button>
   )
-}
-
-async function getData({ id }: { id: string }): Promise<GetProblemResponse> {
-  const res = await fetch(`http://localhost:8000/api/v1/problems/${id}`, { cache: 'no-store' })
-
-  if (!res.ok) {
-    return Promise.resolve({ data: null })
-  }
-
-  return res.json()
 }
 
 type Params = {
@@ -57,10 +51,11 @@ type Params = {
 function EditForm({ problem }: { problem: Problem }) {
   const {
     id, description: initialDescription, prerequisiteSkills: initialSkills,
+    prerequisiteProblems: initialProblems,
   } = problem
   const [description, setDescription] = useState(initialDescription)
   const [prequisiteSkills, setPrerequisiteSkills] = useState(initialSkills)
-  // const [prerequisiteProblems, setPrerequisiteProblems] = useState([] as string[])
+  const [prerequisiteProblems, setPrerequisiteProblems] = useState(initialProblems)
 
   const descOnChange = useCallback(
     (event: React.ChangeEvent<HTMLTextAreaElement>) => setDescription(event.target.value || ''),
@@ -70,7 +65,7 @@ function EditForm({ problem }: { problem: Problem }) {
   const disabled = description.length === 0
 
   return (
-    <>
+    <div className={styles.editForm}>
       <p>
         <textarea
           cols={100}
@@ -88,20 +83,24 @@ function EditForm({ problem }: { problem: Problem }) {
       </div>
 
       <div>
-        <PrerequisiteProblemList />
+        <PrerequisiteProblemList
+          prerequisiteProblems={prerequisiteProblems}
+          setPrerequisiteProblems={setPrerequisiteProblems}
+        />
       </div>
 
       <p>
         <SaveButton
+          description={description}
           disabled={disabled}
           id={id}
           prequisiteSkills={prequisiteSkills}
-          description={description}
+          prerequisiteProblems={prerequisiteProblems}
         />
         {' or '}
         <Link href={`/problems/${id}`}>cancel</Link>
       </p>
-    </>
+    </div>
   )
 }
 
@@ -111,7 +110,7 @@ export default async function Page(params: Params) {
   }
 
   const { id } = params.params
-  const problem = (await getData({ id })).data
+  const problem = (await getProblem({ id })).data
   if (problem == null) {
     return (
       <div>

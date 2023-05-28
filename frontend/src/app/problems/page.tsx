@@ -1,6 +1,7 @@
 import React from 'react'
 import Link from 'next/link'
-import { Problem, GetProblemsResponse } from '@/types'
+import { Problem } from '@/types'
+import { getProblems } from '@/services/problems'
 
 function Skills({ problem }: { problem: Problem }) {
   if (problem.prerequisiteSkills.length === 0) {
@@ -48,19 +49,8 @@ function Problems({ problems }: { problems: Problem[] }) {
   )
 }
 
-async function getData(): Promise<GetProblemsResponse> {
-  const res = await fetch('http://localhost:8000/api/v1/problems', { cache: 'no-store' })
-
-  if (!res.ok) {
-    return Promise.resolve({ data: [] })
-  }
-
-  return res.json()
-}
-
 export default async function Page() {
-  const json = await getData()
-  const problems = json.data || []
+  const problems = (await getProblems()).data
 
   return (
     <main>

@@ -2,17 +2,14 @@
 
 import React, { useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
+import { postSkill } from '@/services/skills'
 
 function AddButton({ description }: { description: string }) {
   const router = useRouter()
 
   const onClick = useCallback(async () => {
-    const skillUpdate = { description }
-    const res = await fetch('http://localhost:8000/api/v1/skills', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(skillUpdate),
-    })
+    const update = { description }
+    const res = await postSkill({ update })
 
     if (res.ok) {
       router.push('/skills')

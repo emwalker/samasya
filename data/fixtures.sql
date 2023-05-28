@@ -66,4 +66,5 @@ CREATE TABLE prerequisite_problems (
   foreign key(problem_id) references problems(id),
   foreign key(prerequisite_problem_id) references problems(id)
 );
+INSERT INTO prerequisite_problems VALUES('2e959eb0-fb53-4684-bc7c-29ccb9d3e3a1','b0120309-5a11-4015-8d32-583dbf73ac7e');
 COMMIT;

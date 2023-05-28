@@ -1,20 +1,9 @@
 import React from 'react'
 import Link from 'next/link'
-import { GetSkillsResponse } from '@/types'
-
-async function getData(): Promise<GetSkillsResponse> {
-  const res = await fetch('http://localhost:8000/api/v1/skills', { cache: 'no-store' })
-
-  if (!res.ok) {
-    throw new Error('Failed to fetch data')
-  }
-
-  return res.json()
-}
+import { getSkills } from '@/services/skills'
 
 export default async function Page() {
-  const json = await getData()
-  const skills = json.data || []
+  const skills = (await getSkills()).data
 
   return (
     <main>
