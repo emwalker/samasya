@@ -153,7 +153,7 @@ async fn include_skills(db: &SqlitePool, rows: Vec<ProblemRow>) -> Result<Vec<Pr
     for row in rows {
         let skills = sqlx::query_as::<_, Skill>(
             "select s.*
-         from skills s join problems_skills ps on s.id = ps.skill_id
+         from skills s join prerequisite_skills ps on s.id = ps.skill_id
          where ps.problem_id = $1",
         )
         .bind(&row.id)
@@ -229,7 +229,7 @@ async fn post_problem(
         .map_err(|err| Error::Database(err.to_string()))?;
 
     for skill_id in payload.skill_ids {
-        sqlx::query("insert into problems_skills (problem_id, skill_id) values ($1, $2)")
+        sqlx::query("insert into prerequisite_skills (problem_id, skill_id) values ($1, $2)")
             .bind(&id)
             .bind(&skill_id)
             .execute(&ctx.db)
@@ -254,14 +254,14 @@ async fn put_problem(
         .await
         .map_err(|err| Error::Database(err.to_string()))?;
 
-    sqlx::query("delete from problems_skills where problem_id = $1")
+    sqlx::query("delete from prerequisite_skills where problem_id = $1")
         .bind(&id)
         .execute(&ctx.db)
         .await
         .map_err(|err| Error::Database(err.to_string()))?;
 
     for skill_id in payload.skill_ids {
-        sqlx::query("insert into problems_skills (problem_id, skill_id) values ($1, $2)")
+        sqlx::query("insert into prerequisite_skills (problem_id, skill_id) values ($1, $2)")
             .bind(&id)
             .bind(&skill_id)
             .execute(&ctx.db)
