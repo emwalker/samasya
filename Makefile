@@ -6,6 +6,10 @@ check:
 	make -C backend check
 	make -C frontend check
 
+check-pre-push:
+	make -C backend check
+	make -C frontend check-pre-push
+
 dev: stop
 	pm2 start development.config.yaml
 	pm2 logs

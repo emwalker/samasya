@@ -7,12 +7,12 @@ e2e:
 dev:
 	npm run dev
 
-check:
-	npm run lint
+check: check-pre-push
 	rm -rf node_modules
 	npm install
 
-check-pre-push: check
+check-pre-push:
+	npm run lint
 
 fix:
 	npm run lint -- --fix
