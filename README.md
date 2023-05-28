@@ -12,6 +12,13 @@ This project exists to help me work through the domain model for a web app that 
 * What approach should be taken for concepts that are closely related, such that it would be hard to formulate a problem that didn't include two or more of them?  For example, the radius, circumference and diameter of a circle?  How to avoid skills that are too specific?
 * What approach should be taken for concepts that are very basic, like measuring the length of a line, or working with circles and other geometric shapes?
 
+## Goals and assumptions
+
+Following are some goals and assumptions that should not be lost sight of:
+
+* Problems will belong to a repo.  Authors can add problems to more than one repo.
+* There may be more than one way to solve a problem using different approaches (think of a Leetcode problem).  We should not assume that there is a single way to solve a problem.  The existence of different approaches should be included in the domain model, and prerequisite skills should be relative to specific approaches.  It seems fine to hide this additional complexity from problem authors until a situation is encountered in which it's needed.
+
 ## Early problem statement
 
 Following is a description I put together in October 2021 to try to illustrate the idea:
