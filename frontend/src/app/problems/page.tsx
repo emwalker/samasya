@@ -2,6 +2,7 @@ import React from 'react'
 import Link from 'next/link'
 import { Problem } from '@/types'
 import { getProblems } from '@/services/problems'
+import styles from './styles.module.css'
 
 function Skills({ problem }: { problem: Problem }) {
   if (problem.prerequisiteSkills.length === 0) {
@@ -40,7 +41,7 @@ function Problems({ problems }: { problems: Problem[] }) {
     <ul>
       {
         problems.map((problem) => (
-          <li key={problem.description}>
+          <li className={styles.problem} key={problem.description}>
             <ProblemComponent problem={problem} />
           </li>
         ))

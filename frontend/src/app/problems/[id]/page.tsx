@@ -8,6 +8,31 @@ type Params = {
   params?: { id: string } | null
 }
 
+interface Item {
+  description: string,
+}
+
+type ListOrProps = {
+  fallback: string,
+  items: Item[],
+}
+
+function ListOr({ items, fallback }: ListOrProps) {
+  if (items.length === 0) {
+    return <div>{fallback}</div>
+  }
+
+  return (
+    <ul>
+      {
+        items.map(({ description }) => (
+          <li key={description}>{description}</li>
+        ))
+      }
+    </ul>
+  )
+}
+
 export default async function Page(params: Params) {
   if (params?.params == null) {
     return null
@@ -32,32 +57,20 @@ export default async function Page(params: Params) {
         </h1>
 
         <p>
-          { problem.description || 'No problem found' }
+          {problem.description || 'No problem found'}
         </p>
 
         <p>
           <h3>Prerequisite skills</h3>
-          <ul>
-            {
-              problem.prerequisiteSkills.map(({ description }) => (
-                <li key={description}>{ description }</li>
-              ))
-            }
-          </ul>
+          <ListOr items={problem.prerequisiteSkills} fallback="No skills" />
         </p>
 
         <p>
           <h3>Prerequisite problems</h3>
-          <ul>
-            {
-              problem.prerequisiteProblems.map(({ description }) => (
-                <li key={description}>{ description }</li>
-              ))
-            }
-          </ul>
+          <ListOr items={problem.prerequisiteProblems} fallback="No problems" />
         </p>
 
-        { problem && <Link href={`/problems/${problem.id}/edit`}>Edit</Link> }
+        {problem && <Link href={`/problems/${problem.id}/edit`}>Edit</Link>}
       </div>
     </main>
   )
