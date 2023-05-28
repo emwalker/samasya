@@ -9,7 +9,8 @@ dev:
 
 check:
 	npm run lint
-	#npm tsc
+	rm -rf node_modules
+	npm install
 
 check-pre-push: check
 
@@ -24,6 +25,3 @@ lint:
 
 start:
 	npm run start
-
-test:
-	npm run test
