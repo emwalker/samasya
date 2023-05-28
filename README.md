@@ -11,6 +11,7 @@ This project exists to help me work through the domain model for a web app that 
 * Is a cluster of skills simply an anonymous skill?
 * What approach should be taken for concepts that are closely related, such that it would be hard to formulate a problem that didn't include two or more of them?  For example, the radius, circumference and diameter of a circle?  How to avoid skills that are too specific?
 * What approach should be taken for concepts that are very basic, like measuring the length of a line, or working with circles and other geometric shapes?
+* Will some problems be so specific that the prerequisite "skills" will simply be other, similar problems, with an additional dimension added?  How to model this?
 
 ## Goals and assumptions
 
