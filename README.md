@@ -4,15 +4,13 @@ Samasya means "problem" in Hindi related languages.  It's being used here in the
 
 This project exists to help me work through the domain model for a web app that would use spaced repetition to guide leaners through a series of challenge problems on the way to acquiring a new skill.  For example, the ability to analyze a complex physical system and then work out a partial derivative that can help to model it.  The web app should not assume too much about what the learner has already mastered.
 
-## Screenshots
-
-TK
-
 ## Questions and challenges
 
-* How to avoid creating duplicate, redundant skills?
+* How to avoid creating duplicate, redundant skills?  It looks like the skills are going to be somewhat specific.
 * At what point should something be considered "mastered"?  What is it that is being  mastered?  A specific skill?  A cluster of skills?
 * Is a cluster of skills simply an anonymous skill?
+* What approach should be taken for concepts that are closely related, such that it would be hard to formulate a problem that didn't include two or more of them?  For example, the radius, circumference and diameter of a circle?  How to avoid skills that are too specific?
+* What approach should be taken for concepts that are very basic, like measuring the length of a line, or working with circles and other geometric shapes?
 
 ## Early problem statement
 
@@ -22,7 +20,7 @@ The purpose of the app would be to help people to rigorously acquire concrete pr
 
 The app would largely be organized around concrete problems that the user is asked to try to solve.  In many cases, the problems would be word problems that state things in a concrete way without providing hints as to what is needed to solve them:
 
-> A 1000 liter holding tank that catches runoff from some chemical process initially has 800 liters of water with 2 milliliters of pollution dissolved in it.  Polluted water flows into the tank at a rate of 3 liters/hr and contains 5 milliliters/liter of pollution in it.  A well mixed solution leaves the tank at 3 liters/hr as well.  When the amount of pollution in the holding tank reaches 500 milliliters the inflow of polluted water is cut off and fresh water will enter the tank at a decreased rate of 2 liters/hr while the outflow is increased to 4 liters/hr. Determine the amount of pollution in the tank at any time t.  (Adapted from this page.)
+> A 1000 liter holding tank that catches runoff from some chemical process initially has 800 liters of water with 2 milliliters of pollution dissolved in it.  Polluted water flows into the tank at a rate of 3 liters/hr and contains 5 milliliters/liter of pollution in it.  A well mixed solution leaves the tank at 3 liters/hr as well.  When the amount of pollution in the holding tank reaches 500 milliliters the inflow of polluted water is cut off and fresh water will enter the tank at a decreased rate of 2 liters/hr while the outflow is increased to 4 liters/hr. Determine the amount of pollution in the tank at any time t.  (Adapted from [this page](https://tutorial.math.lamar.edu/classes/de/modeling.aspx).)
 
 In this case, you need to construct a system of differential equations to solve the word problem, but the question text doesn't come out and say that.  The user would be required to infer that this is what is needed, and in a sense she is just thrown into the deep end of the pool.
 
