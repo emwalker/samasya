@@ -2,19 +2,9 @@
 
 import React from 'react'
 import Link from 'next/link'
-import { Skill } from '../SkillDropdown'
+import { GetProblemResponse } from '@/types'
 
-type Problem = {
-  id: string,
-  description: string,
-  skills: Skill[]
-}
-
-type Response = {
-  data: Problem | null
-}
-
-async function getData({ id }: { id: string }): Promise<Response> {
+async function getData({ id }: { id: string }): Promise<GetProblemResponse> {
   const res = await fetch(`http://localhost:8000/api/v1/problems/${id}`, { cache: 'no-store' })
 
   if (!res.ok) {
@@ -57,7 +47,9 @@ export default async function Page(params: Params) {
 
         <ul>
           {
-            problem.skills.map(({ description }) => <li key={description}>{ description }</li>)
+            problem.prerequisiteSkills.map(({ description }) => (
+              <li key={description}>{ description }</li>
+            ))
           }
         </ul>
 

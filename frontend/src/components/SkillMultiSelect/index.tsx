@@ -1,15 +1,12 @@
 import React, { useCallback } from 'react'
 import AsyncSelect from 'react-select/async'
 import { MultiValue } from 'react-select'
-
-export type Skill = {
-  id: string,
-  description: string,
-}
+import { Skill } from '@/types'
+import styles from './styles.module.css'
 
 type Props = {
-  initialSkills: Skill[],
-  setSkills: (skills: Skill[]) => void,
+  initialPrerequisiteSkills: Skill[],
+  setPrerequisiteSkills: (skills: Skill[]) => void,
 }
 
 type Option = {
@@ -32,30 +29,38 @@ const components = {
   LoadingIndicator: () => null,
 }
 
-export default function SkillDropdown({ initialSkills, setSkills }: Props) {
+export default function SkillMultiSelect({
+  initialPrerequisiteSkills,
+  setPrerequisiteSkills,
+}: Props) {
   const onChange = useCallback(
     (newValue: MultiValue<Option>) => {
       const newSkills = newValue.map(({ value, label }) => ({ id: value, description: label }))
-      setSkills(newSkills)
+      setPrerequisiteSkills(newSkills)
     },
-    [setSkills],
+    [setPrerequisiteSkills],
   )
 
-  const skillsLoadOptions = useCallback(fetchSkills, [fetchSkills])
-  const defaultValue = initialSkills.map(
+  const loadOptions = useCallback(fetchSkills, [fetchSkills])
+  const defaultValue = initialPrerequisiteSkills.map(
     ({ id, description }) => ({ value: id, label: description }),
   )
 
   return (
-    <AsyncSelect
-      cacheOptions
-      components={components}
-      defaultOptions
-      defaultValue={defaultValue}
-      instanceId="skill-dropdown"
-      isMulti
-      loadOptions={skillsLoadOptions}
-      onChange={onChange}
-    />
+    <div className={styles.component}>
+      {/* eslint-disable-next-line jsx-a11y/label-has-associated-control */}
+      <label>Prerequisite skills</label>
+
+      <AsyncSelect
+        cacheOptions
+        components={components}
+        defaultOptions
+        defaultValue={defaultValue}
+        instanceId="skill-dropdown"
+        isMulti
+        loadOptions={loadOptions}
+        onChange={onChange}
+      />
+    </div>
   )
 }

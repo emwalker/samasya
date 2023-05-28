@@ -84,17 +84,18 @@ struct ProblemRow {
 }
 
 #[derive(Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
 struct Problem {
     id: String,
     description: String,
-    skills: Vec<Skill>,
+    prerequisite_skills: Vec<Skill>,
 }
 
 #[derive(Deserialize, Serialize, Debug)]
 #[serde(rename_all = "camelCase")]
 struct ProblemUpdate {
     description: String,
-    skill_ids: Vec<String>,
+    prequisite_skill_ids: Vec<String>,
 }
 
 #[derive(Serialize)]
@@ -151,10 +152,10 @@ async fn include_skills(db: &SqlitePool, rows: Vec<ProblemRow>) -> Result<Vec<Pr
     let mut problems: Vec<Problem> = vec![];
 
     for row in rows {
-        let skills = sqlx::query_as::<_, Skill>(
+        let prerequisite_skills = sqlx::query_as::<_, Skill>(
             "select s.*
-         from skills s join prerequisite_skills ps on s.id = ps.skill_id
-         where ps.problem_id = $1",
+             from skills s join prerequisite_skills ps on s.id = ps.skill_id
+             where ps.problem_id = $1",
         )
         .bind(&row.id)
         .fetch_all(db)
@@ -164,7 +165,7 @@ async fn include_skills(db: &SqlitePool, rows: Vec<ProblemRow>) -> Result<Vec<Pr
         problems.push(Problem {
             id: row.id,
             description: row.description,
-            skills,
+            prerequisite_skills,
         })
     }
 
@@ -228,7 +229,7 @@ async fn post_problem(
         .await
         .map_err(|err| Error::Database(err.to_string()))?;
 
-    for skill_id in payload.skill_ids {
+    for skill_id in payload.prequisite_skill_ids {
         sqlx::query("insert into prerequisite_skills (problem_id, skill_id) values ($1, $2)")
             .bind(&id)
             .bind(&skill_id)
@@ -260,7 +261,7 @@ async fn put_problem(
         .await
         .map_err(|err| Error::Database(err.to_string()))?;
 
-    for skill_id in payload.skill_ids {
+    for skill_id in payload.prequisite_skill_ids {
         sqlx::query("insert into prerequisite_skills (problem_id, skill_id) values ($1, $2)")
             .bind(&id)
             .bind(&skill_id)

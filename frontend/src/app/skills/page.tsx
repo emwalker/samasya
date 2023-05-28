@@ -1,15 +1,8 @@
 import React from 'react'
 import Link from 'next/link'
+import { GetSkillsResponse } from '@/types'
 
-type Skill = {
-  description: string,
-}
-
-type Response = {
-  data: Skill[],
-}
-
-async function getData(): Promise<Response> {
+async function getData(): Promise<GetSkillsResponse> {
   const res = await fetch('http://localhost:8000/api/v1/skills', { cache: 'no-store' })
 
   if (!res.ok) {

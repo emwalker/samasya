@@ -1,23 +1,9 @@
 import React from 'react'
 import Link from 'next/link'
+import { Problem, GetProblemsResponse } from '@/types'
 
-type SkillType = {
-  id: string,
-  description: string,
-}
-
-type ProblemType = {
-  id: string,
-  description: string,
-  skills: SkillType[],
-}
-
-type Response = {
-  data: ProblemType[],
-}
-
-function Skills({ problem }: { problem: ProblemType }) {
-  if (problem.skills.length === 0) {
+function Skills({ problem }: { problem: Problem }) {
+  if (problem.prerequisiteSkills.length === 0) {
     return <span>(no skills)</span>
   }
 
@@ -25,14 +11,14 @@ function Skills({ problem }: { problem: ProblemType }) {
     <>
       (
       <span>
-        {problem.skills.map(({ description }) => description).join(', ')}
+        {problem.prerequisiteSkills.map(({ description }) => description).join(', ')}
       </span>
       )
     </>
   )
 }
 
-function Problem({ problem }: { problem: ProblemType }) {
+function ProblemComponent({ problem }: { problem: Problem }) {
   return (
     <>
       <Link href={`/problems/${problem.id}`}>
@@ -44,7 +30,7 @@ function Problem({ problem }: { problem: ProblemType }) {
   )
 }
 
-function Problems({ problems }: { problems: ProblemType[] }) {
+function Problems({ problems }: { problems: Problem[] }) {
   if (problems.length === 0) {
     return <div>No problems</div>
   }
@@ -52,13 +38,17 @@ function Problems({ problems }: { problems: ProblemType[] }) {
   return (
     <ul>
       {
-        problems.map((problem) => <li key={problem.description}><Problem problem={problem} /></li>)
+        problems.map((problem) => (
+          <li key={problem.description}>
+            <ProblemComponent problem={problem} />
+          </li>
+        ))
       }
     </ul>
   )
 }
 
-async function getData(): Promise<Response> {
+async function getData(): Promise<GetProblemsResponse> {
   const res = await fetch('http://localhost:8000/api/v1/problems', { cache: 'no-store' })
 
   if (!res.ok) {

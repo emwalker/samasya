@@ -3,24 +3,21 @@
 import React, { useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 
-type Skill = {
-  description: string,
-}
-
-function AddButton({ skill }: { skill: Skill }) {
+function AddButton({ description }: { description: string }) {
   const router = useRouter()
 
   const onClick = useCallback(async () => {
+    const skillUpdate = { description }
     const res = await fetch('http://localhost:8000/api/v1/skills', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(skill),
+      body: JSON.stringify(skillUpdate),
     })
 
     if (res.ok) {
       router.push('/skills')
     }
-  }, [skill, router])
+  }, [description, router])
 
   return (
     <button onClick={onClick} type="submit">Add</button>
@@ -51,7 +48,7 @@ export default function Page() {
         </p>
 
         <p>
-          <AddButton skill={{ description }} />
+          <AddButton description={description} />
         </p>
       </div>
     </main>

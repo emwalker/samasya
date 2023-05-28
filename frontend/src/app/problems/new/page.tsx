@@ -3,18 +3,18 @@
 import React, { useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import SkillDropdown, { Skill } from '../SkillDropdown'
+import SkillMultiSelect from '@/components/SkillMultiSelect'
+import { Skill } from '@/types'
 
-type Problem = {
+type AddButtonProps = {
+  disabled: boolean,
   description: string,
-  skills: Skill[]
+  prerequisiteSkills: Skill[]
 }
 
-type AddButtonProps = { disabled: boolean, problem: Problem }
-
-function AddButton({ disabled, problem: { description, skills } }: AddButtonProps) {
+function AddButton({ disabled, description, prerequisiteSkills }: AddButtonProps) {
   const router = useRouter()
-  const skillIds = skills.map(({ id }) => id)
+  const skillIds = prerequisiteSkills.map(({ id }) => id)
 
   const onClick = useCallback(async () => {
     const problemUpdate = { description, skillIds }
@@ -37,7 +37,7 @@ function AddButton({ disabled, problem: { description, skills } }: AddButtonProp
 
 export default function Page() {
   const [description, setDescription] = useState('')
-  const [skills, setSkills] = useState([] as Skill[])
+  const [prerequisiteSkills, setPrerequisiteSkills] = useState([] as Skill[])
 
   const descOnChange = useCallback(
     (event: React.ChangeEvent<HTMLTextAreaElement>) => setDescription(event.target.value),
@@ -62,11 +62,18 @@ export default function Page() {
         </p>
 
         <div>
-          <SkillDropdown initialSkills={[]} setSkills={setSkills} />
+          <SkillMultiSelect
+            initialPrerequisiteSkills={[]}
+            setPrerequisiteSkills={setPrerequisiteSkills}
+          />
         </div>
 
         <p>
-          <AddButton disabled={disabled} problem={{ description, skills }} />
+          <AddButton
+            disabled={disabled}
+            description={description}
+            prerequisiteSkills={prerequisiteSkills}
+          />
           {' or '}
           <Link href="/problems">cancel</Link>
         </p>

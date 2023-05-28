@@ -5,30 +5,22 @@ import React, {
 } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import SkillDropdown, { Skill } from '../../SkillDropdown'
-
-type Problem = {
-  id: string,
-  description: string,
-  skills: Skill[]
-}
-
-type Response = {
-  data: Problem | null
-}
+import SkillMultiSelect from '@/components/SkillMultiSelect'
+import PrerequisiteProblemList from '@/components/PrerequisiteProblemList'
+import { Skill, Problem, GetProblemResponse } from '@/types'
 
 type SaveButtonProps = {
   description: string,
   disabled: boolean,
   id: string,
-  skills: Skill[],
+  prequisiteSkills: Skill[],
 }
 
 function SaveButton({
-  disabled, id, description, skills,
+  disabled, id, description, prequisiteSkills,
 }: SaveButtonProps) {
   const router = useRouter()
-  const skillIds = skills.map(({ id }) => id)
+  const skillIds = prequisiteSkills.map(({ id }) => id)
 
   const onClick = useCallback(async () => {
     const problemUpdate = { description, skillIds }
@@ -48,7 +40,7 @@ function SaveButton({
   )
 }
 
-async function getData({ id }: { id: string }): Promise<Response> {
+async function getData({ id }: { id: string }): Promise<GetProblemResponse> {
   const res = await fetch(`http://localhost:8000/api/v1/problems/${id}`, { cache: 'no-store' })
 
   if (!res.ok) {
@@ -63,9 +55,12 @@ type Params = {
 }
 
 function EditForm({ problem }: { problem: Problem }) {
-  const { id, description: initialDescription, skills: initialSkills } = problem
+  const {
+    id, description: initialDescription, prerequisiteSkills: initialSkills,
+  } = problem
   const [description, setDescription] = useState(initialDescription)
-  const [skills, setSkills] = useState(initialSkills)
+  const [prequisiteSkills, setPrerequisiteSkills] = useState(initialSkills)
+  // const [prerequisiteProblems, setPrerequisiteProblems] = useState([] as string[])
 
   const descOnChange = useCallback(
     (event: React.ChangeEvent<HTMLTextAreaElement>) => setDescription(event.target.value || ''),
@@ -86,11 +81,23 @@ function EditForm({ problem }: { problem: Problem }) {
       </p>
 
       <div>
-        <SkillDropdown initialSkills={initialSkills} setSkills={setSkills} />
+        <SkillMultiSelect
+          initialPrerequisiteSkills={initialSkills}
+          setPrerequisiteSkills={setPrerequisiteSkills}
+        />
+      </div>
+
+      <div>
+        <PrerequisiteProblemList />
       </div>
 
       <p>
-        <SaveButton disabled={disabled} id={id} skills={skills} description={description} />
+        <SaveButton
+          disabled={disabled}
+          id={id}
+          prequisiteSkills={prequisiteSkills}
+          description={description}
+        />
         {' or '}
         <Link href={`/problems/${id}`}>cancel</Link>
       </p>
