@@ -1,65 +1,34 @@
 import React from 'react'
 import Link from 'next/link'
 import { Problem } from '@/types'
-import { getProblems } from '@/services/problems'
+import problemService from '@/services/problems'
+import ListOr from '@/components/ListOr'
 import styles from './styles.module.css'
 
-function Skills({ problem }: { problem: Problem }) {
-  if (problem.prerequisiteSkills.length === 0) {
-    return <span>(no skills)</span>
-  }
-
+function ProblemItem({ problem }: { problem: Problem }) {
   return (
-    <>
-      (
-      <span>
-        {problem.prerequisiteSkills.map(({ description }) => description).join(', ')}
-      </span>
-      )
-    </>
-  )
-}
-
-function ProblemComponent({ problem }: { problem: Problem }) {
-  return (
-    <>
-      <Link href={`/problems/${problem.id}`}>
-        {problem.description}
-      </Link>
-      {' '}
-      <Skills problem={problem} />
-    </>
-  )
-}
-
-function Problems({ problems }: { problems: Problem[] }) {
-  if (problems.length === 0) {
-    return <div>No problems</div>
-  }
-
-  return (
-    <ul>
-      {
-        problems.map((problem) => (
-          <li className={styles.problem} key={problem.description}>
-            <ProblemComponent problem={problem} />
-          </li>
-        ))
-      }
-    </ul>
+    <Link href={`/problems/${problem.id}`}>
+      {problem.summary}
+    </Link>
   )
 }
 
 export default async function Page() {
-  const problems = (await getProblems()).data
+  const problems = (await problemService.getList()).data
 
   return (
     <main>
       <h1 data-testid="page-name">Problems</h1>
 
-      Available problems:
-
-      <Problems problems={problems} />
+      <ListOr title="Available problems" fallback="No problems">
+        {
+          problems.map((problem) => (
+            <li className={styles.problem} key={problem.id}>
+              <ProblemItem problem={problem} />
+            </li>
+          ))
+        }
+      </ListOr>
 
       <p>
         <Link href="/problems/new">Add a problem</Link>

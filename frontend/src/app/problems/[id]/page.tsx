@@ -2,35 +2,45 @@
 
 import React from 'react'
 import Link from 'next/link'
-import { getProblem } from '@/services/problems'
+import problemService from '@/services/problems'
+import { WideApproach } from '@/types'
+import ListOr from '@/components/ListOr'
+import styles from './styles.module.css'
+
+function ApproachItem({ approach }: { approach: WideApproach }) {
+  return (
+    <div className={styles.approach}>
+      <div>
+        Name:
+        {' '}
+        {approach.name}
+      </div>
+
+      <ListOr title="Prerequisite skills" fallback="No required skills">
+        {approach.prereqSkills.map((skill) => (
+          <li key={skill.id}>{skill.summary}</li>
+        ))}
+      </ListOr>
+
+      <ListOr title="Prerequisite approaches" fallback="No required approaches">
+        {approach.prereqApproaches.map((approach) => (
+          <li key={approach.id}>
+            {approach.summary}
+            {' '}
+            (
+            {approach.name}
+            )
+          </li>
+        ))}
+      </ListOr>
+
+      <Link href={`/approaches/${approach.id}/edit`}>Edit</Link>
+    </div>
+  )
+}
 
 type Params = {
   params?: { id: string } | null
-}
-
-interface Item {
-  description: string,
-}
-
-type ListOrProps = {
-  fallback: string,
-  items: Item[],
-}
-
-function ListOr({ items, fallback }: ListOrProps) {
-  if (items.length === 0) {
-    return <div>{fallback}</div>
-  }
-
-  return (
-    <ul>
-      {
-        items.map(({ description }) => (
-          <li key={description}>{description}</li>
-        ))
-      }
-    </ul>
-  )
 }
 
 export default async function Page(params: Params) {
@@ -39,7 +49,7 @@ export default async function Page(params: Params) {
   }
 
   const { id } = params.params
-  const problem = (await getProblem({ id })).data
+  const problem = (await problemService.get(id)).data
   if (problem == null) {
     return (
       <div>
@@ -57,20 +67,28 @@ export default async function Page(params: Params) {
         </h1>
 
         <p>
-          {problem.description || 'No problem found'}
+          {problem.summary}
         </p>
 
         <p>
-          <h3>Prerequisite skills</h3>
-          <ListOr items={problem.prerequisiteSkills} fallback="No skills" />
+          {problem.questionUrl}
         </p>
 
         <p>
-          <h3>Prerequisite problems</h3>
-          <ListOr items={problem.prerequisiteProblems} fallback="No problems" />
+          {problem.questionText}
         </p>
 
-        {problem && <Link href={`/problems/${problem.id}/edit`}>Edit</Link>}
+        <ListOr title="Approaches" fallback="No approaches">
+          {
+            problem.approaches.map((approach) => (
+              <li><ApproachItem approach={approach} /></li>
+            ))
+          }
+        </ListOr>
+
+        <Link href={`/problems/${id}/approaches/new`}>Add an approach</Link>
+        <br />
+        <Link href={`/problems/${id}/edit`}>Edit problem</Link>
       </div>
     </main>
   )

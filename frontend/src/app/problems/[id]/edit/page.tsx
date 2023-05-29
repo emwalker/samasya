@@ -1,46 +1,128 @@
 'use client'
 
-import React, {
-  useCallback, useState,
-} from 'react'
-import Link from 'next/link'
+import React, { ChangeEvent, useCallback, useState } from 'react'
+import problemService from '@/services/problems'
+import { Problem } from '@/types'
 import { useRouter } from 'next/navigation'
-import SkillMultiSelect from '@/components/SkillMultiSelect'
-import PrerequisiteProblemList from '@/components/PrerequisiteProblemList'
-import { Skill, Problem } from '@/types'
-import { getProblem, putProblem, ProblemUpdate } from '@/services/problems'
-import styles from './style.module.css'
+import Link from 'next/link'
 
 type SaveButtonProps = {
-  description: string,
   disabled: boolean,
-  id: string,
-  prequisiteSkills: Skill[],
-  prerequisiteProblems: Problem[],
+  problemId: string,
+  questionText: string | null,
+  questionUrl: string | null,
+  summary: string,
 }
 
 function SaveButton({
-  disabled, id, description, prequisiteSkills, prerequisiteProblems,
+  disabled, summary, problemId, questionText, questionUrl,
 }: SaveButtonProps) {
   const router = useRouter()
-  const prerequisiteSkillIds = prequisiteSkills.map(({ id }) => id)
-  const prerequisiteProblemIds = prerequisiteProblems.map(({ id }) => id)
 
-  const onClick = useCallback(async () => {
-    const update: ProblemUpdate = {
-      description,
-      prerequisiteProblemIds,
-      prerequisiteSkillIds,
-    }
-    const res = await putProblem({ id, update })
+  const onClick = useCallback(
+    async () => {
+      const res = await problemService.put(problemId, { summary, questionText, questionUrl })
 
-    if (res.ok) {
-      router.push(`/problems/${id}`)
-    }
-  }, [id, description, prerequisiteProblemIds, prerequisiteSkillIds, router])
+      if (!res.ok) {
+        throw Error(`failed to save problem: ${res}`)
+      }
+
+      router.push(`/problems/${problemId}`)
+    },
+    [problemId, summary, questionText, questionUrl, router],
+  )
 
   return (
-    <button disabled={disabled} onClick={onClick} type="submit">Update</button>
+    <button type="submit" onClick={onClick} disabled={disabled}>Save</button>
+  )
+}
+
+function EditForm({ problem }: { problem: Problem }) {
+  const [summary, setSummary] = useState(problem.summary)
+  const [questionText, setQuestionText] = useState(problem.questionText)
+  const [questionUrl, setQuestionUrl] = useState(problem.questionUrl)
+
+  const summaryOnChange = useCallback(
+    (event: ChangeEvent<HTMLInputElement>) => setSummary(event.target.value),
+    [setSummary],
+  )
+
+  const questionTextOnChange = useCallback(
+    (event: ChangeEvent<HTMLTextAreaElement>) => setQuestionText(event.target.value),
+    [setQuestionText],
+  )
+
+  const questionUrlOnChange = useCallback(
+    (event: ChangeEvent<HTMLInputElement>) => setQuestionUrl(event.target.value),
+    [setQuestionUrl],
+  )
+
+  const disabled = summary.length === 0 || (questionText != null && questionUrl != null)
+    || (questionText == null && questionUrl == null)
+
+  return (
+    <div>
+      <p>
+        <label htmlFor="summary">
+          Summary
+          <br />
+          <input
+            id="summary"
+            onChange={summaryOnChange}
+            placeholder="Short summary of problem"
+            size={100}
+            type="text"
+            value={summary || ''}
+          />
+        </label>
+      </p>
+
+      <p>
+        <label htmlFor="question-text">
+          Question prompt
+          <br />
+          <textarea
+            cols={100}
+            id="question-text"
+            onChange={questionTextOnChange}
+            placeholder="Question prompt to be shown"
+            rows={6}
+            value={questionText || ''}
+          />
+        </label>
+      </p>
+
+      <p>
+        <label htmlFor="question-url">
+          Question url
+          <br />
+          <input
+            id="question-url"
+            onChange={questionUrlOnChange}
+            placeholder="Link to another website"
+            size={100}
+            type="text"
+            value={questionUrl || ''}
+          />
+        </label>
+      </p>
+
+      <p>
+        <small>Either a question prompt or a question url should be provided, but not both.</small>
+      </p>
+
+      <p>
+        <SaveButton
+          disabled={disabled}
+          problemId={problem.id}
+          questionText={questionText}
+          questionUrl={questionUrl}
+          summary={summary}
+        />
+        {' or '}
+        <Link href={`/problems/${problem.id}`}>cancel</Link>
+      </p>
+    </div>
   )
 }
 
@@ -48,87 +130,26 @@ type Params = {
   params?: { id: string } | null
 }
 
-function EditForm({ problem }: { problem: Problem }) {
-  const {
-    id, description: initialDescription, prerequisiteSkills: initialSkills,
-    prerequisiteProblems: initialProblems,
-  } = problem
-  const [description, setDescription] = useState(initialDescription)
-  const [prequisiteSkills, setPrerequisiteSkills] = useState(initialSkills)
-  const [prerequisiteProblems, setPrerequisiteProblems] = useState(initialProblems)
-
-  const descOnChange = useCallback(
-    (event: React.ChangeEvent<HTMLTextAreaElement>) => setDescription(event.target.value || ''),
-    [setDescription],
-  )
-
-  const disabled = description.length === 0
-
-  return (
-    <div className={styles.editForm}>
-      <p>
-        <textarea
-          cols={100}
-          defaultValue={description || problem.description}
-          onChange={descOnChange}
-          rows={6}
-        />
-      </p>
-
-      <div>
-        <SkillMultiSelect
-          initialPrerequisiteSkills={initialSkills}
-          setPrerequisiteSkills={setPrerequisiteSkills}
-        />
-      </div>
-
-      <div>
-        <PrerequisiteProblemList
-          prerequisiteProblems={prerequisiteProblems}
-          setPrerequisiteProblems={setPrerequisiteProblems}
-        />
-      </div>
-
-      <p>
-        <SaveButton
-          description={description}
-          disabled={disabled}
-          id={id}
-          prequisiteSkills={prequisiteSkills}
-          prerequisiteProblems={prerequisiteProblems}
-        />
-        {' or '}
-        <Link href={`/problems/${id}`}>cancel</Link>
-      </p>
-    </div>
-  )
-}
-
 export default async function Page(params: Params) {
-  if (params?.params == null) {
+  const problemId = params?.params?.id
+  if (problemId == null) {
     return <div>Loading ...</div>
   }
 
-  const { id } = params.params
-  const problem = (await getProblem({ id })).data
+  const problem = (await problemService.get(problemId)).data
   if (problem == null) {
     return (
       <div>
         Problem not found:
-        {id}
+        {problemId}
       </div>
     )
   }
 
   return (
     <main>
-      <div>
-        <h1>
-          Update problem
-        </h1>
-
-        <EditForm problem={problem} />
-      </div>
+      <h1>Update problem</h1>
+      <EditForm problem={problem} />
     </main>
   )
 }

@@ -1,11 +1,11 @@
 import React, { useCallback } from 'react'
-import { Problem } from '@/types'
-import { getProblem } from '@/services/problems'
+import { Approach } from '@/types'
+import approachService from '@/services/approaches'
 import styles from './styles.module.css'
 
 type Props = {
-  prerequisiteProblems: Problem[],
-  setPrerequisiteProblems: (problems: Problem[]) => void,
+  prereqApproaches: Approach[],
+  setPrereqApproaches: (apporaches: Approach[]) => void,
 }
 
 type MakeRemoveOnClickProps = Props & {
@@ -17,19 +17,19 @@ type PrereqProps = MakeRemoveOnClickProps & {
 }
 
 function Prereq({
-  id, description, prerequisiteProblems, setPrerequisiteProblems,
+  id, description, prereqApproaches, setPrereqApproaches,
 }: PrereqProps) {
   const onClick = useCallback(
     () => {
-      const index = prerequisiteProblems.findIndex(({ id: otherId }) => otherId === id)
+      const index = prereqApproaches.findIndex(({ id: otherId }) => otherId === id)
 
       if (index > -1) {
-        const problems = [...prerequisiteProblems]
-        problems.splice(index, 1)
-        setPrerequisiteProblems(problems)
+        const approaches = [...prereqApproaches]
+        approaches.splice(index, 1)
+        setPrereqApproaches(approaches)
       }
     },
-    [id, prerequisiteProblems, setPrerequisiteProblems],
+    [id, prereqApproaches, setPrereqApproaches],
   )
 
   return (
@@ -49,25 +49,23 @@ function parseIdFromUrl(url: string) {
   return url.replace('/edit', '').split('/').pop()
 }
 
-async function addPrereq({ url, prerequisiteProblems, setPrerequisiteProblems }: AddPrereqProps) {
+async function addPrereq({ url, prereqApproaches, setPrereqApproaches }: AddPrereqProps) {
   const id = parseIdFromUrl(url)
 
   if (id == null) {
     throw Error(`do not recognize url: ${url}`)
   }
 
-  const problem = (await getProblem({ id })).data
-  if (problem == null) {
-    throw Error(`problem not found: ${url}`)
+  const approach = (await approachService.get(id)).data
+  if (approach == null) {
+    throw Error(`approach not found: ${url}`)
   }
 
-  const problems = [...prerequisiteProblems, problem]
-  setPrerequisiteProblems(problems)
+  const approaches = [...prereqApproaches, approach]
+  setPrereqApproaches(approaches)
 }
 
-export default function PrerequisiteProblemList({
-  prerequisiteProblems, setPrerequisiteProblems,
-}: Props) {
+export default function PrerequisiteApproachList({ prereqApproaches, setPrereqApproaches }: Props) {
   const onChange = useCallback(
     (event: React.KeyboardEvent<HTMLInputElement>) => {
       if (event.key !== 'Enter') {
@@ -76,38 +74,38 @@ export default function PrerequisiteProblemList({
 
       return addPrereq({
         url: event.currentTarget.value,
-        setPrerequisiteProblems,
-        prerequisiteProblems,
+        setPrereqApproaches,
+        prereqApproaches,
       })
     },
-    [prerequisiteProblems, setPrerequisiteProblems],
+    [prereqApproaches, setPrereqApproaches],
   )
 
   return (
     <div className={styles.component}>
       {/* eslint-disable-next-line jsx-a11y/label-has-associated-control */}
-      <label>Prerequisite problems</label>
+      <label>Prerequisite approaches</label>
 
       <ul>
         {
-          prerequisiteProblems.map(({ description, id }) => (
+          prereqApproaches.map(({ summary, id }) => (
             <Prereq
-              description={description}
+              description={summary}
               id={id}
               key={id}
-              prerequisiteProblems={prerequisiteProblems}
-              setPrerequisiteProblems={setPrerequisiteProblems}
+              prereqApproaches={prereqApproaches}
+              setPrereqApproaches={setPrereqApproaches}
             />
           ))
         }
       </ul>
 
       <p>
-        <label htmlFor="add-a-problem">
-          Add a problem
+        <label htmlFor="add-an-approach">
+          Add an approach
           <br />
           <input
-            id="add-a-problem"
+            id="add-an-approach"
             onKeyDown={onChange}
             placeholder="Problem url"
             size={100}

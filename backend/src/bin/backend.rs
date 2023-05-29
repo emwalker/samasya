@@ -1,43 +1,19 @@
 use axum::{
     extract::{Extension, Path, Query},
-    response::IntoResponse,
     routing::{get, post, put},
     Json, Router,
 };
-use hyper::StatusCode;
+use samasya::{
+    sqlx::{approaches, problems},
+    types::{Approach, Error, Problem, Result, Skill, WideApproach, WideProblem},
+};
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 use sqlx::{sqlite::SqlitePoolOptions, SqlitePool};
 use std::env;
 use std::sync::Arc;
-use thiserror::Error;
 use tower_http::cors::CorsLayer;
 use tracing::info;
-
-#[derive(Error, Debug)]
-pub enum Error {
-    #[error("failed to load config")]
-    Config(String),
-    #[error("failed to connect to database: {0}")]
-    Database(String),
-    #[error("not found")]
-    NotFound,
-}
-
-impl IntoResponse for Error {
-    fn into_response(self) -> axum::response::Response {
-        let (status, error_message) = match self {
-            Self::Database(message) | Self::Config(message) => (
-                StatusCode::INTERNAL_SERVER_ERROR,
-                format!("Internal server error: {}", message),
-            ),
-            Self::NotFound => (StatusCode::NOT_FOUND, "Not found".into()),
-        };
-        (status, Json(json!({ "error": error_message }))).into_response()
-    }
-}
-
-pub type Result<T, E = Error> = std::result::Result<T, E>;
 
 #[derive(Deserialize, Serialize)]
 struct Config {
@@ -60,15 +36,9 @@ struct ApiContext {
     db: SqlitePool,
 }
 
-#[derive(Clone, Serialize, sqlx::FromRow)]
-struct Skill {
-    id: String,
-    description: String,
-}
-
 #[derive(Deserialize, Serialize, Debug)]
 #[serde(rename_all = "camelCase")]
-struct AddSkill {
+struct SkillUpdate {
     description: String,
 }
 
@@ -77,32 +47,21 @@ struct SkillsListResponse {
     data: Vec<Skill>,
 }
 
-#[derive(sqlx::FromRow)]
-struct ProblemRow {
-    id: String,
-    description: String,
-}
-
-#[derive(Clone, Serialize)]
+#[derive(Deserialize, Serialize, Debug)]
 #[serde(rename_all = "camelCase")]
-struct Problem {
-    description: String,
-    id: String,
-    prerequisite_problems: Vec<Problem>,
-    prerequisite_skills: Vec<Skill>,
+struct ProblemUpdate {
+    question_text: Option<String>,
+    question_url: Option<String>,
+    summary: String,
 }
 
 #[derive(Deserialize, Serialize, Debug)]
 #[serde(rename_all = "camelCase")]
-struct ProblemUpdate {
-    description: String,
-    prerequisite_problem_ids: Vec<String>,
-    prerequisite_skill_ids: Vec<String>,
-}
-
-#[derive(Serialize)]
-struct ProblemsListResponse {
-    data: Vec<Problem>,
+struct ApproachUpdate {
+    name: String,
+    problem_id: String,
+    prereq_approach_ids: Vec<String>,
+    prereq_skill_ids: Vec<String>,
 }
 
 async fn root() -> &'static str {
@@ -122,9 +81,10 @@ async fn get_skills(
 
     let data = if let Some(filter) = filter.q {
         let filter = format!("%{}%", filter);
-        sqlx::query_as::<_, Skill>("select * from skills where description like $1").bind(filter)
+        sqlx::query_as::<_, Skill>("select * from skills where summary like $1 limit 20")
+            .bind(filter)
     } else {
-        sqlx::query_as::<_, Skill>("select * from skills")
+        sqlx::query_as::<_, Skill>("select * from skills limit 20")
     }
     .fetch_all(&ctx.db)
     .await
@@ -135,12 +95,12 @@ async fn get_skills(
 
 async fn post_skill(
     ctx: Extension<ApiContext>,
-    Json(payload): Json<AddSkill>,
+    Json(payload): Json<SkillUpdate>,
 ) -> Result<Json<serde_json::Value>> {
     info!("payload: {:?}", payload);
     let id = uuid::Uuid::new_v4().to_string();
 
-    sqlx::query("insert into skills (id, description) values ($1, $2)")
+    sqlx::query("insert into skills (id, summary) values ($1, $2)")
         .bind(&id)
         .bind(&payload.description)
         .execute(&ctx.db)
@@ -150,110 +110,85 @@ async fn post_skill(
     Ok(Json(json!({})))
 }
 
-async fn add_relations(db: &SqlitePool, rows: Vec<ProblemRow>) -> Result<Vec<Problem>> {
-    let mut problems: Vec<Problem> = vec![];
-
-    for row in rows {
-        let prerequisite_skills = sqlx::query_as::<_, Skill>(
-            "select s.*
-             from skills s join prerequisite_skills ps on s.id = ps.skill_id
-             where ps.problem_id = $1",
-        )
-        .bind(&row.id)
-        .fetch_all(db)
-        .await
-        .map_err(|err| Error::Database(err.to_string()))?;
-
-        let prerequisite_problem_rows = sqlx::query_as::<_, ProblemRow>(
-            "select p.*
-             from problems p join prerequisite_problems pp on p.id = pp.prerequisite_problem_id
-             where pp.problem_id = $1",
-        )
-        .bind(&row.id)
-        .fetch_all(db)
-        .await
-        .map_err(|err| Error::Database(err.to_string()))?;
-
-        let prerequisite_problems = prerequisite_problem_rows
-            .into_iter()
-            .map(|row| Problem {
-                id: row.id,
-                description: row.description,
-                prerequisite_skills: vec![],
-                prerequisite_problems: vec![],
-            })
-            .collect::<Vec<Problem>>();
-
-        problems.push(Problem {
-            id: row.id,
-            description: row.description,
-            prerequisite_skills,
-            prerequisite_problems,
-        })
-    }
-
-    Ok(problems)
-}
-
-async fn fetch_all(db: &SqlitePool, limit: i32) -> Result<Vec<Problem>> {
-    let rows = sqlx::query_as::<_, ProblemRow>("select * from problems limit ?")
-        .bind(limit)
-        .fetch_all(db)
-        .await
-        .map_err(|err| Error::Database(err.to_string()))?;
-    add_relations(db, rows).await
-}
-
-async fn fetch_one(db: &SqlitePool, id: &str) -> Result<Problem> {
-    let rows = sqlx::query_as::<_, ProblemRow>("select * from problems where id = ? limit 1")
-        .bind(id)
-        .fetch_all(db)
-        .await
-        .map_err(|err| Error::Database(err.to_string()))?;
-
-    let mut problems = add_relations(db, rows).await?;
-    if problems.len() == 1 {
-        let problem = problems.pop().unwrap();
-        return Ok(problem);
-    }
-
-    Err(Error::NotFound)
-}
-
-async fn get_problems(ctx: Extension<ApiContext>) -> Result<Json<ProblemsListResponse>> {
-    let data = fetch_all(&ctx.db, 20).await?;
-    Ok(Json(ProblemsListResponse { data }))
-}
-
 #[derive(Serialize)]
 struct ProblemResponse {
-    data: Problem,
+    data: WideProblem,
 }
 
 async fn get_problem(
     ctx: Extension<ApiContext>,
     Path(id): Path<String>,
 ) -> Result<Json<ProblemResponse>> {
-    let data = fetch_one(&ctx.db, &id).await?;
+    let data = problems::fetch_wide(&ctx.db, &id).await?;
     Ok(Json(ProblemResponse { data }))
+}
+
+#[derive(Serialize)]
+struct ProblemsListResponse {
+    data: Vec<Problem>,
+}
+
+async fn get_problems(ctx: Extension<ApiContext>) -> Result<Json<ProblemsListResponse>> {
+    let data = problems::fetch_all(&ctx.db, 20).await?;
+    Ok(Json(ProblemsListResponse { data }))
 }
 
 async fn post_problem(
     ctx: Extension<ApiContext>,
-    Json(payload): Json<ProblemUpdate>,
+    Json(update): Json<ProblemUpdate>,
 ) -> Result<Json<serde_json::Value>> {
-    info!("adding problem: {:?}", payload);
+    info!("adding problem: {:?}", update);
     let id = uuid::Uuid::new_v4().to_string();
 
-    sqlx::query("insert into problems (id, description) values ($1, $2)")
+    sqlx::query("insert into problems (id, summary, question_text) values ($1, $2, $3)")
         .bind(&id)
-        .bind(&payload.description)
+        .bind(&update.summary)
+        .bind(&update.question_text)
         .execute(&ctx.db)
         .await
         .map_err(|err| Error::Database(err.to_string()))?;
 
-    for prereq_id in payload.prerequisite_skill_ids {
-        sqlx::query("insert into prerequisite_skills (problem_id, skill_id) values ($1, $2)")
+    Ok(Json(json!({})))
+}
+
+async fn put_problem(
+    ctx: Extension<ApiContext>,
+    Path(problem_id): Path<String>,
+    Json(update): Json<ProblemUpdate>,
+) -> Result<Json<serde_json::Value>> {
+    info!("updating problem: {:?}", update);
+
+    sqlx::query(
+        "update problems set summary = $1, question_text = $2, question_url = $3 where id = $4",
+    )
+    .bind(&update.summary)
+    .bind(&update.question_text)
+    .bind(&update.question_url)
+    .bind(&problem_id)
+    .execute(&ctx.db)
+    .await
+    .map_err(|err| Error::Database(err.to_string()))?;
+
+    Ok(Json(json!({})))
+}
+
+async fn post_approach(
+    ctx: Extension<ApiContext>,
+    Json(update): Json<ApproachUpdate>,
+) -> Result<Json<serde_json::Value>> {
+    info!("adding approach: {:?}", update);
+    let id = uuid::Uuid::new_v4().to_string();
+
+    sqlx::query("insert into approaches (id, problem_id, name) values ($1, $2, $3)")
+        .bind(&id)
+        .bind(&update.problem_id)
+        .bind(&update.name)
+        .execute(&ctx.db)
+        .await
+        .map_err(|err| Error::Database(err.to_string()))?;
+
+    for prereq_id in update.prereq_skill_ids {
+        sqlx::query("insert into prereq_skills (approach_id, prereq_skill_id) values ($1, $2)")
             .bind(&id)
             .bind(&prereq_id)
             .execute(&ctx.db)
@@ -261,9 +196,9 @@ async fn post_problem(
             .map_err(|err| Error::Database(err.to_string()))?;
     }
 
-    for prereq_id in payload.prerequisite_problem_ids {
+    for prereq_id in update.prereq_approach_ids {
         sqlx::query(
-            "insert into prerequisite_problems (problem_id, prerequisite_problem_id)
+            "insert into prereq_problems (problem_id, prereq_approach_id)
              values ($1, $2)",
         )
         .bind(&id)
@@ -276,28 +211,26 @@ async fn post_problem(
     Ok(Json(json!({})))
 }
 
-async fn put_problem(
+async fn put_approach(
     ctx: Extension<ApiContext>,
     Path(id): Path<String>,
-    Json(payload): Json<ProblemUpdate>,
+    Json(update): Json<ApproachUpdate>,
 ) -> Result<Json<serde_json::Value>> {
-    info!("updating problem: {:?}", payload);
-
-    sqlx::query("update problems set description = $1 where id = $2")
-        .bind(&payload.description)
+    sqlx::query("update approaches set name = $1 where id = $2")
+        .bind(&update.name)
         .bind(&id)
         .execute(&ctx.db)
         .await
         .map_err(|err| Error::Database(err.to_string()))?;
 
-    sqlx::query("delete from prerequisite_skills where problem_id = $1")
+    sqlx::query("delete from prereq_skills where approach_id = $1")
         .bind(&id)
         .execute(&ctx.db)
         .await
         .map_err(|err| Error::Database(err.to_string()))?;
 
-    for skill_id in payload.prerequisite_skill_ids {
-        sqlx::query("insert into prerequisite_skills (problem_id, skill_id) values ($1, $2)")
+    for skill_id in update.prereq_skill_ids {
+        sqlx::query("insert into prereq_skills (approach_id, prereq_skill_id) values ($1, $2)")
             .bind(&id)
             .bind(&skill_id)
             .execute(&ctx.db)
@@ -305,15 +238,15 @@ async fn put_problem(
             .map_err(|err| Error::Database(err.to_string()))?;
     }
 
-    sqlx::query("delete from prerequisite_problems where problem_id = $1")
+    sqlx::query("delete from prereq_approaches where approach_id = $1")
         .bind(&id)
         .execute(&ctx.db)
         .await
         .map_err(|err| Error::Database(err.to_string()))?;
 
-    for prereq_id in payload.prerequisite_problem_ids {
+    for prereq_id in update.prereq_approach_ids {
         sqlx::query(
-            "insert into prerequisite_problems (problem_id, prerequisite_problem_id)
+            "insert into prereq_approaches (approach_id, prereq_approach_id)
              values ($1, $2)",
         )
         .bind(&id)
@@ -324,6 +257,33 @@ async fn put_problem(
     }
 
     Ok(Json(json!({})))
+}
+
+#[derive(Serialize)]
+struct ApproachResponse {
+    data: WideApproach,
+}
+
+async fn get_approach(
+    ctx: Extension<ApiContext>,
+    Path(id): Path<String>,
+) -> Result<Json<ApproachResponse>> {
+    let data = approaches::fetch_wide(&ctx.db, &id).await?;
+    Ok(Json(ApproachResponse { data }))
+}
+
+#[derive(Serialize)]
+struct ApproachListResponse {
+    data: Vec<Approach>,
+}
+
+async fn get_approaches(
+    ctx: Extension<ApiContext>,
+    Path(id): Path<String>,
+) -> Result<Json<ApproachListResponse>> {
+    let problem_id = id;
+    let data = approaches::fetch_all(&ctx.db, &problem_id, 20).await?;
+    Ok(Json(ApproachListResponse { data }))
 }
 
 #[tokio::main]
@@ -350,12 +310,16 @@ async fn main() -> Result<()> {
 
     let app = Router::new()
         .route("/", get(root))
-        .route("/api/v1/skills", get(get_skills))
-        .route("/api/v1/skills", post(post_skill))
+        .route("/api/v1/approaches", post(post_approach))
+        .route("/api/v1/approaches/:id", put(put_approach))
+        .route("/api/v1/approaches/:id", get(get_approach))
         .route("/api/v1/problems", get(get_problems))
         .route("/api/v1/problems", post(post_problem))
-        .route("/api/v1/problems/:id", put(put_problem))
         .route("/api/v1/problems/:id", get(get_problem))
+        .route("/api/v1/problems/:id", put(put_problem))
+        .route("/api/v1/problems/:id/approaches", get(get_approaches))
+        .route("/api/v1/skills", get(get_skills))
+        .route("/api/v1/skills", post(post_skill))
         .layer(Extension(ctx))
         .layer(CorsLayer::permissive());
 

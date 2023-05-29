@@ -3,32 +3,23 @@
 import React, { useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import SkillMultiSelect from '@/components/SkillMultiSelect'
-import { Skill } from '@/types'
+import problemService from '@/services/problems'
 
 type AddButtonProps = {
   disabled: boolean,
-  description: string,
-  prerequisiteSkills: Skill[]
+  questionText: string,
 }
 
-function AddButton({ disabled, description, prerequisiteSkills }: AddButtonProps) {
+function AddButton({ disabled, questionText }: AddButtonProps) {
   const router = useRouter()
-  const skillIds = prerequisiteSkills.map(({ id }) => id)
 
   const onClick = useCallback(async () => {
-    const problemUpdate = { description, skillIds }
-
-    const res = await fetch('http://localhost:8000/api/v1/problems', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(problemUpdate),
-    })
+    const res = await problemService.post({ questionText })
 
     if (res.ok) {
       router.push('/problems')
     }
-  }, [description, skillIds, router])
+  }, [questionText, router])
 
   return (
     <button disabled={disabled} onClick={onClick} type="submit">Add</button>
@@ -36,15 +27,14 @@ function AddButton({ disabled, description, prerequisiteSkills }: AddButtonProps
 }
 
 export default function Page() {
-  const [description, setDescription] = useState('')
-  const [prerequisiteSkills, setPrerequisiteSkills] = useState([] as Skill[])
+  const [questionText, setQuestionText] = useState('')
 
-  const descOnChange = useCallback(
-    (event: React.ChangeEvent<HTMLTextAreaElement>) => setDescription(event.target.value),
-    [setDescription],
+  const questionTextOnChange = useCallback(
+    (event: React.ChangeEvent<HTMLTextAreaElement>) => setQuestionText(event.target.value),
+    [setQuestionText],
   )
 
-  const disabled = description.length === 0
+  const disabled = questionText.length === 0
 
   return (
     <main>
@@ -54,25 +44,17 @@ export default function Page() {
         <p>
           <textarea
             cols={100}
-            onChange={descOnChange}
-            placeholder="Description"
+            onChange={questionTextOnChange}
+            placeholder="Question prompt"
             rows={6}
-            value={description}
+            value={questionText}
           />
         </p>
-
-        <div>
-          <SkillMultiSelect
-            initialPrerequisiteSkills={[]}
-            setPrerequisiteSkills={setPrerequisiteSkills}
-          />
-        </div>
 
         <p>
           <AddButton
             disabled={disabled}
-            description={description}
-            prerequisiteSkills={prerequisiteSkills}
+            questionText={questionText}
           />
           {' or '}
           <Link href="/problems">cancel</Link>

@@ -18,9 +18,10 @@ This project exists to help me work through the domain model for a web app that 
 Following are some goals and assumptions that should not be lost sight of:
 
 * Problem repos. Problems will belong to a repo.  Authors can add problems to more than one repo.
-* Problem approaches. There may be more than one way to solve a problem using different approaches (think of a Leetcode problem).  We should not assume that there is a single way to solve a problem.  The existence of different approaches should be included in the domain model, and prerequisite skills should be relative to specific approaches.  It seems fine to hide this additional complexity from problem authors until a situation is encountered in which it's needed.
 * Template problems. In order to avoid a situation where someone simply memorizes the answer to a problem without understanding its solution, we might want template problems at some point.  The problem would have variables whose values are randomly generated, and the correct answer would be derived from a formula.  It might be necessary to generate the other choices as well.  In order to avoid strange corner cases, it might be necessary to specify bounds and types for each variable.
 * Prerequisite skills and problems. Before a problem is shown, the learner must have demonstrated mastery of any prerequisite skills that are listed.  In addition, we'll need the ability to specify specific (template) problems as prerequisites as well, in order to avoid needing to create very specific skills that ultimately amount to a problem.
+* History.  There should be some kind of revision history to see earlier versions of a problem and perhaps even track statistics (e.g., whether an earlier wording was harder)
+* Review.  There should be some kind of review process as well as the ability to move problems and/or problem approaches into and out of a draft state, etc.
 
 ## Early problem statement
 

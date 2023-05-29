@@ -20,7 +20,7 @@ async function fetchSkills(searchText: string): Promise<Option[]> {
     return []
   }
   const data = (await response.json()).data as Skill[]
-  return data.map(({ id, description }) => ({ value: id, label: description }))
+  return data.map(({ id, summary }) => ({ value: id, label: summary }))
 }
 
 const components = {
@@ -35,7 +35,7 @@ export default function SkillMultiSelect({
 }: Props) {
   const onChange = useCallback(
     (newValue: MultiValue<Option>) => {
-      const newSkills = newValue.map(({ value, label }) => ({ id: value, description: label }))
+      const newSkills = newValue.map(({ value, label }) => ({ id: value, summary: label }))
       setPrerequisiteSkills(newSkills)
     },
     [setPrerequisiteSkills],
@@ -43,7 +43,7 @@ export default function SkillMultiSelect({
 
   const loadOptions = useCallback(fetchSkills, [fetchSkills])
   const defaultValue = initialPrerequisiteSkills.map(
-    ({ id, description }) => ({ value: id, label: description }),
+    ({ id, summary }) => ({ value: id, label: summary }),
   )
 
   return (

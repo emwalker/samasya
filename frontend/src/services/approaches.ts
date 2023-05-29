@@ -1,11 +1,11 @@
-import { Problem, WideProblem } from '@/types'
+import { Approach, WideApproach } from '@/types'
 
 export type GetResponse = {
-  data: WideProblem | null
+  data: WideApproach | null
 }
 
 async function get(id: string): Promise<GetResponse> {
-  const res = await fetch(`http://localhost:8000/api/v1/problems/${id}`, { cache: 'no-store' })
+  const res = await fetch(`http://localhost:8000/api/v1/approaches/${id}`, { cache: 'no-store' })
 
   if (!res.ok) {
     return Promise.resolve({ data: null })
@@ -15,11 +15,14 @@ async function get(id: string): Promise<GetResponse> {
 }
 
 export type GetListResponse = {
-  data: Problem[]
+  data: Approach[]
 }
 
-async function getList(): Promise<GetListResponse> {
-  const res = await fetch('http://localhost:8000/api/v1/problems', { cache: 'no-store' })
+async function getList(problemId: string): Promise<GetListResponse> {
+  const res = await fetch(
+    `http://localhost:8000/api/v1/problems/${problemId}/approaches`,
+    { cache: 'no-store' },
+  )
 
   if (!res.ok) {
     return Promise.resolve({ data: [] })
@@ -29,13 +32,14 @@ async function getList(): Promise<GetListResponse> {
 }
 
 export type Update = {
-  questionText: string | null,
-  questionUrl: string | null,
-  summary: string,
+  name: string,
+  prereqApproachIds: string[],
+  prereqSkillIds: string[],
+  problemId: string,
 }
 
 async function put(id: string, update: Update) {
-  return fetch(`http://localhost:8000/api/v1/problems/${id}`, {
+  return fetch(`http://localhost:8000/api/v1/approaches/${id}`, {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(update),
@@ -43,7 +47,7 @@ async function put(id: string, update: Update) {
 }
 
 async function post(update: Update) {
-  return fetch('http://localhost:8000/api/v1/problems', {
+  return fetch('http://localhost:8000/api/v1/approaches', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(update),
