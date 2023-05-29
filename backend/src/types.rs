@@ -12,6 +12,8 @@ pub enum Error {
     Database(String),
     #[error("not found")]
     NotFound,
+    #[error("bad input")]
+    UnprocessableEntity(String),
 }
 
 impl IntoResponse for Error {
@@ -21,8 +23,12 @@ impl IntoResponse for Error {
                 StatusCode::INTERNAL_SERVER_ERROR,
                 format!("Internal server error: {}", message),
             ),
+
             Self::NotFound => (StatusCode::NOT_FOUND, "Not found".into()),
+
+            Self::UnprocessableEntity(message) => (StatusCode::UNPROCESSABLE_ENTITY, message),
         };
+
         (status, Json(json!({ "error": error_message }))).into_response()
     }
 }

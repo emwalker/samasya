@@ -1,25 +1,29 @@
 'use client'
 
-import React, { useState, useCallback } from 'react'
+import React, { useState, useCallback, ChangeEvent } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import problemService from '@/services/problems'
 
 type AddButtonProps = {
   disabled: boolean,
-  questionText: string,
+  summary: string,
+  questionText: string | null,
+  questionUrl: string | null,
 }
 
-function AddButton({ disabled, questionText }: AddButtonProps) {
+function AddButton({
+  disabled, summary, questionText, questionUrl,
+}: AddButtonProps) {
   const router = useRouter()
 
   const onClick = useCallback(async () => {
-    const res = await problemService.post({ questionText })
+    const res = await problemService.post({ summary, questionText, questionUrl })
 
     if (res.ok) {
       router.push('/problems')
     }
-  }, [questionText, router])
+  }, [summary, questionText, questionUrl, router])
 
   return (
     <button disabled={disabled} onClick={onClick} type="submit">Add</button>
@@ -27,19 +31,51 @@ function AddButton({ disabled, questionText }: AddButtonProps) {
 }
 
 export default function Page() {
+  const [summary, setSummary] = useState('')
   const [questionText, setQuestionText] = useState('')
+  const [questionUrl, setQuestionUrl] = useState('')
+
+  const summaryOnChange = useCallback(
+    (event: ChangeEvent<HTMLInputElement>) => setSummary(event.target.value),
+    [setSummary],
+  )
 
   const questionTextOnChange = useCallback(
     (event: React.ChangeEvent<HTMLTextAreaElement>) => setQuestionText(event.target.value),
     [setQuestionText],
   )
 
-  const disabled = questionText.length === 0
+  const questionUrlOnChange = useCallback(
+    (event: React.ChangeEvent<HTMLInputElement>) => setQuestionUrl(event.target.value),
+    [setQuestionUrl],
+  )
+
+  const disabled = summary.length === 0
 
   return (
     <main>
       <div>
         <h1>Add a problem</h1>
+
+        <p>
+          <input
+            onChange={summaryOnChange}
+            placeholder="Short summary of the problem"
+            size={100}
+            type="text"
+            value={summary}
+          />
+        </p>
+
+        <p>
+          <input
+            onChange={questionUrlOnChange}
+            placeholder="Question url"
+            size={100}
+            type="text"
+            value={questionUrl}
+          />
+        </p>
 
         <p>
           <textarea
@@ -54,6 +90,8 @@ export default function Page() {
         <p>
           <AddButton
             disabled={disabled}
+            summary={summary}
+            questionUrl={questionUrl}
             questionText={questionText}
           />
           {' or '}

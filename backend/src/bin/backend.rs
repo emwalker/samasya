@@ -133,6 +133,46 @@ async fn get_problems(ctx: Extension<ApiContext>) -> Result<Json<ProblemsListRes
     Ok(Json(ProblemsListResponse { data }))
 }
 
+fn ensure_valid_problem_update(
+    update: ProblemUpdate,
+) -> Result<(String, Option<String>, Option<String>)> {
+    let ProblemUpdate {
+        mut question_text,
+        mut question_url,
+        summary,
+    } = update;
+
+    if summary.is_empty() {
+        return Err(Error::UnprocessableEntity("a summary is required".into()));
+    }
+
+    if let Some(inner) = &question_text {
+        if inner.is_empty() {
+            question_text = None;
+        }
+    }
+
+    if let Some(inner) = &question_url {
+        if inner.is_empty() {
+            question_url = None;
+        }
+    }
+
+    if question_text.is_none() && question_url.is_none() {
+        return Err(Error::UnprocessableEntity(
+            "either a question prompt or a question url is required".into(),
+        ));
+    }
+
+    if question_text.is_some() && question_url.is_some() {
+        return Err(Error::UnprocessableEntity(
+            "a question prompt and a question url cannot be provided together".into(),
+        ));
+    }
+
+    Ok((summary, question_text, question_url))
+}
+
 async fn post_problem(
     ctx: Extension<ApiContext>,
     Json(update): Json<ProblemUpdate>,
@@ -140,13 +180,19 @@ async fn post_problem(
     info!("adding problem: {:?}", update);
     let id = uuid::Uuid::new_v4().to_string();
 
-    sqlx::query("insert into problems (id, summary, question_text) values ($1, $2, $3)")
-        .bind(&id)
-        .bind(&update.summary)
-        .bind(&update.question_text)
-        .execute(&ctx.db)
-        .await
-        .map_err(|err| Error::Database(err.to_string()))?;
+    let (summary, question_text, question_url) = ensure_valid_problem_update(update)?;
+
+    sqlx::query(
+        "insert into problems (id, summary, question_text, question_url)
+         values ($1, $2, $3, $4)",
+    )
+    .bind(&id)
+    .bind(&summary)
+    .bind(&question_text)
+    .bind(&question_url)
+    .execute(&ctx.db)
+    .await
+    .map_err(|err| Error::Database(err.to_string()))?;
 
     Ok(Json(json!({})))
 }
@@ -158,12 +204,14 @@ async fn put_problem(
 ) -> Result<Json<serde_json::Value>> {
     info!("updating problem: {:?}", update);
 
+    let (summary, question_text, question_url) = ensure_valid_problem_update(update)?;
+
     sqlx::query(
         "update problems set summary = $1, question_text = $2, question_url = $3 where id = $4",
     )
-    .bind(&update.summary)
-    .bind(&update.question_text)
-    .bind(&update.question_url)
+    .bind(&summary)
+    .bind(&question_text)
+    .bind(&question_url)
     .bind(&problem_id)
     .execute(&ctx.db)
     .await
