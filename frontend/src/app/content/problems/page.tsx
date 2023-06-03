@@ -7,7 +7,7 @@ import styles from './styles.module.css'
 
 function ProblemItem({ problem }: { problem: Problem }) {
   return (
-    <Link href={`/problems/${problem.id}`}>
+    <Link href={`/content/problems/${problem.id}`}>
       {problem.summary}
     </Link>
   )
@@ -31,7 +31,7 @@ export default async function Page() {
       </ListOr>
 
       <p>
-        <Link href="/problems/new">Add a problem</Link>
+        <Link href="/content/problems/new">Add a problem</Link>
       </p>
     </main>
   )

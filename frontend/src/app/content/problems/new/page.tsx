@@ -21,7 +21,7 @@ function AddButton({
     const res = await problemService.post({ summary, questionText, questionUrl })
 
     if (res.ok) {
-      router.push('/problems')
+      router.push('/content/problems')
     }
   }, [summary, questionText, questionUrl, router])
 
@@ -95,7 +95,7 @@ export default function Page() {
             questionText={questionText}
           />
           {' or '}
-          <Link href="/problems">cancel</Link>
+          <Link href="/content/problems">cancel</Link>
         </p>
       </div>
     </main>

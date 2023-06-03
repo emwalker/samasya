@@ -5,22 +5,20 @@ import styles from './page.module.css'
 export default function Home() {
   return (
     <main className={styles.main}>
-      <div className={styles.description} data-testid="hero">
-        Samasya — build out your own skill tree
-      </div>
+      <h1>Content authoring</h1>
 
-      Home page
       <p>
-        Go to
+        Go to the
         {' '}
-        <Link href="/content">content authoring</Link>
-        .
+        <Link href="/content/skills">skills</Link>
+        {' '}
+        page.
       </p>
 
       <p>
         Go to the
         {' '}
-        <Link href="/learning">learning</Link>
+        <Link href="/content/problems">problems</Link>
         {' '}
         page.
       </p>

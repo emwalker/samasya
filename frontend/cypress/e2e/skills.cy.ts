@@ -1,7 +1,7 @@
 
-describe('/skills', () => {
+describe('/content/skills', () => {
   beforeEach(() => {
-    cy.visit('/skills')
+    cy.visit('/content/skills')
   })
 
   it('contains a listing of skills', () => {

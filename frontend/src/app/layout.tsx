@@ -1,7 +1,8 @@
-import React from 'react'
+import React, { ChangeEvent, useCallback } from 'react'
 import './globals.css'
 import { Inter } from 'next/font/google'
 import Link from 'next/link'
+import styles from './layout.module.css'
 
 const inter = Inter({ subsets: ['latin'] })
 
@@ -20,6 +21,12 @@ export default function RootLayout({
       <body className={inter.className}>
         <nav className="topnav">
           <Link href="/">Home</Link>
+
+          <div className={styles.rightNav}>
+            <Link href="/content">Content</Link>
+            {' '}
+            <Link href="/learning">Learning</Link>
+          </div>
         </nav>
 
         {children}

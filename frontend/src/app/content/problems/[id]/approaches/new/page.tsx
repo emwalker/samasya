@@ -31,7 +31,7 @@ function AddButton({
     })
 
     if (res.ok) {
-      router.push(`/problems/${problemId}`)
+      router.push(`/content/problems/${problemId}`)
     }
   }, [problemId, name, prereqSkillIds, router])
 
@@ -84,7 +84,7 @@ function NewApproachForm({ problem }: { problem: WideProblem }) {
           prereqSkills={prereqSkills}
         />
         {' or '}
-        <Link href={`/problems/${problem.id}`}>cancel</Link>
+        <Link href={`/content/problems/${problem.id}`}>cancel</Link>
       </p>
     </div>
   )

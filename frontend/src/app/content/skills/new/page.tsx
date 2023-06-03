@@ -13,7 +13,7 @@ function AddButton({ description }: { description: string }) {
     const res = await postSkill({ update })
 
     if (res.ok) {
-      router.push('/skills')
+      router.push('/content/skills')
     }
   }, [description, router])
 
@@ -48,7 +48,7 @@ export default function Page() {
         <p>
           <AddButton description={description} />
           {' or '}
-          <Link href="/skills">cancel</Link>
+          <Link href="/content/skills">cancel</Link>
         </p>
       </div>
     </main>

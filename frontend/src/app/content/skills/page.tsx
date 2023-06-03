@@ -13,12 +13,12 @@ export default async function Page() {
 
       <ul>
         {
-          skills.map((skill) => <li><div key={skill.id}>{skill.summary}</div></li>)
+          skills.map((skill) => <li key={skill.id}><div>{skill.summary}</div></li>)
         }
       </ul>
 
       <p>
-        <Link href="/skills/new">Add a skill</Link>
+        <Link href="/content/skills/new">Add a skill</Link>
       </p>
     </main>
   )

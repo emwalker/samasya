@@ -34,7 +34,7 @@ function ApproachItem({ approach }: { approach: WideApproach }) {
         ))}
       </ListOr>
 
-      <Link href={`/approaches/${approach.id}/edit`}>Edit</Link>
+      <Link href={`/content/approaches/${approach.id}/edit`}>Edit</Link>
     </div>
   )
 }
@@ -86,9 +86,9 @@ export default async function Page(params: Params) {
           }
         </ListOr>
 
-        <Link href={`/problems/${id}/approaches/new`}>Add an approach</Link>
+        <Link href={`/content/problems/${id}/approaches/new`}>Add an approach</Link>
         <br />
-        <Link href={`/problems/${id}/edit`}>Edit problem</Link>
+        <Link href={`/content/problems/${id}/edit`}>Edit problem</Link>
       </div>
     </main>
   )

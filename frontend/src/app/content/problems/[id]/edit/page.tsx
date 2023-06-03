@@ -27,7 +27,7 @@ function SaveButton({
         throw Error(`failed to save problem: ${res}`)
       }
 
-      router.push(`/problems/${problemId}`)
+      router.push(`/content/problems/${problemId}`)
     },
     [problemId, summary, questionText, questionUrl, router],
   )
@@ -120,7 +120,7 @@ function EditForm({ problem }: { problem: Problem }) {
           summary={summary}
         />
         {' or '}
-        <Link href={`/problems/${problem.id}`}>cancel</Link>
+        <Link href={`/content/problems/${problem.id}`}>cancel</Link>
       </p>
     </div>
   )

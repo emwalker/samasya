@@ -34,7 +34,7 @@ function SaveButton({
     })
 
     if (res.ok) {
-      router.push(`/problems/${problemId}`)
+      router.push(`/content/problems/${problemId}`)
     }
   }, [id, name, problemId, prereqApproachIds, prereqSkillIds, router])
 
@@ -103,7 +103,7 @@ function EditForm({ approach }: { approach: WideApproach }) {
           problemId={approach.problem.id}
         />
         {' or '}
-        <Link href={`/problems/${approach.problem.id}`}>cancel</Link>
+        <Link href={`/content/problems/${approach.problem.id}`}>cancel</Link>
       </p>
     </div>
   )
