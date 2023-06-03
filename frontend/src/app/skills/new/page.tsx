@@ -3,6 +3,7 @@
 import React, { useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { postSkill } from '@/services/skills'
+import Link from 'next/link'
 
 function AddButton({ description }: { description: string }) {
   const router = useRouter()
@@ -46,6 +47,8 @@ export default function Page() {
 
         <p>
           <AddButton description={description} />
+          {' or '}
+          <Link href="/skills">cancel</Link>
         </p>
       </div>
     </main>
