@@ -1,10 +1,10 @@
 import { Skill } from '@/types'
 
-export type GetSkillsResponse = {
+export type GetListResponse = {
   data: Skill[]
 }
 
-async function getSkills(): Promise<GetSkillsResponse> {
+async function getList(): Promise<GetListResponse> {
   const res = await fetch('http://localhost:8000/api/v1/skills', { cache: 'no-store' })
 
   if (!res.ok) {
@@ -14,11 +14,11 @@ async function getSkills(): Promise<GetSkillsResponse> {
   return res.json()
 }
 
-export type SkillUpdate = {
+export type Update = {
   description: string,
 }
 
-async function postSkill({ update }: { update: SkillUpdate }) {
+async function post(update: Update) {
   return fetch('http://localhost:8000/api/v1/skills', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -26,4 +26,4 @@ async function postSkill({ update }: { update: SkillUpdate }) {
   })
 }
 
-export { getSkills, postSkill }
+export default { getList, post }

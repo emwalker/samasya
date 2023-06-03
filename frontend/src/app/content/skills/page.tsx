@@ -1,9 +1,9 @@
 import React from 'react'
 import Link from 'next/link'
-import { getSkills } from '@/services/skills'
+import skillService from '@/services/skills'
 
 export default async function Page() {
-  const skills = (await getSkills()).data
+  const skills = (await skillService.getList()).data
 
   return (
     <main>

@@ -4,8 +4,10 @@ use axum::{
     Json, Router,
 };
 use samasya::{
-    sqlx::{approaches, problems},
-    types::{Approach, Error, Problem, Result, Skill, WideApproach, WideProblem},
+    sqlx::{approaches, problems, queues},
+    types::{
+        Approach, Error, Problem, Queue, QueueStrategy, Result, Skill, WideApproach, WideProblem,
+    },
 };
 use serde::{Deserialize, Serialize};
 use serde_json::json;
@@ -334,6 +336,55 @@ async fn get_approaches(
     Ok(Json(ApproachListResponse { data }))
 }
 
+#[derive(Serialize)]
+struct QueuesListResponse {
+    data: Vec<Queue>,
+}
+
+async fn get_queues(
+    ctx: Extension<ApiContext>,
+    Path(user_id): Path<String>,
+) -> Result<Json<QueuesListResponse>> {
+    let data = queues::fetch_all(&ctx.db, &user_id, 20).await?;
+    Ok(Json(QueuesListResponse { data }))
+}
+
+#[derive(Deserialize, Debug)]
+struct QueueUpdate {
+    strategy: QueueStrategy,
+    summary: String,
+    target_problem_id: String,
+}
+
+async fn post_queue(
+    ctx: Extension<ApiContext>,
+    Path(user_id): Path<String>,
+    Json(update): Json<QueueUpdate>,
+) -> Result<Json<serde_json::Value>> {
+    info!("user {}: adding queue: {:?}", user_id, update);
+    let id = uuid::Uuid::new_v4().to_string();
+    let created_at = chrono::Utc::now();
+
+    sqlx::query(
+        "insert into queues (
+            id, summary, strategy, target_problem_id, user_id, created_at, updated_at
+         )
+         values ($1, $2, $3, $4, $5, $6, $7)",
+    )
+    .bind(&id)
+    .bind(&update.summary)
+    .bind(update.strategy as i32)
+    .bind(&update.target_problem_id)
+    .bind(&user_id)
+    .bind(&created_at)
+    .bind(&created_at)
+    .execute(&ctx.db)
+    .await
+    .map_err(|err| Error::Database(err.to_string()))?;
+
+    Ok(Json(json!({})))
+}
+
 #[tokio::main]
 async fn main() -> Result<()> {
     tracing_subscriber::fmt::init();
@@ -359,8 +410,8 @@ async fn main() -> Result<()> {
     let app = Router::new()
         .route("/", get(root))
         .route("/api/v1/approaches", post(post_approach))
-        .route("/api/v1/approaches/:id", put(put_approach))
         .route("/api/v1/approaches/:id", get(get_approach))
+        .route("/api/v1/approaches/:id", put(put_approach))
         .route("/api/v1/problems", get(get_problems))
         .route("/api/v1/problems", post(post_problem))
         .route("/api/v1/problems/:id", get(get_problem))
@@ -368,6 +419,8 @@ async fn main() -> Result<()> {
         .route("/api/v1/problems/:id/approaches", get(get_approaches))
         .route("/api/v1/skills", get(get_skills))
         .route("/api/v1/skills", post(post_skill))
+        .route("/api/v1/users/:id/queues", get(get_queues))
+        .route("/api/v1/users/:id/queues", post(post_queue))
         .layer(Extension(ctx))
         .layer(CorsLayer::permissive());
 

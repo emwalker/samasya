@@ -13,6 +13,7 @@ INSERT INTO _sqlx_migrations VALUES(20230514150322,'add-problems','2023-05-14 16
 INSERT INTO _sqlx_migrations VALUES(20230526193511,'add-problem-skills','2023-05-26 19:57:40',1,X'0b735430e682f77735bcfed42b9763d18094a14c39f5e1852c4a823913f2980275cf05102d6b5778d190f3d5fce18256',8452850);
 INSERT INTO _sqlx_migrations VALUES(20230528185942,'add-prerequisite-problems','2023-05-28 19:05:15',1,X'ec80d1a6265fb0d98ebf4aa171cb7b004f6cb8d373a0127cb3fdd9b31f5f83f6b776599a7a067b2f2145c5af7fe788dc',2086173);
 INSERT INTO _sqlx_migrations VALUES(20230529002438,'add-problem-approaches','2023-05-29 17:18:40',1,X'9004402cea51f895e2c4072dcb7a3b95703b17c5868054ec7065053a30f05626d2574e7e352a2299f260edd4cad6a3a6',3312604);
+INSERT INTO _sqlx_migrations VALUES(20230603202029,'add-problem-queues','2023-06-03 21:01:18',1,X'2e81ecb0cfa4a49815fd977daa7f05688d91e35fc371c83b27abb7c1b1cd7897a0e0be5789c8aecd42aaa7719ea084f2',2986046);
 CREATE TABLE skills (id primary key, summary text not null);
 INSERT INTO skills VALUES('c21e18ae-951a-4d8f-984a-cff1f03a8906','Computing the length of the opposite side of a right triangle from the length of the adjacent side and the angle between the adjacent side and the hypotenuse');
 INSERT INTO skills VALUES('6253e17f-b44e-4d80-ac2a-db4474ca6cc8','Measuring angles using degrees');
@@ -82,4 +83,34 @@ CREATE TABLE prereq_approaches (
   foreign key(prereq_approach_id) references approaches(id)
 );
 INSERT INTO prereq_approaches VALUES('eed2ab67-c579-4997-838e-599f9f69a025','b38930a3-9bdf-45d7-89a3-861d1b727f1c');
+CREATE TABLE users (
+  created_at timestamp not null,
+  id text primary key not null,
+  updated_at timestamp not null default current_timestamp
+);
+INSERT INTO users VALUES('2023-06-03 21:01:18','04e229c9-795e-4f3a-a79e-ec18b5c28b99','2023-06-03 21:01:18');
+CREATE TABLE queues (
+  created_at timestamp not null,
+  id text primary key not null,
+  strategy integer not null default 1,
+  summary text not null,
+  target_problem_id text not null,
+  updated_at timestamp not null default current_timestamp,
+  user_id text not null,
+  foreign key(target_problem_id) references problems(id),
+  foreign key(user_id) references users(id)
+);
+CREATE TABLE answers (
+  choice_id text not null,
+  created_at timestamp not null,
+  id text primary key not null,
+  problem_id text not null,
+  queue_id text not null,
+  state integer not null,
+  updated_at timestamp not null default current_timestamp,
+  user_id text not null,
+  foreign key(problem_id) references problems(id),
+  foreign key(queue_id) references queues(id),
+  foreign key(user_id) references users(id)
+);
 COMMIT;

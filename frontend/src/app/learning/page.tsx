@@ -7,7 +7,7 @@ export default function Home() {
     <main className={styles.main}>
       <h1>Learning</h1>
 
-      Queues
+      Go to the <Link href="/learning/queues">problem queues</Link> page.
     </main>
   )
 }

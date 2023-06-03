@@ -1,6 +1,6 @@
 use axum::{response::IntoResponse, Json};
 use hyper::StatusCode;
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use serde_json::json;
 use thiserror::Error;
 
@@ -77,4 +77,17 @@ pub struct WideApproach {
     pub prereq_approaches: Vec<Approach>,
     pub prereq_skills: Vec<Skill>,
     pub problem: Problem,
+}
+
+#[derive(Clone, Serialize, sqlx::FromRow)]
+#[serde(rename_all = "camelCase")]
+pub struct Queue {
+    pub id: String,
+    pub summary: String,
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
+pub enum QueueStrategy {
+    Determistic = 0,
+    SpacedRepetitionV1 = 1,
 }

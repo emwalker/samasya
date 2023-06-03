@@ -2,7 +2,7 @@
 
 import React, { useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
-import { postSkill } from '@/services/skills'
+import { post } from '@/services/skills'
 import Link from 'next/link'
 
 function AddButton({ description }: { description: string }) {
@@ -10,7 +10,7 @@ function AddButton({ description }: { description: string }) {
 
   const onClick = useCallback(async () => {
     const update = { description }
-    const res = await postSkill({ update })
+    const res = await post({ update })
 
     if (res.ok) {
       router.push('/content/skills')
