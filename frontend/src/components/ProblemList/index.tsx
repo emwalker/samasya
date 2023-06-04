@@ -1,13 +1,14 @@
 import React, { useCallback } from 'react'
 import AsyncSelect from 'react-select/async'
-import { MultiValue } from 'react-select'
-import { Skill } from '@/types'
-import skillService from '@/services/skills'
+import problemService from '@/services/problems'
+import { SingleValue } from 'react-select'
+import { ProblemSlice } from '@/types'
 import styles from './styles.module.css'
 
 type Props = {
-  initialPrerequisiteSkills: Skill[],
-  setPrerequisiteSkills: (skills: Skill[]) => void,
+  initialProblems: ProblemSlice[],
+  label: string,
+  setProblem: (problem: ProblemSlice | null) => void,
 }
 
 type Option = {
@@ -15,8 +16,8 @@ type Option = {
   label: string,
 }
 
-async function fetchSkills(searchString: string) {
-  const { data } = await skillService.getList({ searchString })
+async function fetchProblems(searchString: string): Promise<Option[]> {
+  const { data } = await problemService.getList({ searchString })
   return data.map(({ id, summary }) => ({ value: id, label: summary }))
 }
 
@@ -26,27 +27,30 @@ const components = {
   LoadingIndicator: () => null,
 }
 
-export default function SkillMultiSelect({
-  initialPrerequisiteSkills,
-  setPrerequisiteSkills,
+export default function ProblemList({
+  label,
+  initialProblems,
+  setProblem,
 }: Props) {
   const onChange = useCallback(
-    (newValue: MultiValue<Option>) => {
-      const newSkills = newValue.map(({ value, label }) => ({ id: value, summary: label }))
-      setPrerequisiteSkills(newSkills)
+    (newValue: SingleValue<Option>) => {
+      const problem = newValue == null
+        ? null
+        : { id: newValue.value, summary: newValue.label }
+      setProblem(problem)
     },
-    [setPrerequisiteSkills],
+    [setProblem],
   )
 
-  const loadOptions = useCallback(fetchSkills, [fetchSkills])
-  const defaultValue = initialPrerequisiteSkills.map(
+  const loadOptions = useCallback(fetchProblems, [fetchProblems])
+  const defaultValue = initialProblems.map(
     ({ id, summary }) => ({ value: id, label: summary }),
   )
 
   return (
     <div className={styles.component}>
       {/* eslint-disable-next-line jsx-a11y/label-has-associated-control */}
-      <label>Prerequisite skills</label>
+      <label>{label}</label>
 
       <AsyncSelect
         cacheOptions
@@ -54,7 +58,7 @@ export default function SkillMultiSelect({
         defaultOptions
         defaultValue={defaultValue}
         instanceId="skill-dropdown"
-        isMulti
+        isMulti={false}
         loadOptions={loadOptions}
         onChange={onChange}
       />

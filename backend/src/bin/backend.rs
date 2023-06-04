@@ -7,6 +7,7 @@ use samasya::{
     sqlx::{approaches, problems, queues},
     types::{
         Approach, Error, Problem, Queue, QueueStrategy, Result, Skill, WideApproach, WideProblem,
+        WideQueue,
     },
 };
 use serde::{Deserialize, Serialize};
@@ -350,6 +351,7 @@ async fn get_queues(
 }
 
 #[derive(Deserialize, Debug)]
+#[serde(rename_all = "camelCase")]
 struct QueueUpdate {
     strategy: QueueStrategy,
     summary: String,
@@ -376,13 +378,26 @@ async fn post_queue(
     .bind(update.strategy as i32)
     .bind(&update.target_problem_id)
     .bind(&user_id)
-    .bind(&created_at)
-    .bind(&created_at)
+    .bind(created_at)
+    .bind(created_at)
     .execute(&ctx.db)
     .await
     .map_err(|err| Error::Database(err.to_string()))?;
 
     Ok(Json(json!({})))
+}
+
+#[derive(Serialize)]
+struct QueueResponse {
+    data: WideQueue,
+}
+
+async fn get_queue(
+    ctx: Extension<ApiContext>,
+    Path(id): Path<String>,
+) -> Result<Json<QueueResponse>> {
+    let data = queues::fetch_wide(&ctx.db, &id).await?;
+    Ok(Json(QueueResponse { data }))
 }
 
 #[tokio::main]
@@ -417,6 +432,7 @@ async fn main() -> Result<()> {
         .route("/api/v1/problems/:id", get(get_problem))
         .route("/api/v1/problems/:id", put(put_problem))
         .route("/api/v1/problems/:id/approaches", get(get_approaches))
+        .route("/api/v1/queues/:id", get(get_queue))
         .route("/api/v1/skills", get(get_skills))
         .route("/api/v1/skills", post(post_skill))
         .route("/api/v1/users/:id/queues", get(get_queues))

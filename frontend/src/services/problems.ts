@@ -18,8 +18,13 @@ export type GetListResponse = {
   data: Problem[]
 }
 
-async function getList(): Promise<GetListResponse> {
-  const res = await fetch('http://localhost:8000/api/v1/problems', { cache: 'no-store' })
+async function getList(
+  args: { searchString: string | null } | undefined,
+): Promise<GetListResponse> {
+  const url = args?.searchString
+    ? `http://localhost:8000/api/v1/problems?q=${args.searchString}`
+    : 'http://localhost:8000/api/v1/problems'
+  const res = await fetch(url, { cache: 'no-store' })
 
   if (!res.ok) {
     return Promise.resolve({ data: [] })
