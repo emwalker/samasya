@@ -19,7 +19,7 @@ export type GetListResponse = {
 }
 
 async function getList(
-  args: { searchString: string | null } | undefined,
+  args?: { searchString: string | null } | undefined,
 ): Promise<GetListResponse> {
   const url = args?.searchString
     ? `http://localhost:8000/api/v1/problems?q=${args.searchString}`

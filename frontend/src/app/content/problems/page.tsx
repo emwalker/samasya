@@ -13,6 +13,7 @@ function ProblemItem({ problem }: { problem: Problem }) {
   )
 }
 
+// eslint-disable-next-line @next/next/no-async-client-component
 export default async function Page() {
   const problems = (await problemService.getList()).data
 

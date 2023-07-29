@@ -109,6 +109,7 @@ function EditForm({ approach }: { approach: WideApproach }) {
   )
 }
 
+// eslint-disable-next-line @next/next/no-async-client-component
 export default async function Page(params: Params) {
   if (params?.params == null) {
     return <div>Loading ...</div>
