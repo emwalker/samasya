@@ -130,6 +130,7 @@ type Params = {
   params?: { id: string } | null
 }
 
+// eslint-disable-next-line @next/next/no-async-client-component
 export default async function Page(params: Params) {
   const problemId = params?.params?.id
   if (problemId == null) {

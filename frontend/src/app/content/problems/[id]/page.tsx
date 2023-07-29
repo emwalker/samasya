@@ -43,6 +43,7 @@ type Params = {
   params?: { id: string } | null
 }
 
+// eslint-disable-next-line @next/next/no-async-client-component
 export default async function Page(params: Params) {
   if (params?.params == null) {
     return null
