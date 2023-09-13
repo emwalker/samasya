@@ -11,7 +11,7 @@ path = "src/bin/backend.rs"
 [dependencies]
 axum = "0.6.20"
 axum-macros = "0.3.8"
-chrono = "0.4.28"
+chrono = "0.4.30"
 color-eyre = "0.6.2"
 dotenv = "0.15.0"
 envy = "0.4.2"
