@@ -9,7 +9,7 @@ name = "backend"
 path = "src/bin/backend.rs"
 
 [dependencies]
-axum = "0.6.20"
+axum = "0.7.3"
 axum-macros = "0.3.8"
 chrono = "0.4.31"
 color-eyre = "0.6.2"
