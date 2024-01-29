@@ -16,7 +16,7 @@ color-eyre = "0.6.2"
 dotenv = "0.15.0"
 envy = "0.4.2"
 hyper = { version = "0.14.27", features = ["http2"] }
-serde = { version = "1.0.192", features = ["derive"] }
+serde = { version = "1.0.196", features = ["derive"] }
 serde_json = "1.0.108"
 sqlx = { version = "0.6.3", features = ["runtime-tokio-native-tls", "sqlite", "migrate", "chrono"] }
 sqlx-cli = "0.6.3"
