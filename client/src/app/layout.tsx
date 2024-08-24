@@ -1,35 +1,38 @@
+import '@mantine/core/styles.css'
 import React from 'react'
-import './globals.css'
-import { Inter } from 'next/font/google'
-import Link from 'next/link'
-import styles from './layout.module.css'
-
-const inter = Inter({ subsets: ['latin'] })
+import { ColorSchemeScript, MantineProvider } from '@mantine/core'
+import { Notifications } from '@mantine/notifications'
+import { cssVariablesResolver, theme } from '@/theme'
+import AuthenticatedLayout from '@/components/AuthenticatedLayout'
+import './global.css'
 
 export const metadata = {
   title: 'Samasya',
-  description: 'Build out your own skill tree',
+  description: 'Learn skills that build upon one another',
 }
 
-export default function RootLayout({
-  children,
-}: {
-  children: React.ReactNode
-}) {
+export default function RootLayout({ children }: { children: any }) {
   return (
     <html lang="en">
-      <body className={inter.className}>
-        <nav className="topnav">
-          <Link href="/">Home</Link>
-
-          <div className={styles.rightNav}>
-            <Link href="/content">Content</Link>
-            {' '}
-            <Link href="/learning">Learning</Link>
-          </div>
-        </nav>
-
-        {children}
+      <head>
+        <link rel="shortcut icon" href="/icon.svg" sizes="any" />
+        <meta
+          name="viewport"
+          content="minimum-scale=1, initial-scale=1, width=device-width, user-scalable=no"
+        />
+        <ColorSchemeScript defaultColorScheme="dark" />
+      </head>
+      <body>
+        <MantineProvider
+          cssVariablesResolver={cssVariablesResolver}
+          defaultColorScheme="dark"
+          theme={theme}
+        >
+          <Notifications />
+          <AuthenticatedLayout>
+            {children}
+          </AuthenticatedLayout>
+        </MantineProvider>
       </body>
     </html>
   )

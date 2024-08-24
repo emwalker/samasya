@@ -1,0 +1,26 @@
+:root {
+  --left-col-width: rem(200);
+  --middle-col-width: rem(900);
+
+  @media (max-width: $mantine-breakpoint-xl) {
+    --left-col-width: rem(200);
+    --middle-col-width: rem(600);
+  }
+
+  @media (max-width: $mantine-breakpoint-lg) {
+    --left-col-width: rem(200);
+    --middle-col-width: rem(500);
+  }
+}
+
+html {
+  height: 100%;
+}
+
+body {
+  min-height: 100vh;
+}
+
+.mantine-Code-root {
+  text-overflow: ellipsis;
+}
