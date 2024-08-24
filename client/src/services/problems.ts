@@ -1,14 +1,18 @@
-import { Problem, WideProblem } from '@/types'
+import { Problem, WideProblem, ApiError } from '@/types'
 
 export type GetResponse = {
-  data: WideProblem | null
+  data: WideProblem | null,
+  errors: ApiError[]
 }
 
 async function get(id: string): Promise<GetResponse> {
   const res = await fetch(`http://localhost:8000/api/v1/problems/${id}`, { cache: 'no-store' })
 
   if (!res.ok) {
-    return Promise.resolve({ data: null })
+    return Promise.resolve({
+      data: null,
+      errors: [{ level: 'error', message: 'Something happened' }],
+    })
   }
 
   return res.json()

@@ -1,5 +1,5 @@
 use crate::types::{
-    Answer, AnswerConnection, AnswerEdge, Error, Queue, QueueStrategy, Result, WideQueue,
+    Answer, AnswerConnection, AnswerEdge, ApiError, Queue, QueueStrategy, Result, WideQueue,
 };
 use sqlx::SqlitePool;
 
@@ -11,13 +11,13 @@ struct QueueRow {
 }
 
 impl TryFrom<QueueRow> for Queue {
-    type Error = Error;
+    type Error = ApiError;
 
     fn try_from(value: QueueRow) -> std::result::Result<Self, Self::Error> {
         let strategy = match value.strategy {
             0 => QueueStrategy::Determistic,
             1 => QueueStrategy::SpacedRepetitionV1,
-            other => return Err(Error::Database(format!("bad strategy: {}", other))),
+            other => return Err(ApiError::Database(format!("bad strategy: {}", other))),
         };
 
         Ok(Self {
@@ -34,7 +34,7 @@ pub async fn fetch_all(db: &SqlitePool, user_id: &String, limit: i32) -> Result<
         .bind(limit)
         .fetch_all(db)
         .await
-        .map_err(|err| Error::Database(err.to_string()))?;
+        .map_err(|err| ApiError::Database(err.to_string()))?;
 
     rows.into_iter()
         .map(|row| row.try_into())
@@ -46,14 +46,14 @@ pub async fn fetch_wide(db: &SqlitePool, id: &String) -> Result<WideQueue> {
         .bind(id)
         .fetch_one(db)
         .await
-        .map_err(|err| Error::Database(err.to_string()))?
+        .map_err(|err| ApiError::Database(err.to_string()))?
         .try_into()?;
 
     let answers = sqlx::query_as::<_, Answer>("select * from answers where queue_id = $1 limit 20")
         .bind(id)
         .fetch_all(db)
         .await
-        .map_err(|err| Error::Database(err.to_string()))?;
+        .map_err(|err| ApiError::Database(err.to_string()))?;
 
     let answer_connection = AnswerConnection {
         edges: answers

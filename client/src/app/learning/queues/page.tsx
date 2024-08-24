@@ -2,6 +2,7 @@ import React from 'react'
 import Link from 'next/link'
 import queueService from '@/services/queues'
 import constants from '@/constants'
+import { Button } from '@mantine/core'
 
 export default async function Page() {
   const queues = (await queueService.getList(constants.placeholderUserId)).data
@@ -10,7 +11,6 @@ export default async function Page() {
     <main>
       <h1 data-testid="page-name">Problem queues</h1>
 
-      Open queues:
       <ul>
         {
           queues.map((queue) => (
@@ -22,7 +22,12 @@ export default async function Page() {
       </ul>
 
       <p>
-        <Link href="/learning/queues/new">Start another problem queue</Link>
+        <Button
+          component="a"
+          href="/learning/queues/new"
+        >
+          Start a new queue
+        </Button>
       </p>
     </main>
   )

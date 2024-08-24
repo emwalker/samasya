@@ -1,5 +1,5 @@
 use super::problems;
-use crate::types::{Approach, Error, Problem, Result, Skill, WideApproach};
+use crate::types::{Approach, ApiError, Problem, Result, Skill, WideApproach};
 use sqlx::sqlite::SqlitePool;
 
 async fn add_relations(
@@ -18,7 +18,7 @@ async fn add_relations(
         .bind(&approach.id)
         .fetch_all(db)
         .await
-        .map_err(|err| Error::Database(err.to_string()))?;
+        .map_err(|err| ApiError::Database(err.to_string()))?;
 
         let prereq_approaches = sqlx::query_as::<_, Approach>(
             "select a.*, p.summary
@@ -30,7 +30,7 @@ async fn add_relations(
         .bind(&approach.id)
         .fetch_all(db)
         .await
-        .map_err(|err| Error::Database(err.to_string()))?;
+        .map_err(|err| ApiError::Database(err.to_string()))?;
 
         approaches.push(WideApproach {
             approach,
@@ -54,7 +54,7 @@ pub async fn fetch_all(db: &SqlitePool, problem_id: &String, limit: i32) -> Resu
     .bind(limit)
     .fetch_all(db)
     .await
-    .map_err(|err| Error::Database(err.to_string()))
+    .map_err(|err| ApiError::Database(err.to_string()))
 }
 
 pub async fn fetch_wide(db: &SqlitePool, id: &str) -> Result<WideApproach> {
@@ -68,7 +68,7 @@ pub async fn fetch_wide(db: &SqlitePool, id: &str) -> Result<WideApproach> {
     .bind(id)
     .fetch_one(db)
     .await
-    .map_err(|err| Error::Database(err.to_string()))?;
+    .map_err(|err| ApiError::Database(err.to_string()))?;
 
     let problem = problems::fetch_one(db, &approach.problem_id).await?;
 
@@ -78,5 +78,5 @@ pub async fn fetch_wide(db: &SqlitePool, id: &str) -> Result<WideApproach> {
         return Ok(approach);
     }
 
-    Err(Error::NotFound)
+    Err(ApiError::NotFound)
 }

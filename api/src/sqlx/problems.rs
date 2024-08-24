@@ -1,5 +1,5 @@
 use super::approaches;
-use crate::types::{Error, Problem, Result, WideProblem};
+use crate::types::{ApiError, Problem, Result, WideProblem};
 use sqlx::sqlite::SqlitePool;
 
 pub async fn fetch_all(db: &SqlitePool, limit: i32) -> Result<Vec<Problem>> {
@@ -7,7 +7,7 @@ pub async fn fetch_all(db: &SqlitePool, limit: i32) -> Result<Vec<Problem>> {
         .bind(limit)
         .fetch_all(db)
         .await
-        .map_err(|err| Error::Database(err.to_string()))
+        .map_err(|err| ApiError::Database(err.to_string()))
 }
 
 pub async fn fetch_one(db: &SqlitePool, id: &String) -> Result<Problem> {
@@ -15,7 +15,7 @@ pub async fn fetch_one(db: &SqlitePool, id: &String) -> Result<Problem> {
         .bind(id)
         .fetch_one(db)
         .await
-        .map_err(|err| Error::Database(err.to_string()))
+        .map_err(|err| ApiError::Database(err.to_string()))
 }
 
 pub async fn fetch_wide(db: &SqlitePool, id: &String) -> Result<WideProblem> {
@@ -23,14 +23,14 @@ pub async fn fetch_wide(db: &SqlitePool, id: &String) -> Result<WideProblem> {
         .bind(id)
         .fetch_one(db)
         .await
-        .map_err(|err| Error::Database(err.to_string()))?;
+        .map_err(|err| ApiError::Database(err.to_string()))?;
 
     let approach_ids =
         sqlx::query_as::<_, (String,)>("select id from approaches where problem_id = ?")
             .bind(id)
             .fetch_all(db)
             .await
-            .map_err(|err| Error::Database(err.to_string()))?;
+            .map_err(|err| ApiError::Database(err.to_string()))?;
 
     let mut wide_approaches = vec![];
     for (approach_id,) in approach_ids {

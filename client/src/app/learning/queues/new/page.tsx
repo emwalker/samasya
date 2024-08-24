@@ -1,12 +1,16 @@
 'use client'
 
-import React, { useState, useCallback, ChangeEvent } from 'react'
+import React, {
+  useState, useCallback, ChangeEvent, useEffect,
+} from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import queueService from '@/services/queues'
 import contants from '@/constants'
 import ProblemList from '@/components/ProblemList'
-import { ProblemSlice, QueueStrategy } from '@/types'
+import problemService from '@/services/problems'
+import { Button, ComboboxData, TextInput } from '@mantine/core'
+import handleResponse from '@/app/handleResponse'
 
 type AddButtonProps = {
   disabled: boolean,
@@ -18,45 +22,46 @@ function AddButton({ disabled, summary, targetProblemId }: AddButtonProps) {
   const router = useRouter()
 
   const onClick = useCallback(async () => {
-    const res = await queueService.post(
+    const response = await queueService.post(
       contants.placeholderUserId,
-      { summary, targetProblemId, strategy: QueueStrategy.SpacedRepetitionV1 },
+      { summary, targetProblemId, strategy: 'spacedRepetitionV1' },
     )
 
-    if (res.ok) {
-      router.push('/learning/queues')
-    }
+    handleResponse(router, response, '/learning/queues', 'Unable to add queue')
   }, [summary, targetProblemId, router])
 
   return (
-    <button disabled={disabled} onClick={onClick} type="submit">Start</button>
+    <Button disabled={disabled} onClick={onClick} type="submit">Start</Button>
   )
 }
 
 export default function Page() {
   const [summary, setSummary] = useState('')
   const [targetProblemId, setTargetProblemId] = useState('')
+  const [initialProblems, setInitialProblems] = useState<ComboboxData>([])
 
   const summaryOnChange = useCallback(
     (event: ChangeEvent<HTMLInputElement>) => setSummary(event.target.value),
     [setSummary],
   )
 
+  useEffect(() => {
+    problemService.getList()
+      .then(({ data }) => {
+        const options = data.map(({ id: value, summary: label }) => ({ value, label }))
+        setInitialProblems(options)
+      })
+  }, [setInitialProblems])
+
   const problemOnChange = useCallback(
-    (problem: ProblemSlice | null) => {
-      if (problem == null) {
-        if (summary === '') {
-          setSummary('')
-        }
+    (problemId: string | null) => {
+      if (problemId == null) {
         setTargetProblemId('')
       } else {
-        if (summary === '') {
-          setSummary(problem.summary)
-        }
-        setTargetProblemId(problem.id)
+        setTargetProblemId(problemId)
       }
     },
-    [setTargetProblemId, summary, setSummary],
+    [setTargetProblemId],
   )
 
   const disabled = summary.length === 0 || targetProblemId.length === 0
@@ -64,21 +69,20 @@ export default function Page() {
   return (
     <main>
       <div>
-        <h1>Start a problem queue</h1>
+        <h1>Start a queue</h1>
 
-        <p>
-          <input
-            onChange={summaryOnChange}
-            placeholder="Name for the problem queue"
-            size={100}
-            type="text"
-            value={summary}
-          />
-        </p>
+        <TextInput
+          onChange={summaryOnChange}
+          placeholder="Name of queue"
+          label="Name"
+          type="text"
+          value={summary}
+        />
+        <br />
 
         <div>
           <ProblemList
-            initialProblems={[]}
+            initialProblems={initialProblems}
             label="Problem to work towards"
             setProblem={problemOnChange}
           />

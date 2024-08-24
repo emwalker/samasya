@@ -1,11 +1,10 @@
-use axum::{response::IntoResponse, Json};
+use axum::{extract::rejection::JsonRejection, response::IntoResponse, Json};
 use hyper::StatusCode;
-use serde::{Deserialize, Serialize};
-use serde_json::json;
+use serde::{ser::SerializeMap, Deserialize, Serialize};
 use thiserror::Error;
 
 #[derive(Error, Debug)]
-pub enum Error {
+pub enum ApiError {
     #[error("failed to load config")]
     Config(String),
     #[error("failed to connect to database: {0}")]
@@ -14,26 +13,96 @@ pub enum Error {
     NotFound,
     #[error("bad input")]
     UnprocessableEntity(String),
+    #[error(transparent)]
+    JsonExtractorRejection(#[from] JsonRejection),
 }
 
-impl IntoResponse for Error {
-    fn into_response(self) -> axum::response::Response {
-        let (status, error_message) = match self {
-            Self::Database(message) | Self::Config(message) => (
-                StatusCode::INTERNAL_SERVER_ERROR,
-                format!("Internal server error: {}", message),
-            ),
+#[derive(Serialize)]
+enum ApiErrorLevel {
+    #[serde(rename = "error")]
+    Error,
+    #[allow(dead_code)]
+    #[serde(rename = "info")]
+    Info,
+    #[allow(dead_code)]
+    #[serde(rename = "warning")]
+    Warn,
+}
 
-            Self::NotFound => (StatusCode::NOT_FOUND, "Not found".into()),
+#[derive(Serialize)]
+pub struct ApiErrorResponse {
+    #[allow(dead_code)]
+    message: String,
+    #[allow(dead_code)]
+    level: ApiErrorLevel,
+}
 
-            Self::UnprocessableEntity(message) => (StatusCode::UNPROCESSABLE_ENTITY, message),
-        };
+struct ApiResponse<T> {
+    #[allow(dead_code)]
+    data: Option<T>,
+    #[allow(dead_code)]
+    errors: Vec<ApiErrorResponse>,
+}
 
-        (status, Json(json!({ "error": error_message }))).into_response()
+impl<T> Serialize for ApiResponse<T> {
+    fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        let mut map = serializer.serialize_map(Some(2))?;
+        let value: Option<String> = None;
+        map.serialize_entry("data", &value)?;
+        map.serialize_entry("errors", &self.errors)?;
+        map.end()
     }
 }
 
-pub type Result<T, E = Error> = std::result::Result<T, E>;
+impl IntoResponse for ApiError {
+    fn into_response(self) -> axum::response::Response {
+        let (status, error) = match self {
+            Self::Database(message) | Self::Config(message) => (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                ApiErrorResponse {
+                    message,
+                    level: ApiErrorLevel::Error,
+                },
+            ),
+
+            Self::NotFound => (
+                StatusCode::NOT_FOUND,
+                ApiErrorResponse {
+                    message: "Not found".into(),
+                    level: ApiErrorLevel::Info,
+                },
+            ),
+
+            Self::UnprocessableEntity(message) => (
+                StatusCode::UNPROCESSABLE_ENTITY,
+                ApiErrorResponse {
+                    message,
+                    level: ApiErrorLevel::Error,
+                },
+            ),
+
+            Self::JsonExtractorRejection(rejection) => (
+                StatusCode::BAD_REQUEST,
+                ApiErrorResponse {
+                    message: rejection.body_text(),
+                    level: ApiErrorLevel::Error,
+                },
+            ),
+        };
+
+        let response: ApiResponse<String> = ApiResponse {
+            data: None,
+            errors: vec![error],
+        };
+
+        (status, Json(response)).into_response()
+    }
+}
+
+pub type Result<T, E = ApiError> = std::result::Result<T, E>;
 
 #[derive(Clone, Serialize, sqlx::FromRow)]
 pub struct Skill {
@@ -93,6 +162,7 @@ pub struct AnswerConnection {
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
+#[serde(rename_all = "camelCase")]
 pub enum QueueStrategy {
     Determistic = 0,
     SpacedRepetitionV1 = 1,

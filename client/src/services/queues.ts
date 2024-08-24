@@ -1,4 +1,6 @@
-import { QueueStrategy, Queue, WideQueue } from '@/types'
+import {
+  QueueStrategy, Queue, WideQueue, ApiError,
+} from '@/types'
 
 export type GetResponse = {
   data: WideQueue | null
@@ -40,12 +42,18 @@ export type Update = {
   targetProblemId: string,
 }
 
-async function post(userId: string, update: Update) {
-  return fetch(`http://localhost:8000/api/v1/users/${userId}/queues`, {
+export type UpdateResponse = {
+  data: any,
+  errors: ApiError[],
+};
+
+async function post(userId: string, update: Update): Promise<UpdateResponse> {
+  const res = await fetch(`http://localhost:8000/api/v1/users/${userId}/queues`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(update),
   })
+  return res.json()
 }
 
 export default { get, getList, post }

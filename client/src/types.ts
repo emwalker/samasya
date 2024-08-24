@@ -56,10 +56,7 @@ export type AnswerConnection = {
   edges: AnswerEdge[],
 }
 
-export enum QueueStrategy {
-  Determistic,
-  SpacedRepetitionV1,
-}
+export type QueueStrategy = 'deterministic' | 'spacedRepetitionV1'
 
 export type Queue = {
   id: string,
@@ -69,4 +66,14 @@ export type Queue = {
 
 export type WideQueue = Queue & {
   answerConnection: AnswerConnection,
+}
+
+export type ApiError = {
+  level: 'info' | 'warning' | 'error',
+  message: string,
+}
+
+export interface ApiResponse<T> {
+  data?: T | null,
+  errors: ApiError[]
 }

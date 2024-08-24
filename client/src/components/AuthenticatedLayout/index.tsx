@@ -1,7 +1,7 @@
 import React from 'react'
 import { Group, Title, Box } from '@mantine/core'
 import {
-  IconBrandCodesandbox,
+  IconPlant2,
 } from '@tabler/icons-react'
 import Link from 'next/link'
 import classes from './index.module.css'
@@ -18,7 +18,7 @@ function AuthenticatedLayout({ children }: Props) {
         <div className={classes.navbarMain}>
           <Group className={classes.logo} justify="left">
             <Link href="/" className="link">
-              <IconBrandCodesandbox className={classes.linkIcon} stroke={1.5} />
+              <IconPlant2 className={classes.linkIcon} stroke={1.5} />
               <Title order={2} className={classes.logoTitle}>Samasya</Title>
             </Link>
           </Group>

@@ -1,13 +1,15 @@
 use axum::{
     extract::{Extension, Path, Query},
+    response::{IntoResponse, Response},
     routing::{get, post, put},
     Json, Router,
 };
+use axum_macros::FromRequest;
 use samasya::{
     sqlx::{approaches, problems, queues},
     types::{
-        Approach, Error, Problem, Queue, QueueStrategy, Result, Skill, WideApproach, WideProblem,
-        WideQueue,
+        ApiError, ApiErrorResponse, Approach, Problem, Queue, QueueStrategy, Result, Skill,
+        WideApproach, WideProblem, WideQueue,
     },
 };
 use serde::{Deserialize, Serialize};
@@ -28,7 +30,7 @@ impl Config {
         let profile = env::var("ENV").unwrap_or("development".into());
         dotenv::from_filename(format!(".env.{}.local", profile)).ok();
         dotenv::dotenv().ok();
-        envy::from_env::<Self>().map_err(|err| Error::Config(err.to_string()))
+        envy::from_env::<Self>().map_err(|err| ApiError::Config(err.to_string()))
     }
 }
 
@@ -37,6 +39,19 @@ struct ApiContext {
     #[allow(unused)]
     config: Arc<Config>,
     db: SqlitePool,
+}
+
+#[derive(FromRequest)]
+#[from_request(via(axum::Json), rejection(ApiError))]
+struct ApiJson<T>(T);
+
+impl<T> IntoResponse for ApiJson<T>
+where
+    axum::Json<T>: IntoResponse,
+{
+    fn into_response(self) -> Response {
+        axum::Json(self.0).into_response()
+    }
 }
 
 #[derive(Deserialize, Serialize, Debug)]
@@ -91,7 +106,7 @@ async fn get_skills(
     }
     .fetch_all(&ctx.db)
     .await
-    .map_err(|err| Error::Database(err.to_string()))?;
+    .map_err(|err| ApiError::Database(err.to_string()))?;
 
     Ok(Json(SkillsListResponse { data }))
 }
@@ -108,7 +123,7 @@ async fn post_skill(
         .bind(&payload.description)
         .execute(&ctx.db)
         .await
-        .map_err(|err| Error::Database(err.to_string()))?;
+        .map_err(|err| ApiError::Database(err.to_string()))?;
 
     Ok(Json(json!({})))
 }
@@ -146,7 +161,9 @@ fn ensure_valid_problem_update(
     } = update;
 
     if summary.is_empty() {
-        return Err(Error::UnprocessableEntity("a summary is required".into()));
+        return Err(ApiError::UnprocessableEntity(
+            "a summary is required".into(),
+        ));
     }
 
     if let Some(inner) = &question_text {
@@ -162,13 +179,13 @@ fn ensure_valid_problem_update(
     }
 
     if question_text.is_none() && question_url.is_none() {
-        return Err(Error::UnprocessableEntity(
+        return Err(ApiError::UnprocessableEntity(
             "either a question prompt or a question url is required".into(),
         ));
     }
 
     if question_text.is_some() && question_url.is_some() {
-        return Err(Error::UnprocessableEntity(
+        return Err(ApiError::UnprocessableEntity(
             "a question prompt and a question url cannot be provided together".into(),
         ));
     }
@@ -195,7 +212,7 @@ async fn post_problem(
     .bind(&question_url)
     .execute(&ctx.db)
     .await
-    .map_err(|err| Error::Database(err.to_string()))?;
+    .map_err(|err| ApiError::Database(err.to_string()))?;
 
     Ok(Json(json!({})))
 }
@@ -218,7 +235,7 @@ async fn put_problem(
     .bind(&problem_id)
     .execute(&ctx.db)
     .await
-    .map_err(|err| Error::Database(err.to_string()))?;
+    .map_err(|err| ApiError::Database(err.to_string()))?;
 
     Ok(Json(json!({})))
 }
@@ -236,7 +253,7 @@ async fn post_approach(
         .bind(&update.name)
         .execute(&ctx.db)
         .await
-        .map_err(|err| Error::Database(err.to_string()))?;
+        .map_err(|err| ApiError::Database(err.to_string()))?;
 
     for prereq_id in update.prereq_skill_ids {
         sqlx::query("insert into prereq_skills (approach_id, prereq_skill_id) values ($1, $2)")
@@ -244,7 +261,7 @@ async fn post_approach(
             .bind(&prereq_id)
             .execute(&ctx.db)
             .await
-            .map_err(|err| Error::Database(err.to_string()))?;
+            .map_err(|err| ApiError::Database(err.to_string()))?;
     }
 
     for prereq_id in update.prereq_approach_ids {
@@ -256,7 +273,7 @@ async fn post_approach(
         .bind(&prereq_id)
         .execute(&ctx.db)
         .await
-        .map_err(|err| Error::Database(err.to_string()))?;
+        .map_err(|err| ApiError::Database(err.to_string()))?;
     }
 
     Ok(Json(json!({})))
@@ -272,13 +289,13 @@ async fn put_approach(
         .bind(&id)
         .execute(&ctx.db)
         .await
-        .map_err(|err| Error::Database(err.to_string()))?;
+        .map_err(|err| ApiError::Database(err.to_string()))?;
 
     sqlx::query("delete from prereq_skills where approach_id = $1")
         .bind(&id)
         .execute(&ctx.db)
         .await
-        .map_err(|err| Error::Database(err.to_string()))?;
+        .map_err(|err| ApiError::Database(err.to_string()))?;
 
     for skill_id in update.prereq_skill_ids {
         sqlx::query("insert into prereq_skills (approach_id, prereq_skill_id) values ($1, $2)")
@@ -286,14 +303,14 @@ async fn put_approach(
             .bind(&skill_id)
             .execute(&ctx.db)
             .await
-            .map_err(|err| Error::Database(err.to_string()))?;
+            .map_err(|err| ApiError::Database(err.to_string()))?;
     }
 
     sqlx::query("delete from prereq_approaches where approach_id = $1")
         .bind(&id)
         .execute(&ctx.db)
         .await
-        .map_err(|err| Error::Database(err.to_string()))?;
+        .map_err(|err| ApiError::Database(err.to_string()))?;
 
     for prereq_id in update.prereq_approach_ids {
         sqlx::query(
@@ -304,7 +321,7 @@ async fn put_approach(
         .bind(&prereq_id)
         .execute(&ctx.db)
         .await
-        .map_err(|err| Error::Database(err.to_string()))?;
+        .map_err(|err| ApiError::Database(err.to_string()))?;
     }
 
     Ok(Json(json!({})))
@@ -358,11 +375,26 @@ struct QueueUpdate {
     target_problem_id: String,
 }
 
+#[derive(Serialize)]
+struct UpdateQueueResponse {
+    data: Option<String>,
+    errors: Vec<ApiErrorResponse>,
+}
+
+impl UpdateQueueResponse {
+    fn ok() -> Self {
+        Self {
+            data: None,
+            errors: vec![],
+        }
+    }
+}
+
 async fn post_queue(
     ctx: Extension<ApiContext>,
     Path(user_id): Path<String>,
-    Json(update): Json<QueueUpdate>,
-) -> Result<Json<serde_json::Value>> {
+    ApiJson(update): ApiJson<QueueUpdate>,
+) -> Result<Json<UpdateQueueResponse>> {
     info!("user {}: adding queue: {:?}", user_id, update);
     let id = uuid::Uuid::new_v4().to_string();
     let created_at = chrono::Utc::now();
@@ -382,9 +414,9 @@ async fn post_queue(
     .bind(created_at)
     .execute(&ctx.db)
     .await
-    .map_err(|err| Error::Database(err.to_string()))?;
+    .map_err(|err| ApiError::Database(err.to_string()))?;
 
-    Ok(Json(json!({})))
+    Ok(Json(UpdateQueueResponse::ok()))
 }
 
 #[derive(Serialize)]
@@ -410,7 +442,7 @@ async fn main() -> Result<()> {
         .max_connections(1)
         .connect(&format!("sqlite://{}?mode=rwc", config.db_filename))
         .await
-        .map_err(|err| Error::Database(err.to_string()))?;
+        .map_err(|err| ApiError::Database(err.to_string()))?;
 
     let ctx = ApiContext {
         config: Arc::new(config),
@@ -420,7 +452,7 @@ async fn main() -> Result<()> {
     sqlx::migrate!("./migrations")
         .run(&ctx.db)
         .await
-        .map_err(|err| Error::Database(err.to_string()))?;
+        .map_err(|err| ApiError::Database(err.to_string()))?;
 
     let app = Router::new()
         .route("/", get(root))
