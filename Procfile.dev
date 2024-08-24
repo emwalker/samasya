@@ -1,0 +1,3 @@
+redis: redis-server
+api: make -C api dev
+client: make -C client dev

@@ -25,8 +25,8 @@ function SaveButton({
   disabled, id, problemId, name, prereqSkills, prereqApproaches,
 }: SaveButtonProps) {
   const router = useRouter()
-  const prereqSkillIds = prereqSkills.map(({ id }) => id)
-  const prereqApproachIds = prereqApproaches.map(({ id }) => id)
+  const prereqSkillIds = prereqSkills.map(({ id: id_ }) => id_)
+  const prereqApproachIds = prereqApproaches.map(({ id: id_ }) => id_)
 
   const onClick = useCallback(async () => {
     const res = await approachService.put(id, {
@@ -115,7 +115,7 @@ export default async function Page(params: Params) {
     return <div>Loading ...</div>
   }
 
-  const { id } = params.params
+  const { params: { id } } = params
   const approach = (await approachService.get(id)).data
   if (approach == null) {
     return (

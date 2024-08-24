@@ -1,9 +1,0 @@
-apps:
-  - name: backend
-    script: cd backend && cargo run
-  - name: frontend
-    script: cd frontend && npm run dev
-    env:
-      NODE_ENV: development
-    env_production:
-      NODE_ENV: production

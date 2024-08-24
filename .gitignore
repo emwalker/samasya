@@ -35,7 +35,9 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
-/backend/target
+/api/target
 *.db
-/frontend/cypress/videos
-/frontend/cypress/screenshots
+/client/cypress/videos
+/client/cypress/screenshots
+
+/dump.rdb

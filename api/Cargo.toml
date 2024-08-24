@@ -5,8 +5,8 @@ edition = "2021"
 
 
 [[bin]]
-name = "backend"
-path = "src/bin/backend.rs"
+name = "api"
+path = "src/bin/api.rs"
 
 [dependencies]
 axum = "0.6.20"

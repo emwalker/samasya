@@ -6,8 +6,7 @@ RUN apt update && apt upgrade \
 SHELL ["/bin/bash", "--login", "-i", "-c"]
 RUN curl https://raw.githubusercontent.com/creationix/nvm/master/install.sh | bash
 RUN source /root/.bashrc \
-  && nvm install --lts \
-  && npm install pm2 -g
+  && nvm install --lts
 
 COPY . /app
 WORKDIR /app

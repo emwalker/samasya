@@ -23,12 +23,12 @@ function ApproachItem({ approach }: { approach: WideApproach }) {
       </ListOr>
 
       <ListOr title="Prerequisite approaches" fallback="No required approaches">
-        {approach.prereqApproaches.map((approach) => (
-          <li key={approach.id}>
-            {approach.summary}
+        {approach.prereqApproaches.map(({ id, summary, name }) => (
+          <li key={id}>
+            {summary}
             {' '}
             (
-            {approach.name}
+            {name}
             )
           </li>
         ))}
@@ -49,7 +49,7 @@ export default async function Page(params: Params) {
     return null
   }
 
-  const { id } = params.params
+  const { params: { id } } = params
   const problem = (await problemService.get(id)).data
   if (problem == null) {
     return (

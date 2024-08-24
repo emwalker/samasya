@@ -1,52 +1,41 @@
-build: install
-	make -C backend build
-	make -C frontend build
-
 check:
-	make -C backend check
-	make -C frontend check
+	make -C api check
+	make -C client check
 
 check-pre-push:
-	make -C backend check
-	make -C frontend check-pre-push
+	make -C api check
+	make -C client check-pre-push
 
-dev: stop
-	pm2 start development.config.yaml
-	pm2 logs
+dev:
+	overmind start -f Procfile.dev
 
 e2e:
-	ps ax | grep frontend | grep -v grep >/dev/null || ( echo "app not started" ; false )
-	make -C frontend e2e
+	ps ax | grep client | grep -v grep >/dev/null || ( echo "app not started" ; false )
+	make -C client e2e
 
 fix:
-	make -C backend fix
-	make -C frontend fix
+	make -C api fix
+	make -C client fix
 
 install:
-	make -C frontend install
+	make -C client install
 
 lint:
-	make -C frontend lint
+	make -C client lint
 
 load:
-	rm -f backend/development.db
-	sqlite3 backend/development.db < data/fixtures.sql
+	rm -f api/development.db
+	sqlite3 api/development.db < data/fixtures.sql
 
-logs:
-	pm2 logs
+prod-build:
+	make -C api prod-build
+	make -C client prod-build
+
+prod:
+	overmind start -f Procfile.prod
 
 save:
-	sqlite3 backend/development.db .dump > data/fixtures.sql
-
-setup:
-	npm install pm2 -g
-
-start: build stop
-	pm2 start production.config.yaml --wait-ready
-	pm2 logs
-
-stop:
-	pm2 kill
+	sqlite3 api/development.db .dump > data/fixtures.sql
 
 test:
-	make -C backend test
+	make -C api test

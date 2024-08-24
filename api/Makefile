@@ -1,10 +1,7 @@
-build:
-	cargo build --release --bin backend
-
 check: lint test
 
 dev:
-	cargo run --bin backend
+	cargo run --bin api
 
 fix:
 	cargo clippy --fix --allow-dirty --allow-staged
@@ -12,8 +9,11 @@ fix:
 lint:
 	cargo clippy -- -D warnings
 
-start:
-	./target/release/backend
+prod:
+	./target/release/api
+
+prod-build:
+	cargo build --release --bin api
 
 test:
 	cargo test

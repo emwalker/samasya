@@ -1,9 +1,0 @@
-apps:
-  - name: backend
-    script: ./backend/target/release/backend
-  - name: frontend
-    script: cd frontend && npm run start
-    env:
-      NODE_ENV: development
-    env_production:
-      NODE_ENV: production
