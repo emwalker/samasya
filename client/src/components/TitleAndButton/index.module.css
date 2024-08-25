@@ -1,0 +1,13 @@
+.articleHeader {
+  display: flex;
+  align-items: center;
+  margin-bottom: rem(10);
+}
+
+.title {
+  flex: 15;
+}
+
+.button {
+  flex: 1;
+}

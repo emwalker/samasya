@@ -1,4 +1,4 @@
-import { Problem, WideProblem, ApiError } from '@/types'
+import { ProblemType, WideProblem, ApiError } from '@/types'
 
 export type GetResponse = {
   data: WideProblem | null,
@@ -19,7 +19,7 @@ async function get(id: string): Promise<GetResponse> {
 }
 
 export type GetListResponse = {
-  data: Problem[]
+  data: ProblemType[]
 }
 
 async function getList(

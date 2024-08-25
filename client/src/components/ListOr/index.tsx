@@ -6,7 +6,7 @@ type InnerProps = {
 }
 
 type ListOrProps = InnerProps & {
-  title: string,
+  title?: string | null,
 }
 
 const emptyChildren = (children: React.ReactElement[]) => React.Children.count(children) === 0
@@ -22,10 +22,16 @@ function Inner({ children, fallback }: InnerProps) {
 export default function ListOr({ title, children, fallback }: ListOrProps) {
   return (
     <div>
-      <h3>
-        {title}
-      </h3>
+      {title && (
+        <h3>
+          {title}
+        </h3>
+      )}
       <Inner fallback={fallback}>{children}</Inner>
     </div>
   )
+}
+
+ListOr.defaultProps = {
+  title: null,
 }

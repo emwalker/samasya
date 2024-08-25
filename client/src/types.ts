@@ -4,14 +4,14 @@ export type Skill = {
   description: string | null,
 }
 
-export interface Problem {
+export interface ProblemType {
   id: string,
   summary: string,
   questionText: string | null,
   questionUrl: string | null,
 }
 
-export type WideProblem = Problem & {
+export type WideProblem = ProblemType & {
   // eslint-disable-next-line no-use-before-define
   approaches: WideApproach[],
 }
@@ -31,7 +31,7 @@ export interface Approach {
 export type WideApproach = Approach & {
   prereqApproaches: Approach[],
   prereqSkills: Skill[],
-  problem: Problem,
+  problem: ProblemType,
 }
 
 export enum AnswerState {

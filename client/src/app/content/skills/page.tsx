@@ -2,13 +2,21 @@ import React from 'react'
 import skillService from '@/services/skills'
 import { Button } from '@mantine/core'
 import Link from 'next/link'
+import TitleAndButton from '@/components/TitleAndButton'
 
 export default async function Page() {
   const skills = (await skillService.getList()).data
 
   return (
     <main>
-      <h1 data-testid="page-name">Skills, milestones and attainments</h1>
+      <TitleAndButton title="Skills and milestones">
+        <Button
+          component="a"
+          href="/content/skills/new"
+        >
+          New
+        </Button>
+      </TitleAndButton>
 
       <ul>
         {
@@ -19,13 +27,6 @@ export default async function Page() {
           ))
         }
       </ul>
-
-      <Button
-        component="a"
-        href="/content/skills/new"
-      >
-        Add a skill
-      </Button>
     </main>
   )
 }

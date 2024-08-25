@@ -1,38 +1,34 @@
 import React from 'react'
 import Link from 'next/link'
-import { Button } from '@mantine/core'
-import { Problem } from '@/types'
+import { Button, Card } from '@mantine/core'
+import { ProblemType } from '@/types'
+import TitleAndButton from '@/components/TitleAndButton'
 import problemService from '@/services/problems'
 import ListOr from '@/components/ListOr'
-import styles from './styles.module.css'
+import classes from './page.module.css'
 
-function ProblemItem({ problem }: { problem: Problem }) {
+function ProblemCard({ id, summary }: ProblemType) {
   return (
-    <Link href={`/content/problems/${problem.id}`}>
-      {problem.summary}
-    </Link>
+    <Card className={classes.problemCard} key={id} mb={10}>
+      <Link href={`/content/problems/${id}`}>
+        {summary}
+      </Link>
+    </Card>
   )
 }
 
-// eslint-disable-next-line @next/next/no-async-client-component
 export default async function Page() {
   const problems = (await problemService.getList()).data
 
   return (
     <main>
-      <h1 data-testid="page-name">Problems</h1>
+      <TitleAndButton title="Problems">
+        <Button component="a" href="/content/problems/new">New</Button>
+      </TitleAndButton>
 
-      <ListOr title="Available problems" fallback="No problems">
-        {
-          problems.map((problem) => (
-            <li className={styles.problem} key={problem.id}>
-              <ProblemItem problem={problem} />
-            </li>
-          ))
-        }
+      <ListOr fallback="No problems">
+        {problems.map(ProblemCard)}
       </ListOr>
-
-      <Button component="a" href="/content/problems/new">Add a problem</Button>
     </main>
   )
 }

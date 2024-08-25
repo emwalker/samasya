@@ -2,17 +2,16 @@
 
 import React, { useCallback, useEffect, useState } from 'react'
 // import { notFound } from 'next/navigation'
-import skillService, { GetResponse } from '@/services/skills'
+import skillService, { GetResponse, PrereqProblemType } from '@/services/skills'
 import problemService from '@/services/problems'
 import {
   Box, Button, ComboboxData, LoadingOverlay, Select,
-  Title,
 } from '@mantine/core'
 import ListOr from '@/components/ListOr'
 import { notifications } from '@mantine/notifications'
 import PrereqProblem from '@/components/PrereqProblem'
 import MarkdownPreview from '@/components/MarkdownPreview'
-import classes from './page.module.css'
+import TitleAndButton from '@/components/TitleAndButton'
 
 type PrereqProblemsProps = {
   skillId: string,
@@ -111,6 +110,10 @@ function PrereqProblems({ skillId, refreshParent }: PrereqProblemsProps) {
   )
 }
 
+function makeKey({ skillId, prereqProblemId, prereqApproachId }: PrereqProblemType) {
+  return `${skillId}:${prereqProblemId}:${prereqApproachId}`
+}
+
 type Props = {
   params: {
     id: string
@@ -150,18 +153,15 @@ export default function Page(props: Props) {
         {skillId && skill && prereqProblems && (
           <>
             <Box mb={20}>
-              <div className={classes.articleHeader}>
-                <Title className={classes.title}>{skill.summary}</Title>
-
+              <TitleAndButton title={skill.summary}>
                 <Button
                   component="a"
-                  className={classes.editButton}
                   mr={3}
                   href={`/content/skills/${skillId}/edit`}
                 >
                   Edit
                 </Button>
-              </div>
+              </TitleAndButton>
 
               <MarkdownPreview markdown={skill.description || ''} />
             </Box>
@@ -171,16 +171,13 @@ export default function Page(props: Props) {
             <Box mb={20}>
               <ListOr title="Problems that must be mastered" fallback="No problems">
                 {
-                  prereqProblems.map((prereqProblem) => {
-                    const key = `${prereqProblem.skillId}:${prereqProblem.prereqProblemId}:${prereqProblem.prereqApproachId}`
-                    return (
-                      <PrereqProblem
-                        key={key}
-                        prereqProblem={prereqProblem}
-                        refreshParent={refreshParent}
-                      />
-                    )
-                  })
+                  prereqProblems.map((prereqProblem) => (
+                    <PrereqProblem
+                      key={makeKey(prereqProblem)}
+                      prereqProblem={prereqProblem}
+                      refreshParent={refreshParent}
+                    />
+                  ))
                 }
               </ListOr>
             </Box>

@@ -2,7 +2,7 @@
 
 import React, { ChangeEvent, useCallback, useState } from 'react'
 import problemService from '@/services/problems'
-import { Problem } from '@/types'
+import { ProblemType } from '@/types'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { Button, Textarea, TextInput } from '@mantine/core'
@@ -39,7 +39,7 @@ function SaveButton({
   )
 }
 
-function EditForm({ problem }: { problem: Problem }) {
+function EditForm({ problem }: { problem: ProblemType }) {
   const [summary, setSummary] = useState(problem.summary)
   const [questionText, setQuestionText] = useState(problem.questionText || '')
   const [questionUrl, setQuestionUrl] = useState(problem.questionUrl || '')

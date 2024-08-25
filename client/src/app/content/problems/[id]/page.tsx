@@ -16,19 +16,19 @@ function ApproachItem({ approach }: { approach: WideApproach }) {
 
       <ListOr title="Prerequisite skills" fallback="No required skills">
         {approach.prereqSkills.map((skill) => (
-          <li key={skill.id}>{skill.summary}</li>
+          <div key={skill.id}>{skill.summary}</div>
         ))}
       </ListOr>
 
       <ListOr title="Prerequisite approaches" fallback="No required approaches">
         {approach.prereqApproaches.map(({ id, summary, name }) => (
-          <li key={id}>
+          <div key={id}>
             {summary}
             {' '}
             (
             {name}
             )
-          </li>
+          </div>
         ))}
       </ListOr>
 
@@ -84,7 +84,7 @@ export default async function Page(params: Params) {
         <ListOr title="Approaches" fallback="No approaches">
           {
             problem.approaches.map((approach) => (
-              <li><ApproachItem approach={approach} /></li>
+              <div><ApproachItem approach={approach} /></div>
             ))
           }
         </ListOr>
