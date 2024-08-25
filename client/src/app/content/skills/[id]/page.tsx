@@ -1,16 +1,18 @@
 'use client'
 
 import React, { useCallback, useEffect, useState } from 'react'
-import { notFound } from 'next/navigation'
+// import { notFound } from 'next/navigation'
 import skillService, { GetResponse } from '@/services/skills'
 import problemService from '@/services/problems'
 import {
-  Box, Button, ComboboxData, Select,
+  Box, Button, ComboboxData, LoadingOverlay, Select,
   Title,
 } from '@mantine/core'
 import ListOr from '@/components/ListOr'
 import { notifications } from '@mantine/notifications'
 import PrereqProblem from '@/components/PrereqProblem'
+import MarkdownPreview from '@/components/MarkdownPreview'
+import classes from './page.module.css'
 
 type PrereqProblemsProps = {
   skillId: string,
@@ -80,11 +82,10 @@ function PrereqProblems({ skillId, refreshParent }: PrereqProblemsProps) {
 
   return (
     <Box mb={10}>
-      <Title order={5} mb={10}>Add a problem</Title>
-
       <Select
         data={prereqProblemOptions}
         mb={10}
+        label="Add a problem"
         onChange={onProblemSelect}
         onSearchChange={onProblemSearchChange}
         placeholder="Select a problem"
@@ -117,13 +118,15 @@ type Props = {
 }
 
 export default function Page(props: Props) {
+  const [isLoading, setIsLoading] = useState(true)
   const [response, setResponse] = useState<GetResponse | null>(null)
   const skillId = props?.params?.id
 
   useEffect(() => {
     if (skillId == null) return
     skillService.get(skillId).then(setResponse)
-  }, [skillId, setResponse])
+    setIsLoading(false)
+  }, [skillId, setResponse, setIsLoading])
 
   const refreshParent = useCallback(() => {
     if (skillId == null) return
@@ -132,47 +135,57 @@ export default function Page(props: Props) {
     skillService.get(skillId).then(setResponse)
   }, [skillId])
 
-  if (skillId == null || response == null) {
-    return <div>Loading ...</div>
-  }
-
-  if (response.data == null) {
-    return notFound()
-  }
-
-  const { data: { skill: { summary }, prereqProblems } } = response
+  const skill = response?.data?.skill
+  const prereqProblems = response?.data?.prereqProblems
 
   return (
     <main>
-      <Box mb={20}>
-        <p>{summary}</p>
+      <Box pos="relative">
+        <LoadingOverlay
+          visible={isLoading}
+          zIndex={1000}
+          overlayProps={{ radius: 'sm', blur: 2 }}
+        />
 
-        <Button
-          component="a"
-          mr={3}
-          href={`/content/skills/${skillId}/edit`}
-        >
-          Edit
-        </Button>
-      </Box>
+        {skillId && skill && prereqProblems && (
+          <>
+            <Box mb={20}>
+              <div className={classes.articleHeader}>
+                <Title className={classes.title}>{skill.summary}</Title>
 
-      <PrereqProblems skillId={skillId} refreshParent={refreshParent} />
+                <Button
+                  component="a"
+                  className={classes.editButton}
+                  mr={3}
+                  href={`/content/skills/${skillId}/edit`}
+                >
+                  Edit
+                </Button>
+              </div>
 
-      <Box mb={20}>
-        <ListOr title="Problems that must be mastered" fallback="No problems">
-          {
-            prereqProblems.map((prereqProblem) => {
-              const key = `${prereqProblem.skillId}:${prereqProblem.prereqProblemId}:${prereqProblem.prereqApproachId}`
-              return (
-                <PrereqProblem
-                  key={key}
-                  prereqProblem={prereqProblem}
-                  refreshParent={refreshParent}
-                />
-              )
-            })
-          }
-        </ListOr>
+              <MarkdownPreview markdown={skill.description || ''} />
+            </Box>
+
+            <PrereqProblems skillId={skillId} refreshParent={refreshParent} />
+
+            <Box mb={20}>
+              <ListOr title="Problems that must be mastered" fallback="No problems">
+                {
+                  prereqProblems.map((prereqProblem) => {
+                    const key = `${prereqProblem.skillId}:${prereqProblem.prereqProblemId}:${prereqProblem.prereqApproachId}`
+                    return (
+                      <PrereqProblem
+                        key={key}
+                        prereqProblem={prereqProblem}
+                        refreshParent={refreshParent}
+                      />
+                    )
+                  })
+                }
+              </ListOr>
+            </Box>
+          </>
+        )}
       </Box>
     </main>
   )

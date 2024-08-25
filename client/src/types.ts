@@ -1,6 +1,7 @@
 export type Skill = {
   id: string,
   summary: string,
+  description: string | null,
 }
 
 export interface Problem {

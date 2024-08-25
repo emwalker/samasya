@@ -43,15 +43,24 @@ async function get(id: string): Promise<GetResponse> {
   return res.json()
 }
 
-export type Update = {
-  description: string,
+export type UpdatePayload = {
+  summary: string,
+  description: string | null,
 }
 
-async function add(update: Update) {
+async function add(updatePayload: UpdatePayload) {
   return fetch('http://localhost:8000/api/v1/skills', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(update),
+    body: JSON.stringify(updatePayload),
+  })
+}
+
+async function update(skillId: string, updatePayload: UpdatePayload) {
+  return fetch(`http://localhost:8000/api/v1/skills/${skillId}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(updatePayload),
   })
 }
 
@@ -84,5 +93,5 @@ async function removeProblem(payload: RemoveProblemPayload) {
 }
 
 export default {
-  get, getList, add, addProblem, removeProblem,
+  get, getList, add, addProblem, removeProblem, update,
 }

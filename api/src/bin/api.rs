@@ -372,7 +372,8 @@ async fn main() -> Result<()> {
         .route("/api/v1/problems/:id/approaches", get(get_approaches))
         .route("/api/v1/queues/:id", get(get_queue))
         .route("/api/v1/skills", get(skills::get_list))
-        .route("/api/v1/skills", post(skills::post))
+        .route("/api/v1/skills", post(skills::add))
+        .route("/api/v1/skills/:id", put(skills::update))
         .route("/api/v1/skills/:id", get(skills::get))
         .route(
             "/api/v1/skills/:id/prereqs/add-problem",

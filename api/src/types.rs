@@ -132,6 +132,7 @@ pub type Result<T, E = ApiError> = std::result::Result<T, E>;
 pub struct Skill {
     pub id: String,
     pub summary: String,
+    pub description: Option<String>,
 }
 
 #[derive(Clone, Serialize, sqlx::FromRow)]

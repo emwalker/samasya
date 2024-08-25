@@ -26,7 +26,12 @@
     "react": "18.2.0",
     "react-dom": "18.2.0",
     "react-select": "^5.8.0",
-    "typescript": "5.2.2"
+    "rehype-stringify": "^10.0.0",
+    "remark-gfm": "^4.0.0",
+    "remark-parse": "^11.0.0",
+    "remark-rehype": "^11.1.0",
+    "typescript": "5.2.2",
+    "unified": "^11.0.5"
   },
   "devDependencies": {
     "@typescript-eslint/eslint-plugin": "^6.10.0",

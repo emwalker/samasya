@@ -4,18 +4,24 @@ import React, { useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import skillService from '@/services/skills'
 import Link from 'next/link'
-import { Button, Textarea } from '@mantine/core'
+import { Button, Textarea, TextInput } from '@mantine/core'
 
-function AddButton({ description, disabled }: { description: string, disabled: boolean }) {
+type AddButtonProps = {
+  summary: string,
+  description: string,
+  disabled: boolean,
+}
+
+function AddButton({ summary, description, disabled }: AddButtonProps) {
   const router = useRouter()
 
   const onClick = useCallback(async () => {
-    const res = await skillService.post({ description })
+    const res = await skillService.add({ summary, description })
 
     if (res.ok) {
       router.push('/content/skills')
     }
-  }, [description, router])
+  }, [summary, description, router])
 
   return (
     <Button disabled={disabled} onClick={onClick} type="submit">Add</Button>
@@ -23,9 +29,15 @@ function AddButton({ description, disabled }: { description: string, disabled: b
 }
 
 export default function Page() {
+  const [summary, setSummary] = useState('')
   const [description, setDescription] = useState('')
 
-  const onChange = useCallback(
+  const summaryOnChange = useCallback(
+    (event: React.ChangeEvent<HTMLInputElement>) => setSummary(event.target.value),
+    [setSummary],
+  )
+
+  const descriptionOnChange = useCallback(
     (event: React.ChangeEvent<HTMLTextAreaElement>) => setDescription(event.target.value),
     [setDescription],
   )
@@ -37,16 +49,23 @@ export default function Page() {
       <div>
         <h1>Add a skill</h1>
 
+        <TextInput
+          placeholder="Short summary"
+          label="Summary"
+          value={description}
+          onChange={summaryOnChange}
+        />
+
         <Textarea
           cols={80}
           rows={3}
           placeholder="Description"
           value={description}
-          onChange={onChange}
+          onChange={descriptionOnChange}
         />
 
         <p>
-          <AddButton disabled={disabled} description={description} />
+          <AddButton disabled={disabled} summary={summary} description={description} />
           {' or '}
           <Link href="/content/skills">cancel</Link>
         </p>

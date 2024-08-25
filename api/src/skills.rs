@@ -93,19 +93,62 @@ pub async fn get(ctx: Extension<ApiContext>, Path(id): Path<String>) -> Result<J
 #[derive(Deserialize, Serialize, Debug)]
 #[serde(rename_all = "camelCase")]
 pub struct UpdatePayload {
-    description: String,
+    summary: String,
+    description: Option<String>,
 }
 
-pub async fn post(
+pub async fn add(
     ctx: Extension<ApiContext>,
     Json(payload): Json<UpdatePayload>,
 ) -> Result<Json<serde_json::Value>> {
-    info!("payload: {:?}", payload);
+    info!("{:?}", payload);
     let id = uuid::Uuid::new_v4().to_string();
 
-    sqlx::query("insert into skills (id, summary) values ($1, $2)")
+    let description = if let Some(description) = &payload.description {
+        if description.is_empty() {
+            None
+        } else {
+            Some(description.trim())
+        }
+    } else {
+        None
+    };
+
+    sqlx::query(
+        r#"
+        insert into skills (id, summary, description) values ($1, $2, $3)
+        "#,
+    )
+    .bind(&id)
+    .bind(payload.summary.trim())
+    .bind(description)
+    .execute(&ctx.db)
+    .await?;
+
+    Ok(Json(json!({})))
+}
+
+pub async fn update(
+    ctx: Extension<ApiContext>,
+    Path(id): Path<String>,
+    Json(payload): Json<UpdatePayload>,
+) -> Result<Json<serde_json::Value>> {
+    info!("{:?}", payload);
+
+    let description = if let Some(description) = &payload.description {
+        if description.is_empty() {
+            None
+        } else {
+            Some(description.trim())
+        }
+    } else {
+        None
+    };
+
+    sqlx::query("update skills set summary = $1, description = $2 where id = $3")
+        .bind(payload.summary.trim())
+        .bind(description)
         .bind(&id)
-        .bind(&payload.description)
         .execute(&ctx.db)
         .await?;
 
