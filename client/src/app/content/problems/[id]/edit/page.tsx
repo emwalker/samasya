@@ -23,7 +23,7 @@ function SaveButton({
 
   const onClick = useCallback(
     async () => {
-      const res = await problemService.put(problemId, { summary, questionText, questionUrl })
+      const res = await problemService.update(problemId, { summary, questionText, questionUrl })
 
       if (!res.ok) {
         throw Error(`failed to save problem: ${res}`)

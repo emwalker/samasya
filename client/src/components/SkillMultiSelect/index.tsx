@@ -33,6 +33,7 @@ export default function SkillMultiSelect({
   const onChange = useCallback(
     (newValue: MultiValue<Option>) => {
       const newSkills = newValue.map(({ value, label }) => ({ id: value, summary: label }))
+      // @ts-expect-error
       setPrerequisiteSkills(newSkills)
     },
     [setPrerequisiteSkills],

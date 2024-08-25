@@ -20,7 +20,7 @@ function AddButton({
   const router = useRouter()
 
   const onClick = useCallback(async () => {
-    const res = await problemService.post({ summary, questionText, questionUrl })
+    const res = await problemService.add({ summary, questionText, questionUrl })
 
     if (res.ok) {
       router.push('/content/problems')

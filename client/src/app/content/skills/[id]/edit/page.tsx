@@ -65,7 +65,7 @@ export default function Page(props: Props) {
   return (
     <main>
       <Box mb={20}>
-        <Title mb={20} order={1}>Update skill</Title>
+        <Title mb={20} order={1}>{summary}</Title>
 
         <TextInput
           defaultValue={summary}

@@ -56,4 +56,4 @@ async function post(userId: string, update: Update): Promise<UpdateResponse> {
   return res.json()
 }
 
-export { get, getList, post }
+export default { get, getList, post }
