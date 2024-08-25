@@ -37,28 +37,28 @@ async function getList(
   return res.json()
 }
 
-export type Update = {
+export type UpdatePayload = {
   questionText: string | null,
   questionUrl: string | null,
   summary: string,
 }
 
-async function put(id: string, update: Update) {
+async function update(id: string, updatePayload: UpdatePayload) {
   return fetch(`http://localhost:8000/api/v1/problems/${id}`, {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(update),
+    body: JSON.stringify(updatePayload),
   })
 }
 
-async function post(update: Update) {
+async function add(updatePayload: UpdatePayload) {
   return fetch('http://localhost:8000/api/v1/problems', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(update),
+    body: JSON.stringify(updatePayload),
   })
 }
 
 export default {
-  get, getList, put, post,
+  get, getList, update, add,
 }

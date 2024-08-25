@@ -2,11 +2,14 @@ use axum::{extract::rejection::JsonRejection, response::IntoResponse, Json};
 use hyper::StatusCode;
 use serde::{ser::SerializeMap, Deserialize, Serialize};
 use thiserror::Error;
+use tracing::warn;
 
 #[derive(Error, Debug)]
 pub enum ApiError {
     #[error("failed to load config")]
     Config(String),
+    #[error("sqlx error: {0}")]
+    SqlxError(#[from] sqlx::Error),
     #[error("failed to connect to database: {0}")]
     Database(String),
     #[error("not found")]
@@ -67,6 +70,27 @@ impl IntoResponse for ApiError {
                     level: ApiErrorLevel::Error,
                 },
             ),
+
+            Self::SqlxError(err) => match err {
+                sqlx::Error::RowNotFound => (
+                    StatusCode::NOT_FOUND,
+                    ApiErrorResponse {
+                        message: "Not found".into(),
+                        level: ApiErrorLevel::Error,
+                    },
+                ),
+
+                _ => {
+                    warn!("{}", &err);
+                    (
+                        StatusCode::INTERNAL_SERVER_ERROR,
+                        ApiErrorResponse {
+                            message: format!("{}", err),
+                            level: ApiErrorLevel::Error,
+                        },
+                    )
+                }
+            },
 
             Self::NotFound => (
                 StatusCode::NOT_FOUND,

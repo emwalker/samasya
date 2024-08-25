@@ -14,6 +14,7 @@ INSERT INTO _sqlx_migrations VALUES(20230526193511,'add-problem-skills','2023-05
 INSERT INTO _sqlx_migrations VALUES(20230528185942,'add-prerequisite-problems','2023-05-28 19:05:15',1,X'ec80d1a6265fb0d98ebf4aa171cb7b004f6cb8d373a0127cb3fdd9b31f5f83f6b776599a7a067b2f2145c5af7fe788dc',2086173);
 INSERT INTO _sqlx_migrations VALUES(20230529002438,'add-problem-approaches','2023-05-29 17:18:40',1,X'9004402cea51f895e2c4072dcb7a3b95703b17c5868054ec7065053a30f05626d2574e7e352a2299f260edd4cad6a3a6',3312604);
 INSERT INTO _sqlx_migrations VALUES(20230603202029,'add-problem-queues','2023-06-03 21:01:18',1,X'2e81ecb0cfa4a49815fd977daa7f05688d91e35fc371c83b27abb7c1b1cd7897a0e0be5789c8aecd42aaa7719ea084f2',2986046);
+INSERT INTO _sqlx_migrations VALUES(20240825040820,'add-prereq-problems','2024-08-25 05:02:16',1,X'887541b86aba3b814e5914981a2aa2673acb171fe4838257fd26cbb6253381b68d4244578cddab566069ebd2e6fbbae6',7278491);
 CREATE TABLE skills (id primary key, summary text not null);
 INSERT INTO skills VALUES('c21e18ae-951a-4d8f-984a-cff1f03a8906','Computing the length of the opposite side of a right triangle from the length of the adjacent side and the angle between the adjacent side and the hypotenuse');
 INSERT INTO skills VALUES('6253e17f-b44e-4d80-ac2a-db4474ca6cc8','Measuring angles using degrees');
@@ -26,6 +27,7 @@ INSERT INTO skills VALUES('8c95f096-91aa-4d9e-a612-401d325becd4','Identifying th
 INSERT INTO skills VALUES('54209a1a-ae03-4ff5-aa67-072873577406','Understanding the circumference of a circle');
 INSERT INTO skills VALUES('5ec87192-2893-4981-9b1d-7456ae92af93','Understanding the length of a line');
 INSERT INTO skills VALUES('909052bb-8d7d-4b90-86f5-ccc443140a18','Working with liters');
+INSERT INTO skills VALUES('c7299bc0-8604-4469-bec7-c449ba1bf060','David Tolnay''s Rust Quiz');
 CREATE TABLE problems (id primary key, question_text text, question_url text, summary text not null);
 INSERT INTO problems VALUES('5f10b96b-7032-481b-84de-fd1d37a33cde','You are standing 10 meters away from the wall of a building and want to estimate its height.  You place one end of a stick on the ground and point the other to the top of the wall.  You see that the angle between the ground and the stick is 60 degrees.  Approximately how tall is the wall?',NULL,'Measuring the height of a building using the properties of right triangles');
 INSERT INTO problems VALUES('ef615296-bd68-4660-8ed8-f1056ce7c2bd','If you divide a circle into six equal segments, what is the angle of each segment in degrees?',NULL,'If you divide a circle into six equal segments, what is the angle of each segment in degrees?');
@@ -113,4 +115,14 @@ CREATE TABLE answers (
   foreign key(queue_id) references queues(id),
   foreign key(user_id) references users(id)
 );
+CREATE TABLE prereq_problems (
+  skill_id text not null,
+  prereq_problem_id text not null,
+  prereq_approach_id text,
+  foreign key(skill_id) references skills(id),
+  foreign key(prereq_problem_id) references problems(id),
+  foreign key(prereq_approach_id) references approaches(id)
+);
+CREATE UNIQUE INDEX prereq_problems_uniq_idx on prereq_problems
+  (skill_id, prereq_problem_id, ifnull(prereq_approach_id, 0));
 COMMIT;

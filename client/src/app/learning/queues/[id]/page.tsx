@@ -1,31 +1,25 @@
 import React from 'react'
 import queueService from '@/services/queues'
+import { notFound } from 'next/navigation'
 
-type Params = {
+type Props = {
   params: { id: string } | null
 }
 
-export default async function Page(params: Params) {
-  const queueId = params?.params?.id
+export default async function Page(props: Props) {
+  const queueId = props?.params?.id
   if (queueId == null) {
     return <div>Loading ...</div>
   }
 
   const queue = (await queueService.get(queueId)).data
   if (queue == null) {
-    return (
-      <div>
-        Queue not found:
-        {queueId}
-      </div>
-    )
+    return notFound()
   }
 
   return (
     <main>
-      <h1>
-        Problem queue
-      </h1>
+      <h1>Problem queue</h1>
 
       <p>
         Problems working towards mastery of this problem:

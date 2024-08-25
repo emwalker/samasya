@@ -16,9 +16,7 @@ function Inner({ children, fallback }: InnerProps) {
     return <div>{fallback}</div>
   }
 
-  return (
-    <ul>{children}</ul>
-  )
+  return children
 }
 
 export default function ListOr({ title, children, fallback }: ListOrProps) {

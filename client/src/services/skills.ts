@@ -1,4 +1,4 @@
-import { Skill } from '@/types'
+import { ApiError, Skill } from '@/types'
 
 export type GetListResponse = {
   data: Skill[]
@@ -19,11 +19,35 @@ async function getList(
   return res.json()
 }
 
+export type PrereqProblemType = {
+  prereqApproachId: string | null,
+  prereqApproachName: string | null,
+  prereqProblemId: string,
+  prereqProblemSummary: string,
+  skillId: string,
+}
+
+type WideSkill = {
+  skill: Skill,
+  prereqProblems: PrereqProblemType[],
+}
+
+export type GetResponse = {
+  data: WideSkill | null,
+  errors: ApiError[]
+}
+
+async function get(id: string): Promise<GetResponse> {
+  const url = `http://localhost:8000/api/v1/skills/${id}`
+  const res = await fetch(url, { cache: 'no-store' })
+  return res.json()
+}
+
 export type Update = {
   description: string,
 }
 
-async function post(update: Update) {
+async function add(update: Update) {
   return fetch('http://localhost:8000/api/v1/skills', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -31,4 +55,20 @@ async function post(update: Update) {
   })
 }
 
-export default { getList, post }
+type AddProblemPayload = {
+  skillId: string,
+  prereqProblemId: string,
+  prereqApproachId: string | null
+}
+
+async function addProblem(payload: AddProblemPayload) {
+  return fetch(`http://localhost:8000/api/v1/skills/${payload.skillId}/prereqs/add-problem`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  })
+}
+
+export default {
+  get, getList, add, addProblem,
+}
