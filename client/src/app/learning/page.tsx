@@ -9,7 +9,7 @@ export default function Home() {
 
       Go to the
       {' '}
-      <Link href="/learning/queues">problem queues</Link>
+      <Link href="/learning/queues">queues</Link>
       {' '}
       page.
     </main>

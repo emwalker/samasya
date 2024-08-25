@@ -3,10 +3,11 @@ use crate::types::{Problem, Result, WideProblem};
 use sqlx::sqlite::SqlitePool;
 
 pub async fn fetch_all(db: &SqlitePool, limit: i32) -> Result<Vec<Problem>> {
-    let problems = sqlx::query_as::<_, Problem>("select * from problems limit ?")
-        .bind(limit)
-        .fetch_all(db)
-        .await?;
+    let problems =
+        sqlx::query_as::<_, Problem>("select * from problems order by added_at desc limit ?")
+            .bind(limit)
+            .fetch_all(db)
+            .await?;
     Ok(problems)
 }
 

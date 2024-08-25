@@ -46,9 +46,41 @@ INSERT INTO problems VALUES('ad306d13-9ef4-4f7e-94f8-7660570edd44','Which line i
 INSERT INTO problems VALUES('bca284ca-3064-4bef-805c-c11a55a0ad93','Which line in this diagram of a circle is the length of its circumference?',NULL,'Which line in this diagram of a circle is the length of its circumference?','2024-08-25 22:54:50');
 INSERT INTO problems VALUES('2e959eb0-fb53-4684-bc7c-29ccb9d3e3a1','A 1000 liter holding tank that catches runoff from some chemical process initially has 800 liters of water with 2 milliliters of pollution dissolved in it. Polluted water flows into the tank at a rate of 3 liters/hr and contains 5 milliliters/liter of pollution in it. A well mixed solution leaves the tank at 3 liters/hr as well. When the amount of pollution in the holding tank reaches 500 milliliters the inflow of polluted water is cut off and fresh water will enter the tank at a decreased rate of 2 liters/hr while the outflow is increased to 4 liters/hr. Determine the amount of pollution in the tank at any time t.',NULL,'Deriving a partial differential equation to model the amount of pollution in a tank of water','2024-08-25 22:54:50');
 INSERT INTO problems VALUES('62bcfc08-c98e-4e29-9720-0847f856517d',replace('A 732 square feet apartment in Vienna had two bedrooms, a living room, a dining room, a toilet and washroom and a balcony. In 1971 rent was 700 schillings. What would the equivalent rent in euros be in 2022.  The euro wasn''t introduced until 2002. [Fill in remaining information needed to complete the calculation.]\n','\n',char(10)),NULL,'Calculate the 2022 rent in euros of an apartment in Vienna that was 700 schillings per month in 1971','2024-08-25 22:54:50');
-INSERT INTO problems VALUES('ad6f42a7-45c2-4029-806f-5231cb3e9abb',NULL,'https://dtolnay.github.io/rust-quiz/1','Rust Quiz#1 from David Tolnay''s Rust Quiz','2024-08-25 22:54:50');
-INSERT INTO problems VALUES('eab3c420-aece-4a84-abdd-a398a438242c',NULL,'https://dtolnay.github.io/rust-quiz/2','Rust Quiz#2 from David Tolnay''s Rust Quiz','2024-08-25 22:54:50');
-INSERT INTO problems VALUES('f4e744ac-fc91-4527-bf41-0cb8077a1b5d',NULL,'https://dtolnay.github.io/rust-quiz/3','Rust Quiz#3 from David Tolnay''s Rust Quiz','2024-08-25 22:54:50');
+INSERT INTO problems VALUES('ad6f42a7-45c2-4029-806f-5231cb3e9abb',NULL,'https://dtolnay.github.io/rust-quiz/1','Rust Quiz #1 from David Tolnay''s Rust Quiz','2024-08-25 22:54:51');
+INSERT INTO problems VALUES('eab3c420-aece-4a84-abdd-a398a438242c',NULL,'https://dtolnay.github.io/rust-quiz/2','Rust Quiz #2 from David Tolnay''s Rust Quiz','2024-08-25 22:54:52');
+INSERT INTO problems VALUES('f4e744ac-fc91-4527-bf41-0cb8077a1b5d',NULL,'https://dtolnay.github.io/rust-quiz/3','Rust Quiz #3 from David Tolnay''s Rust Quiz','2024-08-25 22:54:53');
+INSERT INTO problems VALUES('359a50c7-0ad5-424d-8cb1-6396a5f7ece9',NULL,'https://dtolnay.github.io/rust-quiz/4','Rust Quiz #4 from David Tolnay''s Rust Quiz','2024-08-25 22:57:43');
+INSERT INTO problems VALUES('d52fb8d8-acc6-4dd7-b724-b798abd52175',NULL,'https://dtolnay.github.io/rust-quiz/6','Rust Quiz #6 from David Tolnay''s Rust Quiz','2024-08-25 22:58:13');
+INSERT INTO problems VALUES('34062c38-e57e-4dac-b653-b695e85863b3',NULL,'https://dtolnay.github.io/rust-quiz/8','Rust Quiz #8 from David Tolnay''s Rust Quiz','2024-08-25 22:58:34');
+INSERT INTO problems VALUES('08bce113-d1b7-4c24-ba76-ce1a24613959',NULL,'https://dtolnay.github.io/rust-quiz/9','Rust Quiz#9 from David Tolnay''s Rust Quiz','2024-08-25 22:58:55');
+INSERT INTO problems VALUES('3403caef-4fe4-4e6c-8bf2-28328ab3c86a',NULL,'https://dtolnay.github.io/rust-quiz/10','Rust Quiz #10 from David Tolnay''s Rust Quiz','2024-08-25 22:59:12');
+INSERT INTO problems VALUES('d04a9901-bbb3-461d-8976-eaa52704c64a',NULL,'https://dtolnay.github.io/rust-quiz/11','Rust Quiz #11 from David Tolnay''s Rust Quiz','2024-08-25 22:59:30');
+INSERT INTO problems VALUES('e0f53b73-0ae9-413b-bff3-884e73654960',NULL,'https://dtolnay.github.io/rust-quiz/12','Rust Quiz #12 from David Tolnay''s Rust Quiz','2024-08-25 22:59:47');
+INSERT INTO problems VALUES('a987600c-c2a9-4087-9eef-20d4cdb4f471',NULL,'https://dtolnay.github.io/rust-quiz/13','Rust Quiz #13 from David Tolnay''s Rust Quiz','2024-08-25 23:00:08');
+INSERT INTO problems VALUES('e0317968-b0bc-468f-86c0-4968b445aa23',NULL,'https://dtolnay.github.io/rust-quiz/14','Rust Quiz #14 from David Tolnay''s Rust Quiz','2024-08-25 23:00:25');
+INSERT INTO problems VALUES('ff2760b1-aeb3-46f4-a092-8cae0da9be31',NULL,'https://dtolnay.github.io/rust-quiz/15','Rust Quiz #15 from David Tolnay''s Rust Quiz','2024-08-25 23:00:50');
+INSERT INTO problems VALUES('328466c3-f22f-4ac5-baca-2f7089d4184a',NULL,'https://dtolnay.github.io/rust-quiz/16','Rust Quiz #16 from David Tolnay''s Rust Quiz','2024-08-25 23:03:16');
+INSERT INTO problems VALUES('4c09e3e6-ce11-443e-82f9-26579204c773',NULL,'https://dtolnay.github.io/rust-quiz/17','Rust Quiz #17 from David Tolnay''s Rust Quiz','2024-08-25 23:03:39');
+INSERT INTO problems VALUES('93a8dfbe-6fe0-4200-a2a1-9728c019938f',NULL,'https://dtolnay.github.io/rust-quiz/18','Rust Quiz #18 from David Tolnay''s Rust Quiz','2024-08-25 23:03:59');
+INSERT INTO problems VALUES('990534d5-beb7-478e-bd95-30462c460ac1',NULL,'https://dtolnay.github.io/rust-quiz/19','Rust Quiz #19 from David Tolnay''s Rust Quiz','2024-08-25 23:04:18');
+INSERT INTO problems VALUES('cc48c751-3aeb-433b-b88e-55191caa76a1',NULL,'https://dtolnay.github.io/rust-quiz/20','Rust Quiz #20 from David Tolnay''s Rust Quiz','2024-08-25 23:04:42');
+INSERT INTO problems VALUES('74c10a2d-f2a9-4734-a66e-1b3a351bb0ac',NULL,'https://dtolnay.github.io/rust-quiz/21','Rust Quiz #21 from David Tolnay''s Rust Quiz','2024-08-25 23:05:00');
+INSERT INTO problems VALUES('9b8c1918-95cb-4888-9a0e-f1f39c2367e9',NULL,'https://dtolnay.github.io/rust-quiz/22','Rust Quiz #22 from David Tolnay''s Rust Quiz','2024-08-25 23:05:18');
+INSERT INTO problems VALUES('5cfe07b1-4363-40da-898f-4eb192c305bb',NULL,'https://dtolnay.github.io/rust-quiz/23','Rust Quiz #23 from David Tolnay''s Rust Quiz','2024-08-25 23:05:43');
+INSERT INTO problems VALUES('9223e4e4-f0ef-434d-8e0b-74333c837d56',NULL,'https://dtolnay.github.io/rust-quiz/24','Rust Quiz #24 from David Tolnay''s Rust Quiz','2024-08-25 23:06:03');
+INSERT INTO problems VALUES('0a35c3ac-32a1-4173-9c0f-9334001805e5',NULL,'https://dtolnay.github.io/rust-quiz/25','Rust Quiz #25 from David Tolnay''s Rust Quiz','2024-08-25 23:06:21');
+INSERT INTO problems VALUES('9c607f1f-f6e2-4520-b282-4f5e4497d940',NULL,'https://dtolnay.github.io/rust-quiz/26','Rust Quiz #26 from David Tolnay''s Rust Quiz','2024-08-25 23:06:40');
+INSERT INTO problems VALUES('0f345bd0-24eb-473a-90d3-5060b68f8884',NULL,'https://dtolnay.github.io/rust-quiz/27','Rust Quiz #27 from David Tolnay''s Rust Quiz','2024-08-25 23:06:58');
+INSERT INTO problems VALUES('1f1bc291-feec-4baf-8af3-1308a18f6c29',NULL,'https://dtolnay.github.io/rust-quiz/28','Rust Quiz #28 from David Tolnay''s Rust Quiz','2024-08-25 23:07:20');
+INSERT INTO problems VALUES('5f1e64f0-8e2f-4226-a7bb-24366991a20b',NULL,'https://dtolnay.github.io/rust-quiz/29','Rust Quiz #29 from David Tolnay''s Rust Quiz','2024-08-25 23:07:38');
+INSERT INTO problems VALUES('28ea0c4a-5349-47dc-afe8-c4dab792e568',NULL,'https://dtolnay.github.io/rust-quiz/30','Rust Quiz #30 from David Tolnay''s Rust Quiz','2024-08-25 23:07:56');
+INSERT INTO problems VALUES('3cd82009-1c9e-4e37-a46c-b58ffcf3b83d',NULL,'https://dtolnay.github.io/rust-quiz/31','Rust Quiz #31 from David Tolnay''s Rust Quiz','2024-08-25 23:08:14');
+INSERT INTO problems VALUES('5b984244-6b8d-45c6-97a5-afde85d01cdf',NULL,'https://dtolnay.github.io/rust-quiz/32','Rust Quiz #32 from David Tolnay''s Rust Quiz','2024-08-25 23:08:35');
+INSERT INTO problems VALUES('ea9e8f26-bef5-48a9-bd69-58ca4b17c97f',NULL,'https://dtolnay.github.io/rust-quiz/33','Rust Quiz #33 from David Tolnay''s Rust Quiz','2024-08-25 23:08:52');
+INSERT INTO problems VALUES('19b83a23-8b2d-4596-a435-043483f37cc1',NULL,'https://dtolnay.github.io/rust-quiz/34','Rust Quiz #34 from David Tolnay''s Rust Quiz','2024-08-25 23:09:13');
+INSERT INTO problems VALUES('eefd649a-66ee-4a34-9fcc-61a05fc910b5',NULL,'https://dtolnay.github.io/rust-quiz/35','Rust Quiz #35 from David Tolnay''s Rust Quiz','2024-08-25 23:09:30');
+INSERT INTO problems VALUES('2c1c31c1-c8a6-4707-b4c7-211d911317df',NULL,'https://dtolnay.github.io/rust-quiz/36','Rust Quiz #36 from David Tolnay''s Rust Quiz','2024-08-25 23:09:52');
+INSERT INTO problems VALUES('a500f40e-3448-4fee-8de7-06979fd57c35','This is a placeholder problem that requires mastery of David Tolnay''s Rust Quiz.  It is being made to test queues and the spaced repetition implementation.  Eventually perhaps it can be updated to become a real problem.',NULL,'A challenging Rust problem that requires mastery of David Tolnay''s Rust Quiz to complete','2024-08-25 23:12:53');
 CREATE TABLE approaches (
   id text primary key,
   problem_id text not null,
@@ -113,6 +145,7 @@ CREATE TABLE queues (
   foreign key(target_problem_id) references problems(id),
   foreign key(user_id) references users(id)
 );
+INSERT INTO queues VALUES('2024-08-25T23:15:44.653485317+00:00','47b3fd8f-b0b2-45b3-af4b-368eb3ce140e',1,'Rust traits and function invocations','a500f40e-3448-4fee-8de7-06979fd57c35','2024-08-25T23:15:44.653485317+00:00','04e229c9-795e-4f3a-a79e-ec18b5c28b99');
 CREATE TABLE answers (
   choice_id text not null,
   created_at timestamp not null,

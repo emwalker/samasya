@@ -59,13 +59,13 @@ export type AnswerConnection = {
 
 export type QueueStrategy = 'deterministic' | 'spacedRepetitionV1'
 
-export type Queue = {
+export type QueueType = {
   id: string,
   summary: string,
   strategy: QueueStrategy,
 }
 
-export type WideQueue = Queue & {
+export type WideQueue = QueueType & {
   answerConnection: AnswerConnection,
 }
 

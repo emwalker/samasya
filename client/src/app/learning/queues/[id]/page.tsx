@@ -1,6 +1,8 @@
 import React from 'react'
 import queueService from '@/services/queues'
 import { notFound } from 'next/navigation'
+import TitleAndButton from '@/components/TitleAndButton'
+import { Button, Card, Box } from '@mantine/core'
 
 type Props = {
   params: { id: string } | null
@@ -19,13 +21,15 @@ export default async function Page(props: Props) {
 
   return (
     <main>
-      <h1>Problem queue</h1>
+      <TitleAndButton title={queue.summary}>
+        <Button component="a" href={`/learning/queues/${queue.id}/next-problem`}>Resume</Button>
+      </TitleAndButton>
 
-      <p>
-        Problems working towards mastery of this problem:
-        {' '}
-        {queue.summary}
-      </p>
+      <Box mb={10}>This queue will help to work towards mastery of this problem:</Box>
+
+      <Card shadow="lg">
+        Problem goes here
+      </Card>
 
       <div>
         <h2>Answers</h2>

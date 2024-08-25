@@ -9,7 +9,7 @@ import classes from './page.module.css'
 
 function ProblemCard({ id, summary }: ProblemType) {
   return (
-    <Card className={classes.problemCard} key={id} mb={10}>
+    <Card className={classes.card} key={id} mb={10}>
       <Link href={`/content/problems/${id}`}>
         {summary}
       </Link>

@@ -1,5 +1,5 @@
 import {
-  QueueStrategy, Queue, WideQueue, ApiError,
+  QueueStrategy, QueueType, WideQueue, ApiError,
 } from '@/types'
 
 export type GetResponse = {
@@ -20,7 +20,7 @@ async function get(id: string): Promise<GetResponse> {
 }
 
 export type GetListResponse = {
-  data: Queue[]
+  data: QueueType[]
 }
 
 async function getList(userId: string): Promise<GetListResponse> {
