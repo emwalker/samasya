@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useCallback, useEffect, useState } from 'react'
-import { notFound, useRouter } from 'next/navigation'
+import { notFound } from 'next/navigation'
 import skillService, { GetResponse } from '@/services/skills'
 import problemService from '@/services/problems'
 import {
@@ -64,10 +64,19 @@ function PrereqProblems({ skillId, refreshParent }: PrereqProblemsProps) {
       })
       return
     }
-
     await skillService.addProblem({ skillId, prereqProblemId, prereqApproachId })
+
     refreshParent()
-  }, [skillId, prereqProblemId, prereqApproachId, refreshParent])
+    setPrereqProblemId(null)
+    setPrereqApproachOptions([])
+  }, [
+    prereqApproachId,
+    prereqProblemId,
+    refreshParent,
+    setPrereqApproachOptions,
+    setPrereqProblemId,
+    skillId,
+  ])
 
   return (
     <Box mb={10}>
@@ -76,9 +85,10 @@ function PrereqProblems({ skillId, refreshParent }: PrereqProblemsProps) {
       <Select
         data={prereqProblemOptions}
         mb={10}
-        placeholder="Select a problem"
-        onSearchChange={onProblemSearchChange}
         onChange={onProblemSelect}
+        onSearchChange={onProblemSearchChange}
+        placeholder="Select a problem"
+        value={prereqProblemId}
       />
 
       {
@@ -107,7 +117,6 @@ type Props = {
 }
 
 export default function Page(props: Props) {
-  const router = useRouter()
   const [response, setResponse] = useState<GetResponse | null>(null)
   const skillId = props?.params?.id
 
@@ -117,10 +126,11 @@ export default function Page(props: Props) {
   }, [skillId, setResponse])
 
   const refreshParent = useCallback(() => {
+    if (skillId == null) return
     // eslint-disable-next-line no-console
     console.log('refetching page ...')
-    router.push(`/content/skills/${skillId}`)
-  }, [router, skillId])
+    skillService.get(skillId).then(setResponse)
+  }, [skillId])
 
   if (skillId == null || response == null) {
     return <div>Loading ...</div>
@@ -146,13 +156,24 @@ export default function Page(props: Props) {
         </Button>
       </Box>
 
+      <PrereqProblems skillId={skillId} refreshParent={refreshParent} />
+
       <Box mb={20}>
         <ListOr title="Problems that must be mastered" fallback="No problems">
-          {prereqProblems.map(PrereqProblem)}
+          {
+            prereqProblems.map((prereqProblem) => {
+              const key = `${prereqProblem.skillId}:${prereqProblem.prereqProblemId}:${prereqProblem.prereqApproachId}`
+              return (
+                <PrereqProblem
+                  key={key}
+                  prereqProblem={prereqProblem}
+                  refreshParent={refreshParent}
+                />
+              )
+            })
+          }
         </ListOr>
       </Box>
-
-      <PrereqProblems skillId={skillId} refreshParent={refreshParent} />
     </main>
   )
 }

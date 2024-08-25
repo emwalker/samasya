@@ -1,26 +1,30 @@
 import React, { useCallback } from 'react'
-import { PrereqProblemType } from '@/services/skills'
+import skillService, { PrereqProblemType, RemoveProblemPayload } from '@/services/skills'
 import { Box, Card } from '@mantine/core'
 import { IconX } from '@tabler/icons-react'
+import { notifications } from '@mantine/notifications'
 import classes from './index.module.css'
 
 type RemoveButtonProps = {
-  skillId: string,
-  prereqProblemId: string,
-  prereqApproachId: string | null,
+  payload: RemoveProblemPayload,
+  refreshParent: () => void,
 }
 
-function RemoveButton({ skillId, prereqProblemId, prereqApproachId }: RemoveButtonProps) {
-  const removeProblem = useCallback(() => {
-    // eslint-disable-next-line no-console
-    console.log('removing problem', prereqProblemId, 'for skill', skillId, 'and approach', prereqApproachId)
-  }, [skillId, prereqProblemId, prereqApproachId])
+function RemoveButton({ payload, refreshParent }: RemoveButtonProps) {
+  const removeProblem = useCallback(async () => {
+    await skillService.removeProblem(payload)
+    notifications.show({
+      title: 'Problem removed',
+      color: 'blue',
+      position: 'top-center',
+      message: 'A problem/approach has been removed from this skill',
+    })
+    refreshParent()
+  }, [payload, refreshParent])
 
   return (
     <Box onClick={removeProblem} className={classes.removeButton}>
-      <IconX
-        color="var(--mantine-color-dark-1)"
-      />
+      <IconX color="var(--mantine-color-dark-1)" />
     </Box>
   )
 }
@@ -37,12 +41,17 @@ function Approach({ prereqApproachName }: ApproachProps) {
   )
 }
 
-export default function PrereqProblem(
-  {
+type Props = {
+  prereqProblem: PrereqProblemType,
+  refreshParent: () => void,
+}
+
+export default function PrereqProblem({ prereqProblem, refreshParent }: Props) {
+  const {
     skillId, prereqProblemId, prereqProblemSummary, prereqApproachName, prereqApproachId,
-  }: PrereqProblemType,
-) {
+  } = prereqProblem
   const key = `${prereqProblemId}:${prereqApproachId}`
+  const removePayload = { skillId, prereqProblemId, prereqApproachId }
 
   if (prereqApproachName == null) {
     return (
@@ -52,11 +61,7 @@ export default function PrereqProblem(
             {prereqProblemSummary}
             <Approach prereqApproachName="any" />
           </Box>
-          <RemoveButton
-            skillId={skillId}
-            prereqProblemId={prereqProblemId}
-            prereqApproachId={prereqApproachId}
-          />
+          <RemoveButton payload={removePayload} refreshParent={refreshParent} />
         </Card.Section>
       </Card>
     )
@@ -69,11 +74,7 @@ export default function PrereqProblem(
           {prereqProblemSummary}
           <Approach prereqApproachName={prereqApproachName} />
         </Box>
-        <RemoveButton
-          skillId={skillId}
-          prereqProblemId={prereqProblemSummary}
-          prereqApproachId={prereqApproachId}
-        />
+        <RemoveButton payload={removePayload} refreshParent={refreshParent} />
       </Card.Section>
     </Card>
   )

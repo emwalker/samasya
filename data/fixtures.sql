@@ -15,6 +15,7 @@ INSERT INTO _sqlx_migrations VALUES(20230528185942,'add-prerequisite-problems','
 INSERT INTO _sqlx_migrations VALUES(20230529002438,'add-problem-approaches','2023-05-29 17:18:40',1,X'9004402cea51f895e2c4072dcb7a3b95703b17c5868054ec7065053a30f05626d2574e7e352a2299f260edd4cad6a3a6',3312604);
 INSERT INTO _sqlx_migrations VALUES(20230603202029,'add-problem-queues','2023-06-03 21:01:18',1,X'2e81ecb0cfa4a49815fd977daa7f05688d91e35fc371c83b27abb7c1b1cd7897a0e0be5789c8aecd42aaa7719ea084f2',2986046);
 INSERT INTO _sqlx_migrations VALUES(20240825040820,'add-prereq-problems','2024-08-25 05:02:16',1,X'887541b86aba3b814e5914981a2aa2673acb171fe4838257fd26cbb6253381b68d4244578cddab566069ebd2e6fbbae6',7278491);
+INSERT INTO _sqlx_migrations VALUES(20240825143407,'update-prereq-problems','2024-08-25 14:36:01',1,X'27349cf55c66b925ab8714d4faf8fa93b0f7eb4ea3094e6cbe628bc55fd3c49fcbcd7dc47b4858d2e8c6cb94aab86744',2928689);
 CREATE TABLE skills (id primary key, summary text not null);
 INSERT INTO skills VALUES('c21e18ae-951a-4d8f-984a-cff1f03a8906','Computing the length of the opposite side of a right triangle from the length of the adjacent side and the angle between the adjacent side and the hypotenuse');
 INSERT INTO skills VALUES('6253e17f-b44e-4d80-ac2a-db4474ca6cc8','Measuring angles using degrees');
@@ -118,11 +119,14 @@ CREATE TABLE answers (
 CREATE TABLE prereq_problems (
   skill_id text not null,
   prereq_problem_id text not null,
-  prereq_approach_id text,
+  prereq_approach_id text, added_at datetime default current_timestamp,
   foreign key(skill_id) references skills(id),
   foreign key(prereq_problem_id) references problems(id),
   foreign key(prereq_approach_id) references approaches(id)
 );
+INSERT INTO prereq_problems VALUES('c7299bc0-8604-4469-bec7-c449ba1bf060','5f10b96b-7032-481b-84de-fd1d37a33cde',NULL,'2024-08-25 14:36:51');
+INSERT INTO prereq_problems VALUES('c7299bc0-8604-4469-bec7-c449ba1bf060','62bcfc08-c98e-4e29-9720-0847f856517d',NULL,'2024-08-25 14:36:55');
+INSERT INTO prereq_problems VALUES('c7299bc0-8604-4469-bec7-c449ba1bf060','ad306d13-9ef4-4f7e-94f8-7660570edd44','fd6e4065-74ce-4b48-bd8f-dd8634fb5b35','2024-08-25 14:37:00');
 CREATE UNIQUE INDEX prereq_problems_uniq_idx on prereq_problems
   (skill_id, prereq_problem_id, ifnull(prereq_approach_id, 0));
 COMMIT;

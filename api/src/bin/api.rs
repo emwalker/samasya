@@ -378,6 +378,10 @@ async fn main() -> Result<()> {
             "/api/v1/skills/:id/prereqs/add-problem",
             post(skills::prereqs::add_problem),
         )
+        .route(
+            "/api/v1/skills/:id/prereqs/remove-problem",
+            post(skills::prereqs::remove_problem),
+        )
         .route("/api/v1/users/:id/queues", get(get_queues))
         .route("/api/v1/users/:id/queues", post(post_queue))
         .layer(Extension(ctx))

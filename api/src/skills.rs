@@ -72,6 +72,7 @@ pub async fn get(ctx: Extension<ApiContext>, Path(id): Path<String>) -> Result<J
         join problems p on pp.prereq_problem_id = p.id
         left join approaches a on pp.prereq_approach_id = a.id
         where pp.skill_id = ?
+        order by pp.added_at desc
         "#,
     )
     .bind(&id)
@@ -130,7 +131,7 @@ pub mod prereqs {
 
     impl AddProblemResponse {
         fn ok() -> Self {
-            AddProblemResponse {
+            Self {
                 data: None,
                 errors: vec![],
             }
@@ -159,5 +160,53 @@ pub mod prereqs {
         .await?;
 
         Ok(Json(AddProblemResponse::ok()))
+    }
+
+    #[derive(Debug, Deserialize, Serialize)]
+    #[serde(rename_all = "camelCase")]
+    pub struct RemoveProblemPayload {
+        skill_id: String,
+        prereq_problem_id: String,
+        prereq_approach_id: Option<String>,
+    }
+
+    #[derive(Serialize)]
+    pub struct RemoveProblemResponse {
+        data: Option<RemoveProblemPayload>,
+        errors: Vec<ApiErrorResponse>,
+    }
+
+    pub async fn remove_problem(
+        ctx: Extension<ApiContext>,
+        Json(payload): Json<RemoveProblemPayload>,
+    ) -> Result<Json<RemoveProblemResponse>> {
+        let result = if let Some(approach_id) = &payload.prereq_approach_id {
+            sqlx::query(
+                r#"
+                delete from prereq_problems
+                where skill_id = $1 and prereq_problem_id = $2 and prereq_approach_id = $3
+                "#,
+            )
+            .bind(&payload.skill_id)
+            .bind(&payload.prereq_problem_id)
+            .bind(approach_id)
+        } else {
+            sqlx::query(
+                r#"
+                    delete from prereq_problems
+                    where skill_id = $1 and prereq_problem_id = $2 and prereq_approach_id is null
+                    "#,
+            )
+            .bind(&payload.skill_id)
+            .bind(&payload.prereq_problem_id)
+        }
+        .execute(&ctx.db)
+        .await?;
+        info!("prereq problems removed for {:?}: {:?}", payload, result);
+
+        Ok(Json(RemoveProblemResponse {
+            data: Some(payload),
+            errors: vec![],
+        }))
     }
 }

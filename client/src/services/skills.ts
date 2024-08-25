@@ -69,6 +69,20 @@ async function addProblem(payload: AddProblemPayload) {
   })
 }
 
+export type RemoveProblemPayload = {
+  skillId: string,
+  prereqProblemId: string,
+  prereqApproachId: string | null
+}
+
+async function removeProblem(payload: RemoveProblemPayload) {
+  return fetch(`http://localhost:8000/api/v1/skills/${payload.skillId}/prereqs/remove-problem`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  })
+}
+
 export default {
-  get, getList, add, addProblem,
+  get, getList, add, addProblem, removeProblem,
 }
