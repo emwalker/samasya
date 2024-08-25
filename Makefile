@@ -9,10 +9,6 @@ check-pre-push:
 dev:
 	overmind start -f Procfile.dev
 
-e2e:
-	ps ax | grep client | grep -v grep >/dev/null || ( echo "app not started" ; false )
-	make -C client e2e
-
 fix:
 	make -C api fix
 	make -C client fix

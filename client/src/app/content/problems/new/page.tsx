@@ -4,6 +4,8 @@ import React, { useState, useCallback, ChangeEvent } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import problemService from '@/services/problems'
+import { Button, Textarea, TextInput } from '@mantine/core'
+import classes from './page.module.css'
 
 type AddButtonProps = {
   disabled: boolean,
@@ -26,7 +28,7 @@ function AddButton({
   }, [summary, questionText, questionUrl, router])
 
   return (
-    <button disabled={disabled} onClick={onClick} type="submit">Add</button>
+    <Button disabled={disabled} onClick={onClick} type="submit">Add</Button>
   )
 }
 
@@ -51,43 +53,45 @@ export default function Page() {
   )
 
   const disabled = summary.length === 0
+  const questionUrlExists = questionUrl.length > 0
+  const questionTextExists = questionText.length > 0
 
   return (
     <main>
       <div>
         <h1>Add a problem</h1>
 
-        <p>
-          <input
+        <div className={classes.input}>
+          <TextInput
             onChange={summaryOnChange}
             placeholder="Short summary of the problem"
-            size={100}
             type="text"
             value={summary}
           />
-        </p>
+        </div>
 
-        <p>
-          <input
+        <div className={classes.input}>
+          <TextInput
             onChange={questionUrlOnChange}
             placeholder="Question url"
-            size={100}
             type="text"
+            disabled={questionTextExists}
             value={questionUrl}
           />
-        </p>
+        </div>
 
-        <p>
-          <textarea
+        <div className={classes.input}>
+          <Textarea
             cols={100}
             onChange={questionTextOnChange}
             placeholder="Question prompt"
             rows={6}
+            disabled={questionUrlExists}
             value={questionText}
           />
-        </p>
+        </div>
 
-        <p>
+        <div className={classes.input}>
           <AddButton
             disabled={disabled}
             summary={summary}
@@ -96,7 +100,7 @@ export default function Page() {
           />
           {' or '}
           <Link href="/content/problems">cancel</Link>
-        </p>
+        </div>
       </div>
     </main>
   )

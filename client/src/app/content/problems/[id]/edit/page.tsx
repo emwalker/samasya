@@ -5,6 +5,8 @@ import problemService from '@/services/problems'
 import { Problem } from '@/types'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
+import { Button, Textarea, TextInput } from '@mantine/core'
+import classes from './page.module.css'
 
 type SaveButtonProps = {
   disabled: boolean,
@@ -33,14 +35,14 @@ function SaveButton({
   )
 
   return (
-    <button type="submit" onClick={onClick} disabled={disabled}>Save</button>
+    <Button type="submit" onClick={onClick} disabled={disabled}>Save</Button>
   )
 }
 
 function EditForm({ problem }: { problem: Problem }) {
   const [summary, setSummary] = useState(problem.summary)
-  const [questionText, setQuestionText] = useState(problem.questionText)
-  const [questionUrl, setQuestionUrl] = useState(problem.questionUrl)
+  const [questionText, setQuestionText] = useState(problem.questionText || '')
+  const [questionUrl, setQuestionUrl] = useState(problem.questionUrl || '')
 
   const summaryOnChange = useCallback(
     (event: ChangeEvent<HTMLInputElement>) => setSummary(event.target.value),
@@ -57,61 +59,51 @@ function EditForm({ problem }: { problem: Problem }) {
     [setQuestionUrl],
   )
 
-  const disabled = summary.length === 0 || (questionText != null && questionUrl != null)
-    || (questionText == null && questionUrl == null)
+  const questionTextExists = questionText.length > 0
+  const questionUrlExists = questionUrl.length > 0
+  const disabled = summary.length === 0 || (questionTextExists && questionUrlExists)
+    || (!questionTextExists && !questionUrlExists)
 
   return (
     <div>
-      <p>
-        <label htmlFor="summary">
-          Summary
-          <br />
-          <input
-            id="summary"
-            onChange={summaryOnChange}
-            placeholder="Short summary of problem"
-            size={100}
-            type="text"
-            value={summary || ''}
-          />
-        </label>
-      </p>
+      <TextInput
+        className={classes.input}
+        id="summary"
+        label="Summary"
+        onChange={summaryOnChange}
+        placeholder="Short summary of problem"
+        type="text"
+        value={summary || ''}
+      />
 
-      <p>
-        <label htmlFor="question-text">
-          Question prompt
-          <br />
-          <textarea
-            cols={100}
-            id="question-text"
-            onChange={questionTextOnChange}
-            placeholder="Question prompt to be shown"
-            rows={6}
-            value={questionText || ''}
-          />
-        </label>
-      </p>
+      <Textarea
+        className={classes.input}
+        cols={100}
+        disabled={questionUrlExists}
+        id="question-text"
+        label="Question prompt"
+        onChange={questionTextOnChange}
+        placeholder="Question prompt to be shown"
+        rows={6}
+        value={questionText || ''}
+      />
 
-      <p>
-        <label htmlFor="question-url">
-          Question url
-          <br />
-          <input
-            id="question-url"
-            onChange={questionUrlOnChange}
-            placeholder="Link to another website"
-            size={100}
-            type="text"
-            value={questionUrl || ''}
-          />
-        </label>
-      </p>
+      <TextInput
+        className={classes.input}
+        disabled={questionTextExists}
+        id="question-url"
+        label="Question url"
+        onChange={questionUrlOnChange}
+        placeholder="Link to another website"
+        type="text"
+        value={questionUrl || ''}
+      />
 
       <p>
         <small>Either a question prompt or a question url should be provided, but not both.</small>
       </p>
 
-      <p>
+      <div>
         <SaveButton
           disabled={disabled}
           problemId={problem.id}
@@ -121,7 +113,7 @@ function EditForm({ problem }: { problem: Problem }) {
         />
         {' or '}
         <Link href={`/content/problems/${problem.id}`}>cancel</Link>
-      </p>
+      </div>
     </div>
   )
 }

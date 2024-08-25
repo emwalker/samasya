@@ -1,7 +1,5 @@
-'use client'
-
 import React from 'react'
-import Link from 'next/link'
+import { Button } from '@mantine/core'
 import problemService from '@/services/problems'
 import { WideApproach } from '@/types'
 import ListOr from '@/components/ListOr'
@@ -34,7 +32,12 @@ function ApproachItem({ approach }: { approach: WideApproach }) {
         ))}
       </ListOr>
 
-      <Link href={`/content/approaches/${approach.id}/edit`}>Edit</Link>
+      <Button
+        component="a"
+        href={`/content/approaches/${approach.id}/edit`}
+      >
+        Modify
+      </Button>
     </div>
   )
 }
@@ -43,7 +46,6 @@ type Params = {
   params?: { id: string } | null
 }
 
-// eslint-disable-next-line @next/next/no-async-client-component
 export default async function Page(params: Params) {
   if (params?.params == null) {
     return null
@@ -87,9 +89,21 @@ export default async function Page(params: Params) {
           }
         </ListOr>
 
-        <Link href={`/content/problems/${id}/approaches/new`}>Add an approach</Link>
-        <br />
-        <Link href={`/content/problems/${id}/edit`}>Edit problem</Link>
+        <Button
+          component="a"
+          mr={3}
+          href={`/content/problems/${id}/approaches/new`}
+        >
+          Add an approach
+        </Button>
+
+        <Button
+          component="a"
+          mr={3}
+          href={`/content/problems/${id}/edit`}
+        >
+          Update
+        </Button>
       </div>
     </main>
   )

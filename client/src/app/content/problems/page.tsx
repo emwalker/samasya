@@ -1,5 +1,6 @@
 import React from 'react'
 import Link from 'next/link'
+import { Button } from '@mantine/core'
 import { Problem } from '@/types'
 import problemService from '@/services/problems'
 import ListOr from '@/components/ListOr'
@@ -31,9 +32,7 @@ export default async function Page() {
         }
       </ListOr>
 
-      <p>
-        <Link href="/content/problems/new">Add a problem</Link>
-      </p>
+      <Button component="a" href="/content/problems/new">Add a problem</Button>
     </main>
   )
 }

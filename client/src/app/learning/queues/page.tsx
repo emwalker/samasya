@@ -9,7 +9,7 @@ export default async function Page() {
 
   return (
     <main>
-      <h1 data-testid="page-name">Problem queues</h1>
+      <h1 data-testid="page-name">Queues</h1>
 
       <ul>
         {
@@ -21,14 +21,12 @@ export default async function Page() {
         }
       </ul>
 
-      <p>
-        <Button
-          component="a"
-          href="/learning/queues/new"
-        >
-          Start a new queue
-        </Button>
-      </p>
+      <Button
+        component="a"
+        href="/learning/queues/new"
+      >
+        Start a new queue
+      </Button>
     </main>
   )
 }
