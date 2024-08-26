@@ -65,10 +65,6 @@ export type QueueType = {
   strategy: QueueStrategy,
 }
 
-export type WideQueue = QueueType & {
-  answerConnection: AnswerConnection,
-}
-
 export type ApiError = {
   level: 'info' | 'warning' | 'error',
   message: string,

@@ -3,13 +3,11 @@ use axum::{
     routing::{get, post, put},
     Json, Router,
 };
-use samasya::{skills, ApiContext, ApiJson, Config};
 use samasya::{
-    sqlx::{approaches, problems, queues},
-    types::{
-        ApiError, ApiErrorResponse, Approach, Problem, Queue, QueueStrategy, Result, WideApproach,
-        WideProblem, WideQueue,
-    },
+    queues, skills,
+    sqlx::{approaches, problems},
+    types::{ApiError, Approach, Problem, Result, WideApproach, WideProblem},
+    ApiContext, Config,
 };
 use serde::{Deserialize, Serialize};
 use serde_json::json;
@@ -260,84 +258,6 @@ async fn get_approaches(
     Ok(Json(ApproachListResponse { data }))
 }
 
-#[derive(Serialize)]
-struct QueuesListResponse {
-    data: Vec<Queue>,
-}
-
-async fn get_queues(
-    ctx: Extension<ApiContext>,
-    Path(user_id): Path<String>,
-) -> Result<Json<QueuesListResponse>> {
-    let data = queues::fetch_all(&ctx.db, &user_id, 20).await?;
-    Ok(Json(QueuesListResponse { data }))
-}
-
-#[derive(Deserialize, Debug)]
-#[serde(rename_all = "camelCase")]
-struct QueueUpdate {
-    strategy: QueueStrategy,
-    summary: String,
-    target_problem_id: String,
-}
-
-#[derive(Serialize)]
-struct UpdateQueueResponse {
-    data: Option<String>,
-    errors: Vec<ApiErrorResponse>,
-}
-
-impl UpdateQueueResponse {
-    fn ok() -> Self {
-        Self {
-            data: None,
-            errors: vec![],
-        }
-    }
-}
-
-async fn post_queue(
-    ctx: Extension<ApiContext>,
-    Path(user_id): Path<String>,
-    ApiJson(update): ApiJson<QueueUpdate>,
-) -> Result<Json<UpdateQueueResponse>> {
-    info!("user {}: adding queue: {:?}", user_id, update);
-    let id = uuid::Uuid::new_v4().to_string();
-    let created_at = chrono::Utc::now();
-
-    sqlx::query(
-        "insert into queues (
-            id, summary, strategy, target_problem_id, user_id, created_at, updated_at
-         )
-         values ($1, $2, $3, $4, $5, $6, $7)",
-    )
-    .bind(&id)
-    .bind(&update.summary)
-    .bind(update.strategy as i32)
-    .bind(&update.target_problem_id)
-    .bind(&user_id)
-    .bind(created_at)
-    .bind(created_at)
-    .execute(&ctx.db)
-    .await
-    .map_err(|err| ApiError::Database(err.to_string()))?;
-
-    Ok(Json(UpdateQueueResponse::ok()))
-}
-
-#[derive(Serialize)]
-struct QueueResponse {
-    data: WideQueue,
-}
-
-async fn get_queue(
-    ctx: Extension<ApiContext>,
-    Path(id): Path<String>,
-) -> Result<Json<QueueResponse>> {
-    let data = queues::fetch_wide(&ctx.db, &id).await?;
-    Ok(Json(QueueResponse { data }))
-}
-
 #[tokio::main]
 async fn main() -> Result<()> {
     tracing_subscriber::fmt::init();
@@ -370,11 +290,13 @@ async fn main() -> Result<()> {
         .route("/api/v1/problems/:id", get(get_problem))
         .route("/api/v1/problems/:id", put(put_problem))
         .route("/api/v1/problems/:id/approaches", get(get_approaches))
-        .route("/api/v1/queues/:id", get(get_queue))
-        .route("/api/v1/skills", get(skills::get_list))
+        .route("/api/v1/queues/:id", get(queues::get))
+        .route("/api/v1/skills", get(skills::list))
         .route("/api/v1/skills", post(skills::add))
-        .route("/api/v1/skills/:id", put(skills::update))
         .route("/api/v1/skills/:id", get(skills::get))
+        .route("/api/v1/skills/:id", put(skills::update))
+        .route("/api/v1/users/:id/queues", get(queues::list))
+        .route("/api/v1/users/:id/queues", post(queues::add))
         .route(
             "/api/v1/skills/:id/prereqs/add-problem",
             post(skills::prereqs::add_problem),
@@ -383,8 +305,6 @@ async fn main() -> Result<()> {
             "/api/v1/skills/:id/prereqs/remove-problem",
             post(skills::prereqs::remove_problem),
         )
-        .route("/api/v1/users/:id/queues", get(get_queues))
-        .route("/api/v1/users/:id/queues", post(post_queue))
         .layer(Extension(ctx))
         .layer(CorsLayer::permissive());
 

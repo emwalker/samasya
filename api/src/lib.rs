@@ -6,6 +6,7 @@ use serde::{Deserialize, Serialize};
 use std::{env, sync::Arc};
 use types::ApiError;
 
+pub mod queues;
 pub mod skills;
 pub mod sqlx;
 pub mod types;

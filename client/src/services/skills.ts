@@ -1,12 +1,12 @@
 import { ApiError, Skill } from '@/types'
 
-export type GetListResponse = {
+export type ListResponse = {
   data: Skill[]
 }
 
 async function getList(
   args?: { searchString: string | null } | undefined,
-): Promise<GetListResponse> {
+): Promise<ListResponse> {
   const url = args?.searchString
     ? `http://localhost:8000/api/v1/skills?q=${args.searchString}`
     : 'http://localhost:8000/api/v1/skills'

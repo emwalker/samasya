@@ -1,47 +1,72 @@
-import React from 'react'
-import queueService from '@/services/queues'
-import { notFound } from 'next/navigation'
+'use client'
+
+import React, { useEffect, useState } from 'react'
+import queueService, { GetResponse } from '@/services/queues'
 import TitleAndButton from '@/components/TitleAndButton'
-import { Button, Card, Box } from '@mantine/core'
+import {
+  Button, Card, Box, LoadingOverlay,
+} from '@mantine/core'
+import ListOr from '@/components/ListOr'
+import { AnswerEdge } from '@/types'
+
+function Answer({ node }: AnswerEdge) {
+  return (
+    <Card key={node.id} mb={10}>
+      {node.summary}
+    </Card>
+  )
+}
 
 type Props = {
   params: { id: string } | null
 }
 
-export default async function Page(props: Props) {
+export default function Page(props: Props) {
+  const [response, setResponse] = useState<GetResponse | null>(null)
+  const [isLoading, setIsLoading] = useState<boolean>(true)
   const queueId = props?.params?.id
-  if (queueId == null) {
-    return <div>Loading ...</div>
-  }
 
-  const queue = (await queueService.get(queueId)).data
-  if (queue == null) {
-    return notFound()
-  }
+  useEffect(() => {
+    async function fetchData() {
+      if (queueId == null) return
+      const currResponse = await queueService.get(queueId)
+      setResponse(currResponse)
+      setIsLoading(false)
+    }
+    fetchData()
+  }, [queueId])
+
+  const data = response?.data
 
   return (
     <main>
-      <TitleAndButton title={queue.summary}>
-        <Button component="a" href={`/learning/queues/${queue.id}/next-problem`}>Resume</Button>
-      </TitleAndButton>
+      <Box pos="relative">
+        <LoadingOverlay
+          visible={isLoading}
+          zIndex={1000}
+          overlayProps={{ radius: 'sm', blur: 2 }}
+        />
 
-      <Box mb={10}>This queue will help to work towards mastery of this problem:</Box>
+        {data && (
+          <>
+            <TitleAndButton title={data.queue.summary}>
+              <Button component="a" href={`/learning/queues/${queueId}/next-problem`}>Resume</Button>
+            </TitleAndButton>
 
-      <Card shadow="lg">
-        Problem goes here
-      </Card>
+            <Box mb={10}>This queue will help to work towards mastery of this problem:</Box>
 
-      <div>
-        <h2>Answers</h2>
+            <Card shadow="lg">
+              {data.targetProblem.summary}
+            </Card>
 
-        <ul>
-          {
-            queue.answerConnection.edges.map(
-              (edge) => <li key={edge.node.id}>{edge.node.summary}</li>,
-            )
-          }
-        </ul>
-      </div>
+            <ListOr title="Answers" fallback="No answers">
+              {
+                data.answers.edges.map(Answer)
+              }
+            </ListOr>
+          </>
+        )}
+      </Box>
     </main>
   )
 }

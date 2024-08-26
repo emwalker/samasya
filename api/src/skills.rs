@@ -16,7 +16,7 @@ pub struct GetListResponse {
     data: Vec<Skill>,
 }
 
-pub async fn get_list(
+pub async fn list(
     ctx: Extension<ApiContext>,
     query: Query<Filter>,
 ) -> Result<Json<GetListResponse>> {

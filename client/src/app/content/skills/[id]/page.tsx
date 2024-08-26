@@ -41,19 +41,18 @@ function PrereqProblems({ skillId, refreshParent }: PrereqProblemsProps) {
   }, [setPrereqProblemOptions])
 
   const onProblemSelect = useCallback(async (selectedProblemId: string | null) => {
+    setPrereqProblemId(selectedProblemId)
     setPrereqApproachId(null)
 
     if (selectedProblemId == null) {
-      setPrereqProblemId(null)
       setPrereqApproachOptions([])
     } else {
       const response = await problemService.get(selectedProblemId)
       const options = response.data?.approaches
         ?.map(({ name: label, id: value }) => ({ label, value }))
-      setPrereqProblemId(selectedProblemId)
       setPrereqApproachOptions(options || [])
     }
-  }, [setPrereqApproachOptions, setPrereqProblemId])
+  }, [setPrereqApproachId, setPrereqProblemId, setPrereqApproachOptions])
 
   const addPrereqProblem = useCallback(async () => {
     if (prereqProblemId == null) {
@@ -88,7 +87,7 @@ function PrereqProblems({ skillId, refreshParent }: PrereqProblemsProps) {
         onChange={onProblemSelect}
         onSearchChange={onProblemSearchChange}
         placeholder="Select a problem"
-        value={prereqProblemId}
+        defaultValue={prereqProblemId}
       />
 
       {
@@ -97,7 +96,7 @@ function PrereqProblems({ skillId, refreshParent }: PrereqProblemsProps) {
             <Select
               data={prereqApproachOptions}
               mb={10}
-              value={prereqApproachId}
+              defaultValue={prereqApproachId}
               placeholder="Select an approach (optional)"
               onChange={setPrereqApproachId}
             />

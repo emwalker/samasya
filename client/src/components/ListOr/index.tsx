@@ -1,4 +1,5 @@
 import React from 'react'
+import Blankslate from '../Blankslate'
 
 type InnerProps = {
   fallback: string | React.ReactElement,
@@ -13,13 +14,13 @@ const emptyChildren = (children: React.ReactElement[]) => React.Children.count(c
 
 function Inner({ children, fallback }: InnerProps) {
   if (emptyChildren(children)) {
-    return <div>{fallback}</div>
+    return <Blankslate>{fallback}</Blankslate>
   }
 
   return children
 }
 
-export default function ListOr({ title, children, fallback }: ListOrProps) {
+export default function ListOr({ title = null, children, fallback }: ListOrProps) {
   return (
     <div>
       {title && (
@@ -30,8 +31,4 @@ export default function ListOr({ title, children, fallback }: ListOrProps) {
       <Inner fallback={fallback}>{children}</Inner>
     </div>
   )
-}
-
-ListOr.defaultProps = {
-  title: null,
 }

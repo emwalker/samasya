@@ -1,9 +1,15 @@
 import {
-  QueueStrategy, QueueType, WideQueue, ApiError,
+  QueueStrategy, QueueType, ApiError,
+  AnswerConnection,
+  ProblemType,
 } from '@/types'
 
 export type GetResponse = {
-  data: WideQueue | null
+  data: {
+    queue: QueueType,
+    answers: AnswerConnection,
+    targetProblem: ProblemType,
+  } | null
 }
 
 async function get(id: string): Promise<GetResponse> {
@@ -19,11 +25,11 @@ async function get(id: string): Promise<GetResponse> {
   return res.json()
 }
 
-export type GetListResponse = {
+export type ListResponse = {
   data: QueueType[]
 }
 
-async function getList(userId: string): Promise<GetListResponse> {
+async function getList(userId: string): Promise<ListResponse> {
   const res = await fetch(
     `http://localhost:8000/api/v1/users/${userId}/queues`,
     { cache: 'no-store' },
@@ -36,7 +42,7 @@ async function getList(userId: string): Promise<GetListResponse> {
   return res.json()
 }
 
-export type Update = {
+export type UpdatePayload = {
   strategy: QueueStrategy,
   summary: string,
   targetProblemId: string,
@@ -47,7 +53,7 @@ export type UpdateResponse = {
   errors: ApiError[],
 };
 
-async function post(userId: string, update: Update): Promise<UpdateResponse> {
+async function post(userId: string, update: UpdatePayload): Promise<UpdateResponse> {
   const res = await fetch(`http://localhost:8000/api/v1/users/${userId}/queues`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },

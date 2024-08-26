@@ -199,6 +199,7 @@ pub struct Queue {
     pub id: String,
     pub summary: String,
     pub strategy: QueueStrategy,
+    pub target_problem_id: String,
 }
 
 #[derive(Clone, Serialize, sqlx::FromRow)]
