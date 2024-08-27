@@ -38,8 +38,7 @@ pub async fn fetch_all(db: &SqlitePool, user_id: &String, limit: i32) -> Result<
         .bind(user_id)
         .bind(limit)
         .fetch_all(db)
-        .await
-        .map_err(|err| ApiError::Database(err.to_string()))?;
+        .await?;
 
     rows.into_iter()
         .map(|row| row.try_into())
@@ -58,8 +57,7 @@ pub async fn fetch_wide(db: &SqlitePool, id: &String) -> Result<QueueResult> {
     let queue: Queue = sqlx::query_as::<_, QueueRow>("select * from queues where id = $1")
         .bind(id)
         .fetch_one(db)
-        .await
-        .map_err(|err| ApiError::Database(err.to_string()))?
+        .await?
         .try_into()?;
 
     let target_problem = problems::fetch_one(db, &queue.target_problem_id).await?;
@@ -67,8 +65,7 @@ pub async fn fetch_wide(db: &SqlitePool, id: &String) -> Result<QueueResult> {
     let answers = sqlx::query_as::<_, Answer>("select * from answers where queue_id = $1 limit 20")
         .bind(id)
         .fetch_all(db)
-        .await
-        .map_err(|err| ApiError::Database(err.to_string()))?;
+        .await?;
 
     let answers = AnswerConnection {
         edges: answers

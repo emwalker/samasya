@@ -1,5 +1,5 @@
 use super::problems;
-use crate::types::{Approach, ApiError, Problem, Result, Skill, WideApproach};
+use crate::types::{ApiError, Approach, Problem, Result, Skill, WideApproach};
 use sqlx::sqlite::SqlitePool;
 
 async fn add_relations(
@@ -17,8 +17,7 @@ async fn add_relations(
         )
         .bind(&approach.id)
         .fetch_all(db)
-        .await
-        .map_err(|err| ApiError::Database(err.to_string()))?;
+        .await?;
 
         let prereq_approaches = sqlx::query_as::<_, Approach>(
             "select a.*, p.summary
@@ -29,8 +28,7 @@ async fn add_relations(
         )
         .bind(&approach.id)
         .fetch_all(db)
-        .await
-        .map_err(|err| ApiError::Database(err.to_string()))?;
+        .await?;
 
         approaches.push(WideApproach {
             approach,
@@ -44,7 +42,7 @@ async fn add_relations(
 }
 
 pub async fn fetch_all(db: &SqlitePool, problem_id: &String, limit: i32) -> Result<Vec<Approach>> {
-    sqlx::query_as::<_, Approach>(
+    let rows = sqlx::query_as::<_, Approach>(
         "select a.*, p.summary
          from approaches a join problems p on a.problem_id = p.id
          where problem_id = $1
@@ -53,8 +51,8 @@ pub async fn fetch_all(db: &SqlitePool, problem_id: &String, limit: i32) -> Resu
     .bind(problem_id)
     .bind(limit)
     .fetch_all(db)
-    .await
-    .map_err(|err| ApiError::Database(err.to_string()))
+    .await?;
+    Ok(rows)
 }
 
 pub async fn fetch_wide(db: &SqlitePool, id: &str) -> Result<WideApproach> {
@@ -67,8 +65,7 @@ pub async fn fetch_wide(db: &SqlitePool, id: &str) -> Result<WideApproach> {
     )
     .bind(id)
     .fetch_one(db)
-    .await
-    .map_err(|err| ApiError::Database(err.to_string()))?;
+    .await?;
 
     let problem = problems::fetch_one(db, &approach.problem_id).await?;
 

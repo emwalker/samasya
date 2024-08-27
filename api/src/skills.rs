@@ -1,4 +1,4 @@
-use crate::types::{ApiError, ApiErrorResponse, Result, Skill};
+use crate::types::{ApiErrorResponse, Result, Skill};
 use crate::ApiContext;
 use axum::extract::Path;
 use axum::{extract::Query, Extension, Json};
@@ -12,14 +12,11 @@ pub struct Filter {
 }
 
 #[derive(Serialize)]
-pub struct GetListResponse {
+pub struct ListResponse {
     data: Vec<Skill>,
 }
 
-pub async fn list(
-    ctx: Extension<ApiContext>,
-    query: Query<Filter>,
-) -> Result<Json<GetListResponse>> {
+pub async fn list(ctx: Extension<ApiContext>, query: Query<Filter>) -> Result<Json<ListResponse>> {
     let filter = query.0;
 
     let data = if let Some(filter) = filter.q {
@@ -30,10 +27,9 @@ pub async fn list(
         sqlx::query_as::<_, Skill>("select * from skills limit 20")
     }
     .fetch_all(&ctx.db)
-    .await
-    .map_err(|err| ApiError::Database(err.to_string()))?;
+    .await?;
 
-    Ok(Json(GetListResponse { data }))
+    Ok(Json(ListResponse { data }))
 }
 
 #[derive(Serialize, sqlx::FromRow)]
@@ -54,12 +50,15 @@ pub struct WideSkill {
 }
 
 #[derive(Serialize)]
-pub struct GetResponse {
+pub struct FetchResponse {
     data: Option<WideSkill>,
     errors: Vec<ApiErrorResponse>,
 }
 
-pub async fn get(ctx: Extension<ApiContext>, Path(id): Path<String>) -> Result<Json<GetResponse>> {
+pub async fn fetch(
+    ctx: Extension<ApiContext>,
+    Path(id): Path<String>,
+) -> Result<Json<FetchResponse>> {
     let skill = sqlx::query_as::<_, Skill>("select * from skills where id = ?")
         .bind(&id)
         .fetch_one(&ctx.db)
@@ -84,7 +83,7 @@ pub async fn get(ctx: Extension<ApiContext>, Path(id): Path<String>) -> Result<J
         prereq_problems,
     };
 
-    Ok(Json(GetResponse {
+    Ok(Json(FetchResponse {
         data: Some(skill),
         errors: vec![],
     }))

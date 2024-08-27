@@ -1,6 +1,7 @@
 use axum::{extract::rejection::JsonRejection, response::IntoResponse, Json};
 use hyper::StatusCode;
 use serde::{ser::SerializeMap, Deserialize, Serialize};
+use sqlx::migrate::MigrateError;
 use thiserror::Error;
 use tracing::warn;
 
@@ -8,14 +9,22 @@ use tracing::warn;
 pub enum ApiError {
     #[error("failed to load config")]
     Config(String),
+
     #[error("sqlx error: {0}")]
     SqlxError(#[from] sqlx::Error),
+
     #[error("failed to connect to database: {0}")]
     Database(String),
+
+    #[error("failed to prepare database: {0}")]
+    MigrateError(#[from] MigrateError),
+
     #[error("not found")]
     NotFound,
+
     #[error("bad input")]
     UnprocessableEntity(String),
+
     #[error(transparent)]
     JsonExtractorRejection(#[from] JsonRejection),
 }
@@ -91,6 +100,14 @@ impl IntoResponse for ApiError {
                     )
                 }
             },
+
+            Self::MigrateError(err) => (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                ApiErrorResponse {
+                    message: format!("{}", err),
+                    level: ApiErrorLevel::Error,
+                },
+            ),
 
             Self::NotFound => (
                 StatusCode::NOT_FOUND,

@@ -8,33 +8,33 @@ use serde::{Deserialize, Serialize};
 use tracing::info;
 
 #[derive(Serialize)]
-pub struct QueuesListResponse {
+pub struct ListResponse {
     data: Vec<Queue>,
 }
 
 pub async fn list(
     ctx: Extension<ApiContext>,
     Path(user_id): Path<String>,
-) -> Result<Json<QueuesListResponse>> {
+) -> Result<Json<ListResponse>> {
     let data = crate::sqlx::queues::fetch_all(&ctx.db, &user_id, 20).await?;
-    Ok(Json(QueuesListResponse { data }))
+    Ok(Json(ListResponse { data }))
 }
 
 #[derive(Deserialize, Debug)]
 #[serde(rename_all = "camelCase")]
-pub struct QueueUpdate {
+pub struct UpdatePayload {
     strategy: QueueStrategy,
     summary: String,
     target_problem_id: String,
 }
 
 #[derive(Serialize)]
-pub struct UpdateQueueResponse {
+pub struct UpdateResponse {
     data: Option<String>,
     errors: Vec<ApiErrorResponse>,
 }
 
-impl UpdateQueueResponse {
+impl UpdateResponse {
     fn ok() -> Self {
         Self {
             data: None,
@@ -46,8 +46,8 @@ impl UpdateQueueResponse {
 pub async fn add(
     ctx: Extension<ApiContext>,
     Path(user_id): Path<String>,
-    ApiJson(update): ApiJson<QueueUpdate>,
-) -> Result<Json<UpdateQueueResponse>> {
+    ApiJson(update): ApiJson<UpdatePayload>,
+) -> Result<Json<UpdateResponse>> {
     info!("user {}: adding queue: {:?}", user_id, update);
     let id = uuid::Uuid::new_v4().to_string();
     let created_at = chrono::Utc::now();
@@ -68,18 +68,18 @@ pub async fn add(
     .execute(&ctx.db)
     .await?;
 
-    Ok(Json(UpdateQueueResponse::ok()))
+    Ok(Json(UpdateResponse::ok()))
 }
 
 #[derive(Serialize)]
-pub struct QueueResponse {
+pub struct FetchResponse {
     data: QueueResult,
 }
 
-pub async fn get(
+pub async fn fetch(
     ctx: Extension<ApiContext>,
     Path(id): Path<String>,
-) -> Result<Json<QueueResponse>> {
+) -> Result<Json<FetchResponse>> {
     let result = crate::sqlx::queues::fetch_wide(&ctx.db, &id).await?;
-    Ok(Json(QueueResponse { data: result }))
+    Ok(Json(FetchResponse { data: result }))
 }
