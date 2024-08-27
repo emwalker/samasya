@@ -2,7 +2,10 @@ use crate::{
     types::{ApiError, Problem, Result, WideProblem},
     ApiContext,
 };
-use axum::{extract::Path, Extension, Json};
+use axum::{
+    extract::{Path, Query},
+    Extension, Json,
+};
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 use tracing::info;
@@ -20,13 +23,33 @@ pub async fn fetch(
     Ok(Json(FetchResponse { data }))
 }
 
+#[derive(Debug, Default, Deserialize)]
+pub struct Search {
+    q: String,
+}
+
+impl Search {
+    pub(crate) fn is_empty(&self) -> bool {
+        self.q.is_empty()
+    }
+
+    pub(crate) fn substrings(&self) -> impl Iterator<Item = &str> + '_ {
+        self.q.split_whitespace()
+    }
+}
+
 #[derive(Serialize)]
 pub struct ListResponse {
     data: Vec<Problem>,
 }
 
-pub async fn list(ctx: Extension<ApiContext>) -> Result<Json<ListResponse>> {
-    let data = crate::sqlx::problems::fetch_all(&ctx.db, 20).await?;
+pub async fn list(
+    ctx: Extension<ApiContext>,
+    search: Option<Query<Search>>,
+) -> Result<Json<ListResponse>> {
+    let search = search.unwrap_or_default().0;
+    info!("searching problems: {:?}", search);
+    let data = crate::sqlx::problems::list(&ctx.db, 20, search).await?;
     Ok(Json(ListResponse { data }))
 }
 

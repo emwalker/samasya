@@ -18,15 +18,15 @@ async function get(id: string): Promise<GetResponse> {
   return res.json()
 }
 
-export type GetListResponse = {
+export type ListResponse = {
   data: ProblemType[]
 }
 
-async function getList(
+async function list(
   args?: { searchString: string | null } | undefined,
-): Promise<GetListResponse> {
+): Promise<ListResponse> {
   const url = args?.searchString
-    ? `http://localhost:8000/api/v1/problems?q=${args.searchString}`
+    ? `http://localhost:8000/api/v1/problems?q=${encodeURIComponent(args?.searchString)}`
     : 'http://localhost:8000/api/v1/problems'
   const res = await fetch(url, { cache: 'no-store' })
 
@@ -60,5 +60,5 @@ async function add(updatePayload: UpdatePayload) {
 }
 
 export default {
-  get, getList, update, add,
+  get, list, update, add,
 }

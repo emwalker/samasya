@@ -18,7 +18,7 @@ function ProblemCard({ id, summary }: ProblemType) {
 }
 
 export default async function Page() {
-  const problems = (await problemService.getList()).data
+  const problems = (await problemService.list()).data
 
   return (
     <main>

@@ -58,6 +58,10 @@ async fn main() -> Result<()> {
         .route("/api/v1/skills", post(skills::add))
         .route("/api/v1/skills/:id", get(skills::fetch))
         .route("/api/v1/skills/:id", put(skills::update))
+        .route(
+            "/api/v1/skills/:id/prereqs/available-problems",
+            get(skills::prereqs::available_problems),
+        )
         .route("/api/v1/users/:id/queues", get(queues::list))
         .route("/api/v1/users/:id/queues", post(queues::add))
         .route(

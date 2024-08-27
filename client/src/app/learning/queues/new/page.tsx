@@ -46,7 +46,7 @@ export default function Page() {
   )
 
   useEffect(() => {
-    problemService.getList()
+    problemService.list()
       .then(({ data }) => {
         const options = data.map(({ id: value, summary: label }) => ({ value, label }))
         setInitialProblems(options)

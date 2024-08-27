@@ -155,7 +155,62 @@ pub async fn update(
 }
 
 pub mod prereqs {
+    use sqlx::{QueryBuilder, Sqlite};
+
     use super::*;
+    use crate::{problems::Search, types::Problem};
+
+    #[derive(Serialize)]
+    pub struct ListResponse {
+        data: Vec<Problem>,
+    }
+
+    pub async fn available_problems(
+        ctx: Extension<ApiContext>,
+        Path(skill_id): Path<String>,
+        search: Option<Query<Search>>,
+    ) -> Result<Json<ListResponse>> {
+        let search = search.unwrap_or_default().0;
+        info!(
+            "searching for available problems for {skill_id}: {:?}",
+            search
+        );
+
+        let mut builder: QueryBuilder<Sqlite> = QueryBuilder::new("select p.* from problems p ");
+        let mut wheres = vec![];
+
+        for (i, substring) in search.substrings().enumerate() {
+            builder.push(format!("join problems p{i} on p.id = p{i}.id "));
+            wheres.push(substring);
+        }
+
+        builder.push("where ");
+        let mut separated = builder.separated(" and ");
+
+        for (i, substring) in wheres.into_iter().enumerate() {
+            separated.push(format!("lower(p{i}.summary) like '%'||lower("));
+            separated.push_bind_unseparated(substring);
+            separated.push_unseparated(")||'%'");
+        }
+
+        separated.push(
+            "not exists (
+                select pp.prereq_problem_id
+                from prereq_problems pp
+                where pp.prereq_problem_id = p.id
+                    and pp.skill_id = ",
+        );
+        separated.push_bind_unseparated(skill_id);
+        separated.push_unseparated(")");
+
+        builder.push("order by p.added_at desc limit ").push_bind(7);
+        let problems = builder
+            .build_query_as::<Problem>()
+            .fetch_all(&ctx.db)
+            .await?;
+
+        Ok(Json(ListResponse { data: problems }))
+    }
 
     #[derive(Deserialize)]
     #[serde(rename_all = "camelCase")]

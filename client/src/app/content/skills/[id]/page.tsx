@@ -1,7 +1,6 @@
 'use client'
 
 import React, { useCallback, useEffect, useState } from 'react'
-// import { notFound } from 'next/navigation'
 import skillService, { GetResponse, PrereqProblemType } from '@/services/skills'
 import problemService from '@/services/problems'
 import {
@@ -20,8 +19,12 @@ type PrereqProblemsProps = {
 
 type Fn = (options: ComboboxData) => void
 
-async function updatePrereqProblems(setPrereqProblemOptions: Fn, searchString: string) {
-  const response = await problemService.getList({ searchString: searchString || '' })
+async function updatePrereqProblems(
+  setPrereqProblemOptions: Fn,
+  skillId: string,
+  searchString: string,
+) {
+  const response = await skillService.availablePrereqProblems(skillId, searchString || '')
   const options = response.data.map(({ id: value, summary: label }) => ({ value, label }))
   setPrereqProblemOptions(options || [])
 }
@@ -31,14 +34,15 @@ function PrereqProblems({ skillId, refreshParent }: PrereqProblemsProps) {
   const [prereqApproachOptions, setPrereqApproachOptions] = useState<ComboboxData>([])
   const [prereqProblemId, setPrereqProblemId] = useState<string | null>(null)
   const [prereqApproachId, setPrereqApproachId] = useState<string | null>(null)
+  const [isLoading, setIsLoading] = useState(true)
 
-  useEffect(() => {
-    updatePrereqProblems(setPrereqProblemOptions, '')
-  }, [setPrereqProblemOptions])
-
-  const onProblemSearchChange = useCallback(async (searchString: string | null) => {
-    updatePrereqProblems(setPrereqProblemOptions, searchString || '')
-  }, [setPrereqProblemOptions])
+  const updateSearch = useCallback(async (searchString: string | null) => {
+    const search = searchString || ''
+    if (isLoading || search !== '') {
+      updatePrereqProblems(setPrereqProblemOptions, skillId, search)
+    }
+    setIsLoading(false)
+  }, [setPrereqProblemOptions, skillId, isLoading])
 
   const onProblemSelect = useCallback(async (selectedProblemId: string | null) => {
     setPrereqProblemId(selectedProblemId)
@@ -66,28 +70,36 @@ function PrereqProblems({ skillId, refreshParent }: PrereqProblemsProps) {
     }
     await skillService.addProblem({ skillId, prereqProblemId, prereqApproachId })
 
-    refreshParent()
     setPrereqProblemId(null)
+    setPrereqApproachId(null)
+    setPrereqProblemOptions([])
     setPrereqApproachOptions([])
+    refreshParent()
   }, [
     prereqApproachId,
     prereqProblemId,
     refreshParent,
+    setPrereqApproachId,
     setPrereqApproachOptions,
     setPrereqProblemId,
+    setPrereqProblemOptions,
     skillId,
   ])
 
   return (
     <Box mb={10}>
       <Select
+        allowDeselect
+        clearable
         data={prereqProblemOptions}
-        mb={10}
-        label="Add a problem"
-        onChange={onProblemSelect}
-        onSearchChange={onProblemSearchChange}
-        placeholder="Select a problem"
         defaultValue={prereqProblemId}
+        label="Add a problem"
+        mb={10}
+        onChange={onProblemSelect}
+        filter={({ options }) => options}
+        onSearchChange={updateSearch}
+        placeholder="Select a problem"
+        searchable
       />
 
       {

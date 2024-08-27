@@ -1,4 +1,4 @@
-import { ApiError, Skill } from '@/types'
+import { ApiError, ProblemType, Skill } from '@/types'
 
 export type ListResponse = {
   data: Skill[]
@@ -92,6 +92,24 @@ async function removeProblem(payload: RemoveProblemPayload) {
   })
 }
 
+export type AvailablePrereqProblems = {
+  data: ProblemType[],
+  errors: ApiError[],
+}
+
+async function availablePrereqProblems(
+  skillId: string,
+  searchString: string,
+): Promise<AvailablePrereqProblems> {
+  const q = encodeURIComponent(searchString)
+  const url = `http://localhost:8000/api/v1/skills/${skillId}/prereqs/available-problems?q=${q}`
+  const response = await fetch(url, {
+    method: 'GET',
+    headers: { 'Content-Type': 'application/json' },
+  })
+  return response.json()
+}
+
 export default {
-  get, getList, add, addProblem, removeProblem, update,
+  get, getList, add, addProblem, removeProblem, update, availablePrereqProblems,
 }

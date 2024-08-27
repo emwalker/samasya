@@ -1,13 +1,40 @@
 use super::approaches;
-use crate::types::{Problem, Result, WideProblem};
-use sqlx::sqlite::SqlitePool;
+use crate::{
+    problems::Search,
+    types::{Problem, Result, WideProblem},
+};
+use sqlx::{sqlite::SqlitePool, QueryBuilder, Sqlite};
 
-pub async fn fetch_all(db: &SqlitePool, limit: i32) -> Result<Vec<Problem>> {
-    let problems =
+pub async fn list(db: &SqlitePool, limit: i32, search: Search) -> Result<Vec<Problem>> {
+    let problems = if search.is_empty() {
         sqlx::query_as::<_, Problem>("select * from problems order by added_at desc limit ?")
             .bind(limit)
             .fetch_all(db)
-            .await?;
+            .await?
+    } else {
+        let mut builder: QueryBuilder<Sqlite> = QueryBuilder::new("select p.* from problems p ");
+        let mut wheres = vec![];
+
+        for (i, substring) in search.substrings().enumerate() {
+            builder.push(format!("join problems p{i} on p.id = p{i}.id "));
+            wheres.push(substring);
+        }
+
+        builder.push("where ");
+        let mut separated = builder.separated(" and ");
+
+        for (i, substring) in wheres.into_iter().enumerate() {
+            separated.push(format!("lower(p{i}.summary) like '%'||lower("));
+            separated.push_bind_unseparated(substring);
+            separated.push_unseparated(")||'%'");
+        }
+
+        builder
+            .push("order by p.added_at desc limit ")
+            .push_bind(limit);
+        builder.build_query_as::<Problem>().fetch_all(db).await?
+    };
+
     Ok(problems)
 }
 
