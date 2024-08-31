@@ -28,7 +28,7 @@ export default function Page(props: Props) {
   useEffect(() => {
     async function fetchData() {
       if (skillId == null) return
-      const response = await skillService.get(skillId)
+      const response = await skillService.fetch(skillId)
       if (response.data?.skill == null) return
       const { data: { skill: { summary: currSummary, description: currDescription } } } = response
       setSummary(currSummary || '')

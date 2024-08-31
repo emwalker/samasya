@@ -1,11 +1,11 @@
 import React, { useCallback } from 'react'
-import { Approach } from '@/types'
+import { ApproachType } from '@/types'
 import approachService from '@/services/approaches'
 import styles from './styles.module.css'
 
 type Props = {
-  prereqApproaches: Approach[],
-  setPrereqApproaches: (apporaches: Approach[]) => void,
+  prereqApproaches: ApproachType[],
+  setPrereqApproaches: (apporaches: ApproachType[]) => void,
 }
 
 type MakeRemoveOnClickProps = Props & {

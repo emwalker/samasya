@@ -1,125 +1,15 @@
 'use client'
 
 import React, { useCallback, useEffect, useState } from 'react'
-import skillService, { GetResponse, PrereqProblemType } from '@/services/skills'
-import problemService from '@/services/problems'
+import skillService, { FetchResponse, PrereqProblemType } from '@/services/skills'
 import {
-  Box, Button, ComboboxData, LoadingOverlay, Select,
+  Box, Button, LoadingOverlay,
 } from '@mantine/core'
+import PrereqProblems from '@/components/PrereqProblems'
 import ListOr from '@/components/ListOr'
-import { notifications } from '@mantine/notifications'
 import PrereqProblem from '@/components/PrereqProblem'
 import MarkdownPreview from '@/components/MarkdownPreview'
 import TitleAndButton from '@/components/TitleAndButton'
-
-type PrereqProblemsProps = {
-  skillId: string,
-  refreshParent: () => void,
-}
-
-type Fn = (options: ComboboxData) => void
-
-async function updatePrereqProblems(
-  setPrereqProblemOptions: Fn,
-  skillId: string,
-  searchString: string,
-) {
-  const response = await skillService.availablePrereqProblems(skillId, searchString || '')
-  const options = response.data.map(({ id: value, summary: label }) => ({ value, label }))
-  setPrereqProblemOptions(options || [])
-}
-
-function PrereqProblems({ skillId, refreshParent }: PrereqProblemsProps) {
-  const [prereqProblemOptions, setPrereqProblemOptions] = useState<ComboboxData>([])
-  const [prereqApproachOptions, setPrereqApproachOptions] = useState<ComboboxData>([])
-  const [prereqProblemId, setPrereqProblemId] = useState<string | null>(null)
-  const [prereqApproachId, setPrereqApproachId] = useState<string | null>(null)
-  const [isLoading, setIsLoading] = useState(true)
-
-  const updateSearch = useCallback(async (searchString: string | null) => {
-    const search = searchString || ''
-    if (isLoading || search !== '') {
-      updatePrereqProblems(setPrereqProblemOptions, skillId, search)
-    }
-    setIsLoading(false)
-  }, [setPrereqProblemOptions, skillId, isLoading])
-
-  const onProblemSelect = useCallback(async (selectedProblemId: string | null) => {
-    setPrereqProblemId(selectedProblemId)
-    setPrereqApproachId(null)
-
-    if (selectedProblemId == null) {
-      setPrereqApproachOptions([])
-    } else {
-      const response = await problemService.get(selectedProblemId)
-      const options = response.data?.approaches
-        ?.map(({ name: label, id: value }) => ({ label, value }))
-      setPrereqApproachOptions(options || [])
-    }
-  }, [setPrereqApproachId, setPrereqProblemId, setPrereqApproachOptions])
-
-  const addPrereqProblem = useCallback(async () => {
-    if (prereqProblemId == null) {
-      notifications.show({
-        title: 'Something happened',
-        color: 'red',
-        position: 'top-center',
-        message: 'Cannot add a prequisite problem without an id',
-      })
-      return
-    }
-    await skillService.addProblem({ skillId, prereqProblemId, prereqApproachId })
-
-    setPrereqProblemId(null)
-    setPrereqApproachId(null)
-    setPrereqProblemOptions([])
-    setPrereqApproachOptions([])
-    refreshParent()
-  }, [
-    prereqApproachId,
-    prereqProblemId,
-    refreshParent,
-    setPrereqApproachId,
-    setPrereqApproachOptions,
-    setPrereqProblemId,
-    setPrereqProblemOptions,
-    skillId,
-  ])
-
-  return (
-    <Box mb={10}>
-      <Select
-        allowDeselect
-        clearable
-        data={prereqProblemOptions}
-        defaultValue={prereqProblemId}
-        label="Add a problem"
-        mb={10}
-        onChange={onProblemSelect}
-        filter={({ options }) => options}
-        onSearchChange={updateSearch}
-        placeholder="Select a problem"
-        searchable
-      />
-
-      {
-        prereqProblemId && (
-          <>
-            <Select
-              data={prereqApproachOptions}
-              mb={10}
-              defaultValue={prereqApproachId}
-              placeholder="Select an approach (optional)"
-              onChange={setPrereqApproachId}
-            />
-
-            <Button onClick={addPrereqProblem}>Add</Button>
-          </>
-        )
-      }
-    </Box>
-  )
-}
 
 function makeKey({ skillId, prereqProblemId, prereqApproachId }: PrereqProblemType) {
   return `${skillId}:${prereqProblemId}:${prereqApproachId}`
@@ -133,12 +23,12 @@ type Props = {
 
 export default function Page(props: Props) {
   const [isLoading, setIsLoading] = useState(true)
-  const [response, setResponse] = useState<GetResponse | null>(null)
+  const [response, setResponse] = useState<FetchResponse | null>(null)
   const skillId = props?.params?.id
 
   useEffect(() => {
     if (skillId == null) return
-    skillService.get(skillId).then(setResponse)
+    skillService.fetch(skillId).then(setResponse)
     setIsLoading(false)
   }, [skillId, setResponse, setIsLoading])
 
@@ -146,7 +36,7 @@ export default function Page(props: Props) {
     if (skillId == null) return
     // eslint-disable-next-line no-console
     console.log('refetching page ...')
-    skillService.get(skillId).then(setResponse)
+    skillService.fetch(skillId).then(setResponse)
   }, [skillId])
 
   const skill = response?.data?.skill

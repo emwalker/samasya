@@ -1,13 +1,13 @@
 import React, { useCallback } from 'react'
 import AsyncSelect from 'react-select/async'
 import { MultiValue } from 'react-select'
-import { Skill } from '@/types'
+import { SkillType } from '@/types'
 import skillService from '@/services/skills'
 import styles from './styles.module.css'
 
 type Props = {
-  initialPrerequisiteSkills: Skill[],
-  setPrerequisiteSkills: (skills: Skill[]) => void,
+  initialPrerequisiteSkills: SkillType[],
+  setPrerequisiteSkills: (skills: SkillType[]) => void,
 }
 
 type Option = {
@@ -16,7 +16,7 @@ type Option = {
 }
 
 async function fetchSkills(searchString: string) {
-  const { data } = await skillService.getList({ searchString })
+  const { data } = await skillService.list({ searchString })
   return data.map(({ id, summary }) => ({ value: id, label: summary }))
 }
 

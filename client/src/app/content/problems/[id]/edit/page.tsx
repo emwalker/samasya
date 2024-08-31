@@ -1,11 +1,15 @@
 'use client'
 
-import React, { ChangeEvent, useCallback, useState } from 'react'
-import problemService from '@/services/problems'
+import React, {
+  ChangeEvent, useCallback, useEffect, useState,
+} from 'react'
+import problemService, { FetchResponse } from '@/services/problems'
 import { ProblemType } from '@/types'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { Button, Textarea, TextInput } from '@mantine/core'
+import {
+  Box, Button, LoadingOverlay, Textarea, TextInput,
+} from '@mantine/core'
 import classes from './page.module.css'
 
 type SaveButtonProps = {
@@ -122,27 +126,36 @@ type Params = {
   params?: { id: string } | null
 }
 
-// eslint-disable-next-line @next/next/no-async-client-component
-export default async function Page(params: Params) {
+export default function Page(params: Params) {
+  const [isLoading, setIsLoading] = useState(true)
+  const [response, setResponse] = useState<FetchResponse | null>(null)
   const problemId = params?.params?.id
-  if (problemId == null) {
-    return <div>Loading ...</div>
-  }
 
-  const problem = (await problemService.get(problemId)).data
-  if (problem == null) {
-    return (
-      <div>
-        Problem not found:
-        {problemId}
-      </div>
-    )
-  }
+  useEffect(() => {
+    async function fetchData() {
+      if (problemId == null) return
+      const currResponse = await problemService.fetch(problemId)
+      setResponse(currResponse)
+      setIsLoading(false)
+    }
+    fetchData()
+  }, [problemId, setIsLoading, setResponse])
+
+  const problem = response?.data?.problem
 
   return (
     <main>
-      <h1>Update problem</h1>
-      <EditForm problem={problem} />
+      <Box pos="relative">
+        <LoadingOverlay
+          visible={isLoading}
+          zIndex={1000}
+          overlayProps={{ radius: 'sm', blur: 2 }}
+        />
+
+        {problem && (
+          <EditForm problem={problem} />
+        )}
+      </Box>
     </main>
   )
 }

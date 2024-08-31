@@ -1,3 +1,5 @@
+use std::str::FromStr;
+
 use axum::{extract::rejection::JsonRejection, response::IntoResponse, Json};
 use chrono::{DateTime, TimeDelta, Utc};
 use hyper::StatusCode;
@@ -8,6 +10,9 @@ use tracing::warn;
 
 #[derive(Error, Debug)]
 pub enum ApiError {
+    #[error("unknown format: {0}")]
+    ChronoParseError(#[from] chrono::ParseError),
+
     #[error("failed to load config")]
     Config(String),
 
@@ -76,6 +81,14 @@ impl<T> Serialize for ApiResponse<T> {
 impl IntoResponse for ApiError {
     fn into_response(self) -> axum::response::Response {
         let (status, error) = match self {
+            Self::ChronoParseError(err) => (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                ApiErrorResponse {
+                    message: err.to_string(),
+                    level: ApiErrorLevel::Error,
+                },
+            ),
+
             Self::Database(message) | Self::Config(message) => (
                 StatusCode::INTERNAL_SERVER_ERROR,
                 ApiErrorResponse {
@@ -157,7 +170,7 @@ impl IntoResponse for ApiError {
 
 pub type Result<T> = std::result::Result<T, ApiError>;
 
-#[derive(Debug, Eq, Ord, PartialEq, PartialOrd)]
+#[derive(Debug, Eq, Ord, PartialEq, PartialOrd, Serialize)]
 pub struct Timestamp(pub(crate) DateTime<Utc>);
 
 impl From<DateTime<Utc>> for Timestamp {
@@ -166,7 +179,18 @@ impl From<DateTime<Utc>> for Timestamp {
     }
 }
 
+impl FromStr for Timestamp {
+    type Err = ApiError;
+
+    fn from_str(s: &str) -> std::result::Result<Self, Self::Err> {
+        Ok(Self(s.parse::<DateTime<Utc>>()?))
+    }
+}
+
 impl Timestamp {
+    pub fn now() -> Self {
+        Self(Utc::now())
+    }
     pub fn from_timestamp(timestamp: i64) -> Option<Self> {
         DateTime::<Utc>::from_timestamp(timestamp, 0).map(Self)
     }
@@ -241,7 +265,7 @@ pub enum QueueStrategy {
     SpacedRepetitionV1 = 1,
 }
 
-#[derive(Clone, Serialize)]
+#[derive(Clone, Serialize, sqlx::FromRow)]
 #[serde(rename_all = "camelCase")]
 pub struct Queue {
     pub id: String,

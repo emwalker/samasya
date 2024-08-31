@@ -1,4 +1,4 @@
-import { Approach, WideApproach } from '@/types'
+import { ApproachType, WideApproach } from '@/types'
 
 export type GetResponse = {
   data: WideApproach | null
@@ -15,7 +15,7 @@ async function get(id: string): Promise<GetResponse> {
 }
 
 export type GetListResponse = {
-  data: Approach[]
+  data: ApproachType[]
 }
 
 async function getList(problemId: string): Promise<GetListResponse> {

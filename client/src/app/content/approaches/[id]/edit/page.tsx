@@ -8,7 +8,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import SkillMultiSelect from '@/components/SkillMultiSelect'
 import PrereqApproachList from '@/components/PrereqApproachList'
-import { Skill, WideApproach, Approach } from '@/types'
+import { SkillType, WideApproach, ApproachType } from '@/types'
 import approachService from '@/services/approaches'
 import styles from './style.module.css'
 
@@ -16,8 +16,8 @@ type SaveButtonProps = {
   disabled: boolean,
   id: string,
   name: string,
-  prereqApproaches: Approach[],
-  prereqSkills: Skill[],
+  prereqApproaches: ApproachType[],
+  prereqSkills: SkillType[],
   problemId: string,
 }
 

@@ -1,4 +1,4 @@
-export type Skill = {
+export type SkillType = {
   id: string,
   summary: string,
   description: string | null,
@@ -21,16 +21,16 @@ export interface ProblemSlice {
   summary: string,
 }
 
-export interface Approach {
+export interface ApproachType {
   default: boolean,
   id: string,
   name: string,
   summary: string,
 }
 
-export type WideApproach = Approach & {
-  prereqApproaches: Approach[],
-  prereqSkills: Skill[],
+export type WideApproach = ApproachType & {
+  prereqApproaches: ApproachType[],
+  prereqSkills: SkillType[],
   problem: ProblemType,
 }
 

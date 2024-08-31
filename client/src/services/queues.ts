@@ -53,7 +53,7 @@ export type UpdateResponse = {
   errors: ApiError[],
 };
 
-async function post(userId: string, update: UpdatePayload): Promise<UpdateResponse> {
+async function add(userId: string, update: UpdatePayload): Promise<UpdateResponse> {
   const res = await fetch(`http://localhost:8000/api/v1/users/${userId}/queues`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -62,4 +62,4 @@ async function post(userId: string, update: UpdatePayload): Promise<UpdateRespon
   return res.json()
 }
 
-export default { get, getList, post }
+export default { get, getList, add }

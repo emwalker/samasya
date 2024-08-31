@@ -1,44 +1,20 @@
-import React from 'react'
-import { Button } from '@mantine/core'
-import problemService from '@/services/problems'
-import { WideApproach } from '@/types'
+'use client'
+
+import React, { useEffect, useState } from 'react'
+import {
+  Box, Button, Card, LoadingOverlay,
+} from '@mantine/core'
+import problemService, { FetchResponse } from '@/services/problems'
+import { SkillType } from '@/types'
 import ListOr from '@/components/ListOr'
-import styles from './styles.module.css'
+import TitleAndButton from '@/components/TitleAndButton'
+import MarkdownPreview from '@/components/MarkdownPreview'
 
-function ApproachItem({ approach }: { approach: WideApproach }) {
+function PrerequisiteSkill({ id, summary }: SkillType) {
   return (
-    <div className={styles.approach}>
-      <div>
-        Name:
-        {' '}
-        {approach.name}
-      </div>
-
-      <ListOr title="Prerequisite skills" fallback="No required skills">
-        {approach.prereqSkills.map((skill) => (
-          <div key={skill.id}>{skill.summary}</div>
-        ))}
-      </ListOr>
-
-      <ListOr title="Prerequisite approaches" fallback="No required approaches">
-        {approach.prereqApproaches.map(({ id, summary, name }) => (
-          <div key={id}>
-            {summary}
-            {' '}
-            (
-            {name}
-            )
-          </div>
-        ))}
-      </ListOr>
-
-      <Button
-        component="a"
-        href={`/content/approaches/${approach.id}/edit`}
-      >
-        Modify
-      </Button>
-    </div>
+    <Card key={id}>
+      {summary}
+    </Card>
   )
 }
 
@@ -46,65 +22,51 @@ type Params = {
   params?: { id: string } | null
 }
 
-export default async function Page(params: Params) {
-  if (params?.params == null) {
-    return null
-  }
+export default function Page(params: Params) {
+  const [isLoading, setIsLoading] = useState(true)
+  const [response, setResponse] = useState<FetchResponse | null>(null)
+  const problemId = params?.params?.id
 
-  const { params: { id } } = params
-  const problem = (await problemService.get(id)).data
-  if (problem == null) {
-    return (
-      <div>
-        Problem not found:
-        {id}
-      </div>
-    )
-  }
+  useEffect(() => {
+    async function fetchData() {
+      if (problemId == null) return
+      const currResponse = await problemService.fetch(problemId)
+      setResponse(currResponse)
+      setIsLoading(false)
+    }
+    fetchData()
+  }, [problemId, setResponse, setIsLoading])
+
+  const problem = response?.data?.problem
+  const prereqSkills = response?.data?.prereqSkills || []
 
   return (
     <main>
-      <div>
-        <h1>
-          Problem
-        </h1>
+      <Box pos="relative">
+        <LoadingOverlay
+          visible={isLoading}
+          zIndex={1000}
+          overlayProps={{ radius: 'sm', blur: 2 }}
+        />
 
-        <p>
-          {problem.summary}
-        </p>
+        {problem && prereqSkills && (
+          <>
+            <TitleAndButton title={problem.summary}>
+              <Button>Edit</Button>
+            </TitleAndButton>
 
-        <p>
-          {problem.questionUrl}
-        </p>
+            <p>
+              {problem.questionUrl}
+            </p>
 
-        <p>
-          {problem.questionText}
-        </p>
+            <MarkdownPreview markdown={problem.questionText || ''} />
 
-        <ListOr title="Approaches" fallback="No approaches">
-          {
-            problem.approaches.map((approach) => (
-              <div><ApproachItem approach={approach} /></div>
-            ))
-          }
-        </ListOr>
-
-        <Button
-          component="a"
-          mr={3}
-          href={`/content/problems/${id}/approaches/new`}
-        >
-          Add an approach
-        </Button>
-
-        <Button
-          component="a"
-          mr={3}
-          href={`/content/problems/${id}/edit`}
-        >
-          Update
-        </Button>
-      </div>
+            <ListOr title="Prequisite skills" fallback="No skills">
+              {prereqSkills.map(PrerequisiteSkill)}
+            </ListOr>
+          </>
+        )}
+      </Box>
     </main>
   )
 }

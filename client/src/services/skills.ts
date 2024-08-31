@@ -1,10 +1,10 @@
-import { ApiError, ProblemType, Skill } from '@/types'
+import { ApiError, ProblemType, SkillType } from '@/types'
 
 export type ListResponse = {
-  data: Skill[]
+  data: SkillType[]
 }
 
-async function getList(
+async function list(
   args?: { searchString: string | null } | undefined,
 ): Promise<ListResponse> {
   const url = args?.searchString
@@ -28,16 +28,16 @@ export type PrereqProblemType = {
 }
 
 type WideSkill = {
-  skill: Skill,
+  skill: SkillType,
   prereqProblems: PrereqProblemType[],
 }
 
-export type GetResponse = {
+export type FetchResponse = {
   data: WideSkill | null,
   errors: ApiError[]
 }
 
-async function get(id: string): Promise<GetResponse> {
+async function fetchSkill(id: string): Promise<FetchResponse> {
   const url = `http://localhost:8000/api/v1/skills/${id}`
   const res = await fetch(url, { cache: 'no-store' })
   return res.json()
@@ -111,5 +111,5 @@ async function availablePrereqProblems(
 }
 
 export default {
-  get, getList, add, addProblem, removeProblem, update, availablePrereqProblems,
+  fetch: fetchSkill, list, add, addProblem, removeProblem, update, availablePrereqProblems,
 }

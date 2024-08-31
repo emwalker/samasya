@@ -1,21 +1,22 @@
-import { ProblemType, WideProblem, ApiError } from '@/types'
+import {
+  ProblemType, ApiError, SkillType, ApproachType,
+} from '@/types'
 
-export type GetResponse = {
-  data: WideProblem | null,
+export type FetchResponse = {
+  data: {
+    problem: ProblemType,
+    approaches: ApproachType[],
+    prereqSkills: SkillType[],
+  } | null,
   errors: ApiError[]
 }
 
-async function get(id: string): Promise<GetResponse> {
-  const res = await fetch(`http://localhost:8000/api/v1/problems/${id}`, { cache: 'no-store' })
-
-  if (!res.ok) {
-    return Promise.resolve({
-      data: null,
-      errors: [{ level: 'error', message: 'Something happened' }],
-    })
-  }
-
-  return res.json()
+async function fetchProblem(id: string): Promise<FetchResponse> {
+  const response = await fetch(
+    `http://localhost:8000/api/v1/problems/${id}`,
+    { cache: 'no-store' },
+  )
+  return response.json()
 }
 
 export type ListResponse = {
@@ -43,22 +44,22 @@ export type UpdatePayload = {
   summary: string,
 }
 
-async function update(id: string, updatePayload: UpdatePayload) {
+async function update(id: string, payload: UpdatePayload) {
   return fetch(`http://localhost:8000/api/v1/problems/${id}`, {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(updatePayload),
+    body: JSON.stringify(payload),
   })
 }
 
-async function add(updatePayload: UpdatePayload) {
+async function add(payload: UpdatePayload) {
   return fetch('http://localhost:8000/api/v1/problems', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(updatePayload),
+    body: JSON.stringify(payload),
   })
 }
 
 export default {
-  get, list, update, add,
+  fetch: fetchProblem, list, update, add,
 }

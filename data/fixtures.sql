@@ -17,6 +17,9 @@ INSERT INTO _sqlx_migrations VALUES(20230603202029,'add-problem-queues','2023-06
 INSERT INTO _sqlx_migrations VALUES(20240825040820,'add-prereq-problems','2024-08-25 05:02:16',1,X'887541b86aba3b814e5914981a2aa2673acb171fe4838257fd26cbb6253381b68d4244578cddab566069ebd2e6fbbae6',7278491);
 INSERT INTO _sqlx_migrations VALUES(20240825143407,'update-prereq-problems','2024-08-25 14:36:01',1,X'27349cf55c66b925ab8714d4faf8fa93b0f7eb4ea3094e6cbe628bc55fd3c49fcbcd7dc47b4858d2e8c6cb94aab86744',2928689);
 INSERT INTO _sqlx_migrations VALUES(20240825201852,'update-skills','2024-08-25 20:20:53',1,X'471f4ccdec2a0fd04237eb8db2bb09041c41587b93aaf541258fe12a8e22966a18c46c99d246a12c34faae09c4b8c422',2243158);
+INSERT INTO _sqlx_migrations VALUES(20240831230748,'add-problem-to-prereq-skills','2024-08-31 23:17:24',1,X'aea3f763c9fddbd10bf80c0f484cfeafea2e13f78d0912d3d66fd6758b1d35caaace8860a2e7671f90f8f86a877ce4e9',5340473);
+INSERT INTO _sqlx_migrations VALUES(20240901002032,'add-approach-to-answers','2024-09-01 00:28:53',1,X'5673e49c2400d70d60eee7e43a748bb7e532f44dd7e79639d4361e1b2fdc3b30f077044f09b325b0c1e677f4087bfc64',3550375);
+INSERT INTO _sqlx_migrations VALUES(20240901003429,'add-approach-to-queues','2024-09-01 00:38:06',1,X'1f7e549fa9eba758295c14e9fbf74c3e2e132ef4e9054783977f623576cf6eed752c1e0c86f15545487b84d9edc31894',4970749);
 CREATE TABLE skills (id primary key, summary text not null, description text);
 INSERT INTO skills VALUES('c21e18ae-951a-4d8f-984a-cff1f03a8906','Computing the length of the opposite side of a right triangle from the length of the adjacent side and the angle between the adjacent side and the hypotenuse',NULL);
 INSERT INTO skills VALUES('6253e17f-b44e-4d80-ac2a-db4474ca6cc8','Measuring angles using degrees',NULL);
@@ -98,29 +101,6 @@ INSERT INTO approaches VALUES('a410aad8-5d4f-477d-b90d-74b1fdc3a6bd','bca284ca-3
 INSERT INTO approaches VALUES('d8e6714e-2788-4e53-8a55-9a7acb4b470b','ef615296-bd68-4660-8ed8-f1056ce7c2bd','Subdividing by thirds',1);
 INSERT INTO approaches VALUES('6e4c7350-4d67-4293-94c3-d5431b019537','7de3e676-d23a-422c-8e9a-499398fb487e','Another approach',1);
 INSERT INTO approaches VALUES('a1d0bcbe-f9bb-47cc-995c-cc069ab1f18a','7de3e676-d23a-422c-8e9a-499398fb487e','A third way to do this problem',1);
-CREATE TABLE prereq_skills (
-  approach_id text not null,
-  prereq_skill_id text not null,
-  foreign key(approach_id) references approaches(id),
-  foreign key(prereq_skill_id) references skills(id)
-);
-INSERT INTO prereq_skills VALUES('e785d88d-e55e-4901-88d5-ee0841ce7e13','c21e18ae-951a-4d8f-984a-cff1f03a8906');
-INSERT INTO prereq_skills VALUES('e785d88d-e55e-4901-88d5-ee0841ce7e13','6253e17f-b44e-4d80-ac2a-db4474ca6cc8');
-INSERT INTO prereq_skills VALUES('566ee9de-f11e-4aac-9850-ee94aa1abea6','d2d5b2bf-1c69-4879-a3f5-75ae65c484b7');
-INSERT INTO prereq_skills VALUES('566ee9de-f11e-4aac-9850-ee94aa1abea6','bb08e32d-5db5-49fc-97d1-9027bb2b6a29');
-INSERT INTO prereq_skills VALUES('a410aad8-5d4f-477d-b90d-74b1fdc3a6bd','54209a1a-ae03-4ff5-aa67-072873577406');
-INSERT INTO prereq_skills VALUES('a410aad8-5d4f-477d-b90d-74b1fdc3a6bd','5ec87192-2893-4981-9b1d-7456ae92af93');
-INSERT INTO prereq_skills VALUES('fd6e4065-74ce-4b48-bd8f-dd8634fb5b35','8c95f096-91aa-4d9e-a612-401d325becd4');
-INSERT INTO prereq_skills VALUES('fd6e4065-74ce-4b48-bd8f-dd8634fb5b35','5ec87192-2893-4981-9b1d-7456ae92af93');
-INSERT INTO prereq_skills VALUES('b38930a3-9bdf-45d7-89a3-861d1b727f1c','a1e29ba4-e514-4968-94e0-4a4f73c75701');
-INSERT INTO prereq_skills VALUES('b38930a3-9bdf-45d7-89a3-861d1b727f1c','5ec87192-2893-4981-9b1d-7456ae92af93');
-INSERT INTO prereq_skills VALUES('6e4c7350-4d67-4293-94c3-d5431b019537','6253e17f-b44e-4d80-ac2a-db4474ca6cc8');
-INSERT INTO prereq_skills VALUES('a1d0bcbe-f9bb-47cc-995c-cc069ab1f18a','c21e18ae-951a-4d8f-984a-cff1f03a8906');
-INSERT INTO prereq_skills VALUES('d8e6714e-2788-4e53-8a55-9a7acb4b470b','6253e17f-b44e-4d80-ac2a-db4474ca6cc8');
-INSERT INTO prereq_skills VALUES('d8e6714e-2788-4e53-8a55-9a7acb4b470b','dc5b0bef-4472-43d9-9252-6de96b71b68c');
-INSERT INTO prereq_skills VALUES('c1f78392-d7a2-46b0-a40a-7292d3b8e4ea','752c7a54-d89c-4298-9203-ea73a0866790');
-INSERT INTO prereq_skills VALUES('c1f78392-d7a2-46b0-a40a-7292d3b8e4ea','bb08e32d-5db5-49fc-97d1-9027bb2b6a29');
-INSERT INTO prereq_skills VALUES('eed2ab67-c579-4997-838e-599f9f69a025','909052bb-8d7d-4b90-86f5-ccc443140a18');
 CREATE TABLE prereq_approaches (
   approach_id text not null,
   prereq_approach_id text not null,
@@ -134,31 +114,6 @@ CREATE TABLE users (
   updated_at timestamp not null default current_timestamp
 );
 INSERT INTO users VALUES('2023-06-03 21:01:18','04e229c9-795e-4f3a-a79e-ec18b5c28b99','2023-06-03 21:01:18');
-CREATE TABLE queues (
-  created_at timestamp not null,
-  id text primary key not null,
-  strategy integer not null default 1,
-  summary text not null,
-  target_problem_id text not null,
-  updated_at timestamp not null default current_timestamp,
-  user_id text not null,
-  foreign key(target_problem_id) references problems(id),
-  foreign key(user_id) references users(id)
-);
-INSERT INTO queues VALUES('2024-08-25T23:15:44.653485317+00:00','47b3fd8f-b0b2-45b3-af4b-368eb3ce140e',1,'Rust traits and function invocations','a500f40e-3448-4fee-8de7-06979fd57c35','2024-08-25T23:15:44.653485317+00:00','04e229c9-795e-4f3a-a79e-ec18b5c28b99');
-CREATE TABLE answers (
-  choice_id text not null,
-  created_at timestamp not null,
-  id text primary key not null,
-  problem_id text not null,
-  queue_id text not null,
-  state integer not null,
-  updated_at timestamp not null default current_timestamp,
-  user_id text not null,
-  foreign key(problem_id) references problems(id),
-  foreign key(queue_id) references queues(id),
-  foreign key(user_id) references users(id)
-);
 CREATE TABLE prereq_problems (
   skill_id text not null,
   prereq_problem_id text not null,
@@ -201,6 +156,59 @@ INSERT INTO prereq_problems VALUES('c7299bc0-8604-4469-bec7-c449ba1bf060','359a5
 INSERT INTO prereq_problems VALUES('c7299bc0-8604-4469-bec7-c449ba1bf060','f4e744ac-fc91-4527-bf41-0cb8077a1b5d',NULL,'2024-08-30 20:16:02');
 INSERT INTO prereq_problems VALUES('c7299bc0-8604-4469-bec7-c449ba1bf060','eab3c420-aece-4a84-abdd-a398a438242c',NULL,'2024-08-30 20:16:07');
 INSERT INTO prereq_problems VALUES('c7299bc0-8604-4469-bec7-c449ba1bf060','ad6f42a7-45c2-4029-806f-5231cb3e9abb',NULL,'2024-08-30 20:16:14');
+CREATE TABLE prereq_skills (
+  problem_id text not null,
+  approach_id text,
+  prereq_skill_id text not null,
+  foreign key(problem_id) references problems(id),
+  foreign key(approach_id) references approaches(id),
+  foreign key(prereq_skill_id) references skills(id)
+);
+INSERT INTO prereq_skills VALUES('5f10b96b-7032-481b-84de-fd1d37a33cde','e785d88d-e55e-4901-88d5-ee0841ce7e13','c21e18ae-951a-4d8f-984a-cff1f03a8906');
+INSERT INTO prereq_skills VALUES('5f10b96b-7032-481b-84de-fd1d37a33cde','e785d88d-e55e-4901-88d5-ee0841ce7e13','6253e17f-b44e-4d80-ac2a-db4474ca6cc8');
+INSERT INTO prereq_skills VALUES('7de3e676-d23a-422c-8e9a-499398fb487e','566ee9de-f11e-4aac-9850-ee94aa1abea6','d2d5b2bf-1c69-4879-a3f5-75ae65c484b7');
+INSERT INTO prereq_skills VALUES('7de3e676-d23a-422c-8e9a-499398fb487e','566ee9de-f11e-4aac-9850-ee94aa1abea6','bb08e32d-5db5-49fc-97d1-9027bb2b6a29');
+INSERT INTO prereq_skills VALUES('bca284ca-3064-4bef-805c-c11a55a0ad93','a410aad8-5d4f-477d-b90d-74b1fdc3a6bd','54209a1a-ae03-4ff5-aa67-072873577406');
+INSERT INTO prereq_skills VALUES('bca284ca-3064-4bef-805c-c11a55a0ad93','a410aad8-5d4f-477d-b90d-74b1fdc3a6bd','5ec87192-2893-4981-9b1d-7456ae92af93');
+INSERT INTO prereq_skills VALUES('ad306d13-9ef4-4f7e-94f8-7660570edd44','fd6e4065-74ce-4b48-bd8f-dd8634fb5b35','8c95f096-91aa-4d9e-a612-401d325becd4');
+INSERT INTO prereq_skills VALUES('ad306d13-9ef4-4f7e-94f8-7660570edd44','fd6e4065-74ce-4b48-bd8f-dd8634fb5b35','5ec87192-2893-4981-9b1d-7456ae92af93');
+INSERT INTO prereq_skills VALUES('b0120309-5a11-4015-8d32-583dbf73ac7e','b38930a3-9bdf-45d7-89a3-861d1b727f1c','a1e29ba4-e514-4968-94e0-4a4f73c75701');
+INSERT INTO prereq_skills VALUES('b0120309-5a11-4015-8d32-583dbf73ac7e','b38930a3-9bdf-45d7-89a3-861d1b727f1c','5ec87192-2893-4981-9b1d-7456ae92af93');
+INSERT INTO prereq_skills VALUES('7de3e676-d23a-422c-8e9a-499398fb487e','6e4c7350-4d67-4293-94c3-d5431b019537','6253e17f-b44e-4d80-ac2a-db4474ca6cc8');
+INSERT INTO prereq_skills VALUES('7de3e676-d23a-422c-8e9a-499398fb487e','a1d0bcbe-f9bb-47cc-995c-cc069ab1f18a','c21e18ae-951a-4d8f-984a-cff1f03a8906');
+INSERT INTO prereq_skills VALUES('ef615296-bd68-4660-8ed8-f1056ce7c2bd','d8e6714e-2788-4e53-8a55-9a7acb4b470b','6253e17f-b44e-4d80-ac2a-db4474ca6cc8');
+INSERT INTO prereq_skills VALUES('ef615296-bd68-4660-8ed8-f1056ce7c2bd','d8e6714e-2788-4e53-8a55-9a7acb4b470b','dc5b0bef-4472-43d9-9252-6de96b71b68c');
+INSERT INTO prereq_skills VALUES('8c91f5b7-9cf8-4ce2-8626-6756b0d85d52','c1f78392-d7a2-46b0-a40a-7292d3b8e4ea','752c7a54-d89c-4298-9203-ea73a0866790');
+INSERT INTO prereq_skills VALUES('8c91f5b7-9cf8-4ce2-8626-6756b0d85d52','c1f78392-d7a2-46b0-a40a-7292d3b8e4ea','bb08e32d-5db5-49fc-97d1-9027bb2b6a29');
+INSERT INTO prereq_skills VALUES('2e959eb0-fb53-4684-bc7c-29ccb9d3e3a1','eed2ab67-c579-4997-838e-599f9f69a025','909052bb-8d7d-4b90-86f5-ccc443140a18');
+CREATE TABLE answers (
+  id text primary key not null,
+  added_at timestamp not null default current_timestamp,
+  answered_at timestamp,
+  problem_id text not null,
+  approach_id text,
+  queue_id text not null,
+  state string check(state in ('unseen', 'correct', 'incorrect', 'unsure')) not null,
+  user_id text not null,
+  foreign key(queue_id) references queues(id),
+  foreign key(user_id) references users(id),
+  foreign key(problem_id) references problems(id),
+  foreign key(approach_id) references approaches(id)
+);
+CREATE TABLE queues (
+  created_at timestamp not null,
+  id text primary key not null,
+  strategy integer not null default 1,
+  summary text not null,
+  target_problem_id text not null,
+  updated_at timestamp not null default current_timestamp,
+  user_id text not null,
+  target_approach_id text,
+  foreign key(target_problem_id) references problems(id),
+  foreign key(target_approach_id) references approaches(id),
+  foreign key(user_id) references users(id)
+);
+INSERT INTO queues VALUES('2024-08-25T23:15:44.653485317+00:00','47b3fd8f-b0b2-45b3-af4b-368eb3ce140e',1,'Rust traits and function invocations','a500f40e-3448-4fee-8de7-06979fd57c35','2024-08-25T23:15:44.653485317+00:00','04e229c9-795e-4f3a-a79e-ec18b5c28b99',NULL);
 CREATE UNIQUE INDEX prereq_problems_uniq_idx on prereq_problems
   (skill_id, prereq_problem_id, ifnull(prereq_approach_id, 0));
 COMMIT;

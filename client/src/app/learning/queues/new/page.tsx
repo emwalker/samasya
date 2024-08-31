@@ -22,7 +22,7 @@ function AddButton({ disabled, summary, targetProblemId }: AddButtonProps) {
   const router = useRouter()
 
   const onClick = useCallback(async () => {
-    const response = await queueService.post(
+    const response = await queueService.add(
       contants.placeholderUserId,
       { summary, targetProblemId, strategy: 'spacedRepetitionV1' },
     )

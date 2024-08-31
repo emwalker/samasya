@@ -1,6 +1,6 @@
 use crate::{
-    types::{ApiError, Problem, Result, WideProblem},
-    ApiContext,
+    types::{ApiError, ApiErrorResponse, Approach, Problem, Result, Skill},
+    ApiContext, ApiJson,
 };
 use axum::{
     extract::{Path, Query},
@@ -11,16 +11,46 @@ use serde_json::json;
 use tracing::info;
 
 #[derive(Serialize)]
+struct ProblemData {
+    problem: Problem,
+    approaches: Vec<Approach>,
+    prereq_skills: Vec<Skill>,
+}
+
+#[derive(Serialize)]
 pub struct FetchResponse {
-    data: WideProblem,
+    data: Option<ProblemData>,
+    errors: Vec<ApiErrorResponse>,
 }
 
 pub async fn fetch(
     ctx: Extension<ApiContext>,
-    Path(id): Path<String>,
-) -> Result<Json<FetchResponse>> {
-    let data = crate::sqlx::problems::fetch_wide(&ctx.db, &id).await?;
-    Ok(Json(FetchResponse { data }))
+    Path(problem_id): Path<String>,
+) -> Result<ApiJson<FetchResponse>> {
+    let problem = sqlx::query_as::<_, Problem>("select * from problems where id = ?")
+        .bind(&problem_id)
+        .fetch_one(&ctx.db)
+        .await?;
+
+    let approaches = sqlx::query_as::<_, Approach>("select * from approaches where problem_id = ?")
+        .bind(&problem_id)
+        .fetch_all(&ctx.db)
+        .await?;
+
+    let prereq_skills =
+        sqlx::query_as::<_, Skill>("select * from prereq_skills where problem_id = ?")
+            .bind(&problem_id)
+            .fetch_all(&ctx.db)
+            .await?;
+
+    Ok(ApiJson(FetchResponse {
+        data: Some(ProblemData {
+            problem,
+            approaches,
+            prereq_skills,
+        }),
+        errors: vec![],
+    }))
 }
 
 #[derive(Debug, Default, Deserialize)]
