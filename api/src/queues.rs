@@ -1,7 +1,9 @@
+mod chooser;
+
 use crate::{
     sqlx::queues::QueueResult,
-    types::{ApiErrorResponse, Queue, QueueStrategy},
-    ApiContext, ApiJson, Result,
+    types::{ApiErrorResponse, Queue, QueueStrategy, Result},
+    ApiContext, ApiJson,
 };
 use axum::{extract::Path, Extension, Json};
 use serde::{Deserialize, Serialize};

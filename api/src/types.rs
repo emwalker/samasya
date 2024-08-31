@@ -1,4 +1,5 @@
 use axum::{extract::rejection::JsonRejection, response::IntoResponse, Json};
+use chrono::{DateTime, TimeDelta, Utc};
 use hyper::StatusCode;
 use serde::{ser::SerializeMap, Deserialize, Serialize};
 use sqlx::migrate::MigrateError;
@@ -15,6 +16,9 @@ pub enum ApiError {
 
     #[error("failed to connect to database: {0}")]
     Database(String),
+
+    #[error("there was a problem: {0}")]
+    General(String),
 
     #[error("failed to prepare database: {0}")]
     MigrateError(#[from] MigrateError),
@@ -94,7 +98,7 @@ impl IntoResponse for ApiError {
                     (
                         StatusCode::INTERNAL_SERVER_ERROR,
                         ApiErrorResponse {
-                            message: format!("{}", err),
+                            message: err.to_string(),
                             level: ApiErrorLevel::Error,
                         },
                     )
@@ -104,7 +108,15 @@ impl IntoResponse for ApiError {
             Self::MigrateError(err) => (
                 StatusCode::INTERNAL_SERVER_ERROR,
                 ApiErrorResponse {
-                    message: format!("{}", err),
+                    message: err.to_string(),
+                    level: ApiErrorLevel::Error,
+                },
+            ),
+
+            Self::General(err) => (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                ApiErrorResponse {
+                    message: err.to_string(),
                     level: ApiErrorLevel::Error,
                 },
             ),
@@ -143,7 +155,26 @@ impl IntoResponse for ApiError {
     }
 }
 
-pub type Result<T, E = ApiError> = std::result::Result<T, E>;
+pub type Result<T> = std::result::Result<T, ApiError>;
+
+#[derive(Debug, Eq, Ord, PartialEq, PartialOrd)]
+pub struct Timestamp(pub(crate) DateTime<Utc>);
+
+impl From<DateTime<Utc>> for Timestamp {
+    fn from(value: DateTime<Utc>) -> Self {
+        Self(value)
+    }
+}
+
+impl Timestamp {
+    pub fn from_timestamp(timestamp: i64) -> Option<Self> {
+        DateTime::<Utc>::from_timestamp(timestamp, 0).map(Self)
+    }
+
+    pub fn checked_add_signed(&self, delta: TimeDelta) -> Option<Self> {
+        self.0.checked_add_signed(delta).map(Self)
+    }
+}
 
 #[derive(Clone, Serialize, sqlx::FromRow)]
 pub struct Skill {
