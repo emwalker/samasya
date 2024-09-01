@@ -8,19 +8,6 @@ CREATE TABLE _sqlx_migrations (
     checksum BLOB NOT NULL,
     execution_time BIGINT NOT NULL
 );
-INSERT INTO _sqlx_migrations VALUES(20230513205412,'init','2023-05-14 16:42:33',1,X'e9e4caf85fe8c0e9a2e04d4afae1cab14e5bbe5d974da22874acc02706296a1a00ff1815807e528397e004858bb0de24',4824622);
-INSERT INTO _sqlx_migrations VALUES(20230514150322,'add-problems','2023-05-14 16:42:33',1,X'5c3cf5c925a45f24361bc57347be2ec1fcb74eafb15155df0b57ee09a978223049ef15c9fab8a9dedd2b84619dc9100f',7929907);
-INSERT INTO _sqlx_migrations VALUES(20230526193511,'add-problem-skills','2023-05-26 19:57:40',1,X'0b735430e682f77735bcfed42b9763d18094a14c39f5e1852c4a823913f2980275cf05102d6b5778d190f3d5fce18256',8452850);
-INSERT INTO _sqlx_migrations VALUES(20230528185942,'add-prerequisite-problems','2023-05-28 19:05:15',1,X'ec80d1a6265fb0d98ebf4aa171cb7b004f6cb8d373a0127cb3fdd9b31f5f83f6b776599a7a067b2f2145c5af7fe788dc',2086173);
-INSERT INTO _sqlx_migrations VALUES(20230529002438,'add-problem-approaches','2023-05-29 17:18:40',1,X'9004402cea51f895e2c4072dcb7a3b95703b17c5868054ec7065053a30f05626d2574e7e352a2299f260edd4cad6a3a6',3312604);
-INSERT INTO _sqlx_migrations VALUES(20230603202029,'add-problem-queues','2023-06-03 21:01:18',1,X'2e81ecb0cfa4a49815fd977daa7f05688d91e35fc371c83b27abb7c1b1cd7897a0e0be5789c8aecd42aaa7719ea084f2',2986046);
-INSERT INTO _sqlx_migrations VALUES(20240825040820,'add-prereq-problems','2024-08-25 05:02:16',1,X'887541b86aba3b814e5914981a2aa2673acb171fe4838257fd26cbb6253381b68d4244578cddab566069ebd2e6fbbae6',7278491);
-INSERT INTO _sqlx_migrations VALUES(20240825143407,'update-prereq-problems','2024-08-25 14:36:01',1,X'27349cf55c66b925ab8714d4faf8fa93b0f7eb4ea3094e6cbe628bc55fd3c49fcbcd7dc47b4858d2e8c6cb94aab86744',2928689);
-INSERT INTO _sqlx_migrations VALUES(20240825201852,'update-skills','2024-08-25 20:20:53',1,X'471f4ccdec2a0fd04237eb8db2bb09041c41587b93aaf541258fe12a8e22966a18c46c99d246a12c34faae09c4b8c422',2243158);
-INSERT INTO _sqlx_migrations VALUES(20240831230748,'add-problem-to-prereq-skills','2024-08-31 23:17:24',1,X'aea3f763c9fddbd10bf80c0f484cfeafea2e13f78d0912d3d66fd6758b1d35caaace8860a2e7671f90f8f86a877ce4e9',5340473);
-INSERT INTO _sqlx_migrations VALUES(20240901002032,'add-approach-to-answers','2024-09-01 00:28:53',1,X'5673e49c2400d70d60eee7e43a748bb7e532f44dd7e79639d4361e1b2fdc3b30f077044f09b325b0c1e677f4087bfc64',3550375);
-INSERT INTO _sqlx_migrations VALUES(20240901003429,'add-approach-to-queues','2024-09-01 00:38:06',1,X'1f7e549fa9eba758295c14e9fbf74c3e2e132ef4e9054783977f623576cf6eed752c1e0c86f15545487b84d9edc31894',4970749);
-INSERT INTO _sqlx_migrations VALUES(20240901043527,'add-added-at-to-prereq-skills','2024-09-01 04:37:52',1,X'5dd811ab5a0251ca7c8c6d1a6b40aafa6ef93b7bf52035a262a626e74876d05362da3e1bbf5c2c3fb40a2bd899a1af00',3039517);
 CREATE TABLE skills (id primary key, summary text not null, description text);
 INSERT INTO skills VALUES('c21e18ae-951a-4d8f-984a-cff1f03a8906','Computing the length of the opposite side of a right triangle from the length of the adjacent side and the angle between the adjacent side and the hypotenuse',NULL);
 INSERT INTO skills VALUES('6253e17f-b44e-4d80-ac2a-db4474ca6cc8','Measuring angles using degrees',NULL);
