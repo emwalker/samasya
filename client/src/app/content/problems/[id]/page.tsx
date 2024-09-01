@@ -1,25 +1,22 @@
 'use client'
 
-import React, { useEffect, useState } from 'react'
+import React, { useCallback, useEffect, useState } from 'react'
 import {
-  Box, Button, Card, LoadingOverlay,
+  Box, Button, LoadingOverlay,
 } from '@mantine/core'
-import problemService, { FetchResponse } from '@/services/problems'
-import { SkillType } from '@/types'
+import problemService, { FetchResponse, PrereqSkillType } from '@/services/problems'
 import ListOr from '@/components/ListOr'
 import TitleAndButton from '@/components/TitleAndButton'
 import MarkdownPreview from '@/components/MarkdownPreview'
-
-function PrerequisiteSkill({ id, summary }: SkillType) {
-  return (
-    <Card key={id}>
-      {summary}
-    </Card>
-  )
-}
+import PrereqSkills from '@/components/PrereqSkills'
+import PrereqSkill from '@/components/PrereqSkill'
 
 type Params = {
   params?: { id: string } | null
+}
+
+function makeKey({ problemId, approachId, prereqSkillId }: PrereqSkillType) {
+  return `${problemId}:${approachId}:${prereqSkillId}`
 }
 
 export default function Page(params: Params) {
@@ -37,6 +34,14 @@ export default function Page(params: Params) {
     fetchData()
   }, [problemId, setResponse, setIsLoading])
 
+  const refreshParent = useCallback(async () => {
+    if (problemId == null) return
+    // eslint-disable-next-line no-console
+    console.log('refetching page ...')
+    const currResponse = await problemService.fetch(problemId)
+    setResponse(currResponse)
+  }, [problemId, setResponse])
+
   const problem = response?.data?.problem
   const prereqSkills = response?.data?.prereqSkills || []
 
@@ -49,7 +54,7 @@ export default function Page(params: Params) {
           overlayProps={{ radius: 'sm', blur: 2 }}
         />
 
-        {problem && prereqSkills && (
+        {problemId && problem && prereqSkills && (
           <>
             <TitleAndButton title={problem.summary}>
               <Button>Edit</Button>
@@ -61,8 +66,16 @@ export default function Page(params: Params) {
 
             <MarkdownPreview markdown={problem.questionText || ''} />
 
-            <ListOr title="Prequisite skills" fallback="No skills">
-              {prereqSkills.map(PrerequisiteSkill)}
+            <PrereqSkills problemId={problemId} refreshParent={refreshParent} />
+
+            <ListOr title="Skills that must be mastered" fallback="No skills">
+              {prereqSkills.map((skill) => (
+                <PrereqSkill
+                  key={makeKey(skill)}
+                  prereqSkill={skill}
+                  refreshParent={refreshParent}
+                />
+              ))}
             </ListOr>
           </>
         )}

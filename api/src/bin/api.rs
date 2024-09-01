@@ -3,7 +3,11 @@ use axum::{
     routing::{get, post, put},
     Router,
 };
-use samasya::{approaches, problems, queues, skills, types::Result, ApiContext, ApiJson, Config};
+use samasya::{
+    approaches, problems, queues, skills,
+    types::{ApiErrorLevel, ApiErrorResponse, Result},
+    ApiContext, ApiJson, Config,
+};
 use serde::Serialize;
 use sqlx::sqlite::SqlitePoolOptions;
 use std::sync::Arc;
@@ -22,6 +26,22 @@ async fn root() -> ApiJson<RootResponse> {
         status: "up".into(),
         version: "v0.0.1".into(),
         message: "Welcome to Samasya".into(),
+    })
+}
+
+#[derive(Serialize)]
+struct NotFoundResponse {
+    data: Option<String>,
+    errors: Vec<ApiErrorResponse>,
+}
+
+async fn handle_404() -> ApiJson<NotFoundResponse> {
+    ApiJson(NotFoundResponse {
+        data: None,
+        errors: vec![ApiErrorResponse {
+            level: ApiErrorLevel::Warn,
+            message: "No such endpoint".into(),
+        }],
     })
 }
 
@@ -53,6 +73,14 @@ async fn main() -> Result<()> {
         .route("/api/v1/problems/:id", get(problems::fetch))
         .route("/api/v1/problems/:id", put(problems::update))
         .route("/api/v1/problems/:id/approaches", get(approaches::list))
+        .route(
+            "/api/v1/problems/:id/prereqs/add-skill",
+            post(problems::prereqs::add_skill),
+        )
+        .route(
+            "/api/v1/problems/:id/prereqs/remove-skill",
+            post(problems::prereqs::remove_skill),
+        )
         .route("/api/v1/queues/:id", get(queues::fetch))
         .route("/api/v1/queues/:id/next-problem", get(queues::next_problem))
         .route("/api/v1/skills", get(skills::list))
@@ -73,6 +101,7 @@ async fn main() -> Result<()> {
             "/api/v1/skills/:id/prereqs/remove-problem",
             post(skills::prereqs::remove_problem),
         )
+        .fallback(handle_404)
         .layer(Extension(ctx))
         .layer(CorsLayer::permissive());
 

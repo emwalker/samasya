@@ -39,23 +39,17 @@ pub enum ApiError {
 }
 
 #[derive(Serialize)]
-enum ApiErrorLevel {
-    #[serde(rename = "error")]
+#[serde(rename_all = "camelCase")]
+pub enum ApiErrorLevel {
     Error,
-    #[allow(dead_code)]
-    #[serde(rename = "info")]
     Info,
-    #[allow(dead_code)]
-    #[serde(rename = "warning")]
     Warn,
 }
 
 #[derive(Serialize)]
 pub struct ApiErrorResponse {
-    #[allow(dead_code)]
-    message: String,
-    #[allow(dead_code)]
-    level: ApiErrorLevel,
+    pub message: String,
+    pub level: ApiErrorLevel,
 }
 
 struct ApiResponse<T> {

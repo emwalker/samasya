@@ -209,6 +209,8 @@ CREATE TABLE queues (
   foreign key(user_id) references users(id)
 );
 INSERT INTO queues VALUES('2024-08-25T23:15:44.653485317+00:00','47b3fd8f-b0b2-45b3-af4b-368eb3ce140e',1,'Rust traits and function invocations','a500f40e-3448-4fee-8de7-06979fd57c35','2024-08-25T23:15:44.653485317+00:00','04e229c9-795e-4f3a-a79e-ec18b5c28b99',NULL);
+CREATE UNIQUE INDEX prereq_skills_uniq_idx on prereq_skills
+  (problem_id, ifnull(approach_id, 0), prereq_skill_id);
 CREATE UNIQUE INDEX prereq_problems_uniq_idx on prereq_problems
   (skill_id, prereq_problem_id, ifnull(prereq_approach_id, 0));
 COMMIT;

@@ -1,5 +1,5 @@
 use crate::{
-    types::{ApiError, ApiErrorResponse, Approach, Problem, Result, Skill},
+    types::{ApiError, ApiErrorResponse, Approach, Problem, Result},
     ApiContext, ApiJson,
 };
 use axum::{
@@ -10,11 +10,21 @@ use serde::{Deserialize, Serialize};
 use serde_json::json;
 use tracing::info;
 
+#[derive(Serialize, sqlx::FromRow)]
+#[serde(rename_all = "camelCase")]
+struct PrereqSkill {
+    problem_id: String,
+    approach_id: Option<String>,
+    prereq_skill_id: String,
+    prereq_skill_summary: String,
+}
+
 #[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
 struct ProblemData {
     problem: Problem,
     approaches: Vec<Approach>,
-    prereq_skills: Vec<Skill>,
+    prereq_skills: Vec<PrereqSkill>,
 }
 
 #[derive(Serialize)]
@@ -37,11 +47,19 @@ pub async fn fetch(
         .fetch_all(&ctx.db)
         .await?;
 
-    let prereq_skills =
-        sqlx::query_as::<_, Skill>("select * from prereq_skills where problem_id = ?")
-            .bind(&problem_id)
-            .fetch_all(&ctx.db)
-            .await?;
+    let prereq_skills = sqlx::query_as::<_, PrereqSkill>(
+        "select
+            ps.problem_id,
+            ps.approach_id,
+            ps.prereq_skill_id,
+            s.summary prereq_skill_summary
+         from prereq_skills ps
+         join skills s on ps.prereq_skill_id = s.id
+         where ps.problem_id = ?",
+    )
+    .bind(&problem_id)
+    .fetch_all(&ctx.db)
+    .await?;
 
     Ok(ApiJson(FetchResponse {
         data: Some(ProblemData {
@@ -175,4 +193,100 @@ pub async fn update(
     .await?;
 
     Ok(Json(json!({})))
+}
+
+pub mod prereqs {
+    use super::*;
+
+    #[derive(Serialize)]
+    pub struct PrereqResponse {
+        data: Option<String>,
+        errors: Vec<ApiErrorResponse>,
+    }
+
+    #[derive(Debug, Deserialize)]
+    #[serde(rename_all = "camelCase")]
+    pub struct AddSkillPayload {
+        problem_id: String,
+        approach_id: Option<String>,
+        prereq_skill_id: String,
+    }
+
+    pub async fn add_skill(
+        ctx: Extension<ApiContext>,
+        Path(problem_id): Path<String>,
+        ApiJson(payload): ApiJson<AddSkillPayload>,
+    ) -> Result<ApiJson<PrereqResponse>> {
+        info!("adding prerequisite skill: {payload:?}");
+
+        if problem_id != payload.problem_id {
+            return Err(ApiError::UnprocessableEntity(String::from(
+                "problem id must match the payload",
+            )));
+        }
+
+        sqlx::query(
+            "insert into prereq_skills (problem_id, approach_id, prereq_skill_id)
+                values (?, ?, ?)
+                on conflict do nothing",
+        )
+        .bind(&problem_id)
+        .bind(&payload.approach_id)
+        .bind(&payload.prereq_skill_id)
+        .execute(&ctx.db)
+        .await?;
+
+        Ok(ApiJson(PrereqResponse {
+            data: None,
+            errors: vec![],
+        }))
+    }
+
+    #[derive(Debug, Deserialize)]
+    #[serde(rename_all = "camelCase")]
+    pub struct RemoveSkillPayload {
+        problem_id: String,
+        approach_id: Option<String>,
+        prereq_skill_id: String,
+    }
+
+    pub async fn remove_skill(
+        ctx: Extension<ApiContext>,
+        Path(problem_id): Path<String>,
+        ApiJson(payload): ApiJson<RemoveSkillPayload>,
+    ) -> Result<ApiJson<PrereqResponse>> {
+        info!("adding prerequisite skill: {payload:?}");
+
+        if problem_id != payload.problem_id {
+            return Err(ApiError::UnprocessableEntity(String::from(
+                "problem id must match the payload",
+            )));
+        }
+
+        if let Some(approach_id) = payload.approach_id {
+            sqlx::query(
+                "delete from prereq_skills
+                 where problem_id = ? and approach_id = ? and prereq_skill_id = ?",
+            )
+            .bind(&problem_id)
+            .bind(&approach_id)
+            .bind(&payload.prereq_skill_id)
+            .execute(&ctx.db)
+            .await?;
+        } else {
+            sqlx::query(
+                "delete from prereq_skills
+                     where problem_id = ? and approach_id is null and prereq_skill_id = ?",
+            )
+            .bind(&problem_id)
+            .bind(&payload.prereq_skill_id)
+            .execute(&ctx.db)
+            .await?;
+        }
+
+        Ok(ApiJson(PrereqResponse {
+            data: None,
+            errors: vec![],
+        }))
+    }
 }

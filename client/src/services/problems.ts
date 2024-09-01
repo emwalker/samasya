@@ -1,12 +1,19 @@
 import {
-  ProblemType, ApiError, SkillType, ApproachType,
+  ProblemType, ApiError, ApproachType,
 } from '@/types'
+
+export type PrereqSkillType = {
+  problemId: string,
+  approachId: string | null,
+  prereqSkillId: string,
+  prereqSkillSummary: string,
+}
 
 export type FetchResponse = {
   data: {
     problem: ProblemType,
     approaches: ApproachType[],
-    prereqSkills: SkillType[],
+    prereqSkills: PrereqSkillType[],
   } | null,
   errors: ApiError[]
 }
@@ -60,6 +67,47 @@ async function add(payload: UpdatePayload) {
   })
 }
 
+type PrereqResponse = {
+  data: string | null,
+  errors: ApiError[],
+}
+
+type AddSkillPayload = {
+  problemId: string,
+  approachId: string | null,
+  prereqSkillId: string,
+}
+
+async function addSkill(payload: AddSkillPayload): Promise<PrereqResponse> {
+  const response = await fetch(
+    `http://localhost:8000/api/v1/problems/${payload.problemId}/prereqs/add-skill`,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    },
+  )
+  return response.json()
+}
+
+export type RemoveSkillPayload = {
+  problemId: string,
+  approachId: string | null,
+  prereqSkillId: string,
+}
+
+async function removeSkill(payload: RemoveSkillPayload): Promise<PrereqResponse> {
+  const response = await fetch(
+    `http://localhost:8000/api/v1/problems/${payload.problemId}/prereqs/remove-skill`,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    },
+  )
+  return response.json()
+}
+
 export default {
-  fetch: fetchProblem, list, update, add,
+  fetch: fetchProblem, list, update, add, addSkill, removeSkill,
 }
