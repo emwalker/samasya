@@ -4,7 +4,6 @@ import React, { useCallback, useState } from 'react'
 import {
   Box, Button, ComboboxData, Select,
 } from '@mantine/core'
-import skillService from '@/services/skills'
 import problemService from '@/services/problems'
 import { handleError } from '@/app/handleResponse'
 
@@ -18,11 +17,13 @@ export default function PrereqSkills({ problemId, refreshParent }: Props) {
   const [selectedSkillId, setSelectedSkillId] = useState<string | null>(null)
 
   const onSearchChange = useCallback(async (searchString: string) => {
-    const response = await skillService.list({ searchString })
+    const response = await problemService.availablePrereqSkills({ problemId, searchString })
     const skills = response?.data || []
-    const currOptions = skills.map(({ id: value, summary: label }) => ({ value, label }))
+    const currOptions = skills.map(
+      ({ id: value, summary: label }) => ({ value, label }),
+    )
     setOptions(currOptions)
-  }, [setOptions])
+  }, [problemId, setOptions])
 
   const addSkill = useCallback(async () => {
     if (selectedSkillId == null) return

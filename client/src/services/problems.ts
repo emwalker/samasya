@@ -1,5 +1,6 @@
 import {
   ProblemType, ApiError, ApproachType,
+  SkillType,
 } from '@/types'
 
 export type PrereqSkillType = {
@@ -108,6 +109,30 @@ async function removeSkill(payload: RemoveSkillPayload): Promise<PrereqResponse>
   return response.json()
 }
 
+type AvailablePrereqSkillsProps = {
+  problemId: string,
+  searchString: string,
+}
+
+type AvailablePrereqSkillsResponse = {
+  data: SkillType[] | null,
+  errors: ApiError[],
+}
+
+async function availablePrereqSkills(
+  { problemId, searchString }: AvailablePrereqSkillsProps,
+): Promise<AvailablePrereqSkillsResponse> {
+  const urlBase = `http://localhost:8000/api/v1/problems/${problemId}/prereqs/available-skills`
+  const url = searchString
+    ? `${urlBase}?q=${encodeURIComponent(searchString)}`
+    : urlBase
+  const response = await fetch(url, {
+    method: 'GET',
+    headers: { 'Content-Type': 'application/json' },
+  })
+  return response.json()
+}
+
 export default {
-  fetch: fetchProblem, list, update, add, addSkill, removeSkill,
+  fetch: fetchProblem, list, update, add, addSkill, removeSkill, availablePrereqSkills,
 }

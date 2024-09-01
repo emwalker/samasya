@@ -197,6 +197,8 @@ pub async fn update(
 
 pub mod prereqs {
     use super::*;
+    use crate::types::Skill;
+    use sqlx::{QueryBuilder, Sqlite};
 
     #[derive(Serialize)]
     pub struct PrereqResponse {
@@ -288,5 +290,60 @@ pub mod prereqs {
             data: None,
             errors: vec![],
         }))
+    }
+
+    #[derive(Serialize)]
+    pub struct ListResponse {
+        data: Vec<Skill>,
+    }
+
+    pub async fn available_skills(
+        ctx: Extension<ApiContext>,
+        Path(problem_id): Path<String>,
+        search: Option<Query<Search>>,
+    ) -> Result<Json<ListResponse>> {
+        let search = search.unwrap_or_default().0;
+        info!(
+            "searching for available skills for {problem_id}: {:?}",
+            search
+        );
+
+        let mut builder: QueryBuilder<Sqlite> = QueryBuilder::new(
+            "select distinct s.*
+             from prereq_skills ps
+             join skills s on ps.prereq_skill_id = s.id ",
+        );
+        let mut wheres = vec![];
+
+        for (i, substring) in search.substrings().enumerate() {
+            builder.push(format!("join skills s{i} on s.id = s{i}.id "));
+            wheres.push(substring);
+        }
+
+        builder.push("where ");
+        let mut separated = builder.separated(" and ");
+
+        for (i, substring) in wheres.into_iter().enumerate() {
+            separated.push(format!("lower(s{i}.summary) like '%'||lower("));
+            separated.push_bind_unseparated(substring);
+            separated.push_unseparated(")||'%'");
+        }
+
+        separated.push(
+            "not exists (
+                select ps.prereq_skill_id
+                from prereq_skills ps
+                where ps.prereq_skill_id = s.id
+                    and ps.problem_id = ",
+        );
+        separated.push_bind_unseparated(problem_id);
+        separated.push_unseparated(")");
+
+        builder
+            .push("order by ps.added_at desc limit ")
+            .push_bind(7);
+        let skills = builder.build_query_as::<Skill>().fetch_all(&ctx.db).await?;
+
+        Ok(Json(ListResponse { data: skills }))
     }
 }

@@ -81,6 +81,10 @@ async fn main() -> Result<()> {
             "/api/v1/problems/:id/prereqs/remove-skill",
             post(problems::prereqs::remove_skill),
         )
+        .route(
+            "/api/v1/problems/:id/prereqs/available-skills",
+            get(problems::prereqs::available_skills),
+        )
         .route("/api/v1/queues/:id", get(queues::fetch))
         .route("/api/v1/queues/:id/next-problem", get(queues::next_problem))
         .route("/api/v1/skills", get(skills::list))
