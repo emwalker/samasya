@@ -112,7 +112,7 @@ mod tests {
         state: AnswerState,
     ) -> AnsweredProblem {
         AnsweredProblem {
-            problem_id: problem_id.into(),
+            problem_id: problem_id.to_string(),
             approach_id: None,
             data: Some(AnswerData {
                 consecutive_correct,

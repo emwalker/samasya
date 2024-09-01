@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useEffect, useState } from 'react'
-import queueService, { GetResponse } from '@/services/queues'
+import queueService, { FetchResponse } from '@/services/queues'
 import TitleAndButton from '@/components/TitleAndButton'
 import {
   Button, Card, Box, LoadingOverlay,
@@ -22,14 +22,14 @@ type Props = {
 }
 
 export default function Page(props: Props) {
-  const [response, setResponse] = useState<GetResponse | null>(null)
+  const [response, setResponse] = useState<FetchResponse | null>(null)
   const [isLoading, setIsLoading] = useState<boolean>(true)
   const queueId = props?.params?.id
 
   useEffect(() => {
     async function fetchData() {
       if (queueId == null) return
-      const currResponse = await queueService.get(queueId)
+      const currResponse = await queueService.fetch(queueId)
       setResponse(currResponse)
       setIsLoading(false)
     }

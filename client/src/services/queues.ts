@@ -2,9 +2,10 @@ import {
   QueueStrategy, QueueType, ApiError,
   AnswerConnection,
   ProblemType,
+  ApproachType,
 } from '@/types'
 
-export type GetResponse = {
+export type FetchResponse = {
   data: {
     queue: QueueType,
     answers: AnswerConnection,
@@ -12,7 +13,7 @@ export type GetResponse = {
   } | null
 }
 
-async function get(id: string): Promise<GetResponse> {
+async function fetchQueue(id: string): Promise<FetchResponse> {
   const res = await fetch(
     `http://localhost:8000/api/v1/queues/${id}`,
     { cache: 'no-store' },
@@ -29,7 +30,7 @@ export type ListResponse = {
   data: QueueType[]
 }
 
-async function getList(userId: string): Promise<ListResponse> {
+async function list(userId: string): Promise<ListResponse> {
   const res = await fetch(
     `http://localhost:8000/api/v1/users/${userId}/queues`,
     { cache: 'no-store' },
@@ -62,4 +63,43 @@ async function add(userId: string, update: UpdatePayload): Promise<UpdateRespons
   return res.json()
 }
 
-export default { get, getList, add }
+type Ready = {
+  problem: ProblemType,
+  approach: ApproachType | null,
+  availableAt: Date,
+  status: 'ready',
+}
+
+type NotReady = {
+  problem: null,
+  approach: null,
+  availableAt: Date,
+  status: 'notReady',
+}
+
+type EmptyQueue = {
+  problem: null,
+  approach: null,
+  availableAt: null,
+  status: 'emptyQueue',
+}
+
+type NextProblemData = Ready | NotReady | EmptyQueue
+
+export type NextProblemResponse = {
+  data: NextProblemData,
+  errors: ApiError[],
+}
+
+async function nextProblem(queueId: string): Promise<NextProblemResponse> {
+  const response = await fetch(`http://localhost:8000/api/v1/queues/${queueId}/next-problem`, {
+    method: 'GET',
+    headers: { 'Content-Type': 'application/json' },
+    cache: 'no-store',
+  })
+  return response.json()
+}
+
+export default {
+  fetch: fetchQueue, list, add, nextProblem,
+}

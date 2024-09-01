@@ -16,7 +16,7 @@ function Queue({ id, summary }: QueueType) {
 }
 
 export default async function Page() {
-  const queues = (await queueService.getList(constants.placeholderUserId)).data
+  const queues = (await queueService.list(constants.placeholderUserId)).data
 
   return (
     <main>

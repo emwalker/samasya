@@ -4,7 +4,9 @@ use std::str::FromStr;
 
 use crate::{
     sqlx::queues::QueueResult,
-    types::{ApiError, ApiErrorResponse, Queue, QueueStrategy, Result, Timestamp},
+    types::{
+        ApiError, ApiErrorResponse, Approach, Problem, Queue, QueueStrategy, Result, Timestamp,
+    },
     ApiContext, ApiJson,
 };
 use axum::{extract::Path, Extension, Json};
@@ -112,8 +114,24 @@ impl FromStr for AnswerState {
     }
 }
 
-#[derive(Debug, Serialize)]
+#[derive(sqlx::FromRow)]
+struct QueueRow {
+    target_problem_id: String,
+    target_approach_id: Option<String>,
+}
+
+#[derive(sqlx::FromRow, Serialize)]
 #[serde(rename_all = "camelCase")]
+struct PrereqProblem {
+    prereq_skill_id: String,
+    prereq_problem_id: String,
+    prereq_problem_summary: String,
+    prereq_approach_id: Option<String>,
+    prereq_approach_name: Option<String>,
+}
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase", tag = "status")]
 enum NextProblem {
     EmptyQueue,
 
@@ -123,7 +141,9 @@ enum NextProblem {
 
     Ready {
         available_at: Timestamp,
+        #[serde(skip)]
         problem_id: String,
+        #[serde(skip)]
         approach_id: Option<String>,
     },
 }
@@ -217,7 +237,7 @@ impl TryFrom<AnsweredProblemRow> for AnsweredProblem {
     ) -> std::result::Result<Self, Self::Error> {
         let Some(answered_at) = answered_at else {
             return Ok(AnsweredProblem {
-                problem_id,
+                problem_id: problem_id.clone(),
                 approach_id,
                 data: None,
             });
@@ -226,7 +246,7 @@ impl TryFrom<AnsweredProblemRow> for AnsweredProblem {
 
         let Some(consecutive_correct) = consecutive_correct else {
             return Ok(AnsweredProblem {
-                problem_id,
+                problem_id: problem_id.clone(),
                 approach_id,
                 data: None,
             });
@@ -234,7 +254,7 @@ impl TryFrom<AnsweredProblemRow> for AnsweredProblem {
 
         let Some(state) = state else {
             return Ok(AnsweredProblem {
-                problem_id,
+                problem_id: problem_id.clone(),
                 approach_id,
                 data: None,
             });
@@ -242,7 +262,7 @@ impl TryFrom<AnsweredProblemRow> for AnsweredProblem {
         let state = state.parse::<AnswerState>()?;
 
         Ok(AnsweredProblem {
-            problem_id,
+            problem_id: problem_id.clone(),
             approach_id,
             data: Some(AnswerData {
                 answered_at,
@@ -253,25 +273,17 @@ impl TryFrom<AnsweredProblemRow> for AnsweredProblem {
     }
 }
 
-#[derive(sqlx::FromRow)]
-struct QueueRow {
-    target_problem_id: String,
-    target_approach_id: Option<String>,
-}
-
-#[derive(sqlx::FromRow, Serialize)]
-#[serde(rename_all = "camelCase")]
-struct PrereqProblem {
-    prereq_skill_id: String,
-    prereq_problem_id: String,
-    prereq_problem_summary: String,
-    prereq_approach_id: Option<String>,
-    prereq_approach_name: Option<String>,
+#[derive(Serialize)]
+pub struct NextProblemData {
+    problem: Option<Problem>,
+    approach: Option<Approach>,
+    #[serde(flatten)]
+    details: NextProblem,
 }
 
 #[derive(Serialize)]
 pub struct NextProblemResponse {
-    data: Option<NextProblem>,
+    data: Option<NextProblemData>,
     errors: Vec<ApiErrorResponse>,
 }
 
@@ -338,8 +350,32 @@ pub async fn next_problem(
     let clock = Clock::now(Tick::Minutes);
     let next_problem = SpacedRepetitionV1.choose(clock, &history)?;
 
+    let (problem, approach) = match &next_problem {
+        NextProblem::Ready {
+            problem_id,
+            approach_id,
+            ..
+        } => {
+            let problem = sqlx::query_as::<_, Problem>("select * from problems where id = ?")
+                .bind(problem_id)
+                .fetch_one(&ctx.db)
+                .await?;
+            let approach = sqlx::query_as::<_, Approach>("select * from approaches where id = ?")
+                .bind(approach_id)
+                .fetch_optional(&ctx.db)
+                .await?;
+            (Some(problem), approach)
+        }
+
+        _ => (None, None),
+    };
+
     Ok(ApiJson(NextProblemResponse {
-        data: Some(next_problem),
+        data: Some(NextProblemData {
+            problem,
+            approach,
+            details: next_problem,
+        }),
         errors: vec![],
     }))
 }
