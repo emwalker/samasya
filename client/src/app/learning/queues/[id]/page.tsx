@@ -50,7 +50,12 @@ export default function Page(props: Props) {
         {data && (
           <>
             <TitleAndButton title={data.queue.summary}>
-              <Button component="a" href={`/learning/queues/${queueId}/next-problem`}>Resume</Button>
+              <Button
+                component="a"
+                href={`/learning/queues/${queueId}/next-problem`}
+              >
+                Continue
+              </Button>
             </TitleAndButton>
 
             <Box mb={10}>This queue will help to work towards mastery of this problem:</Box>

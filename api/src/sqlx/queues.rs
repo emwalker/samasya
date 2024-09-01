@@ -10,7 +10,7 @@ use super::problems;
 struct QueueRow {
     pub id: String,
     pub summary: String,
-    pub strategy: i32,
+    pub strategy: String,
     pub target_problem_id: String,
 }
 
@@ -18,11 +18,7 @@ impl TryFrom<QueueRow> for Queue {
     type Error = ApiError;
 
     fn try_from(value: QueueRow) -> std::result::Result<Self, Self::Error> {
-        let strategy = match value.strategy {
-            0 => QueueStrategy::Determistic,
-            1 => QueueStrategy::SpacedRepetitionV1,
-            other => return Err(ApiError::Database(format!("bad strategy: {}", other))),
-        };
+        let strategy = value.strategy.parse::<QueueStrategy>()?;
 
         Ok(Self {
             id: value.id,

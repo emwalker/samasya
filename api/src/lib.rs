@@ -1,10 +1,7 @@
-use crate::types::Result;
+use crate::types::{ApiError, Result};
 use ::sqlx::SqlitePool;
-use axum::response::{IntoResponse, Response};
-use axum_macros::FromRequest;
 use serde::{Deserialize, Serialize};
 use std::{env, sync::Arc};
-use types::ApiError;
 
 pub mod approaches;
 pub mod problems;
@@ -33,17 +30,4 @@ impl Config {
 pub struct ApiContext {
     pub config: Arc<Config>,
     pub db: SqlitePool,
-}
-
-#[derive(FromRequest)]
-#[from_request(via(axum::Json), rejection(ApiError))]
-pub struct ApiJson<T>(pub T);
-
-impl<T> IntoResponse for ApiJson<T>
-where
-    axum::Json<T>: IntoResponse,
-{
-    fn into_response(self) -> Response {
-        axum::Json(self.0).into_response()
-    }
 }

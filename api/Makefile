@@ -3,10 +3,9 @@ check: lint test
 dev:
 	cargo run --bin api
 
-fix:
-	cargo clippy --fix --allow-dirty --allow-staged
-
 lint:
+	cargo fmt
+	cargo clippy --fix --allow-dirty --allow-staged
 	cargo clippy -- -D warnings
 
 prod:

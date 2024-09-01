@@ -1,10 +1,14 @@
-use crate::ApiJson;
-use axum::{extract::rejection::JsonRejection, response::IntoResponse, Json};
+use axum::{
+    extract::rejection::JsonRejection,
+    response::{IntoResponse, Response},
+    Json,
+};
+use axum_macros::FromRequest;
 use chrono::{DateTime, TimeDelta, Utc};
 use hyper::StatusCode;
 use serde::{ser::SerializeMap, Deserialize, Serialize};
 use sqlx::migrate::MigrateError;
-use std::str::FromStr;
+use std::{fmt::Display, str::FromStr};
 use thiserror::Error;
 use tracing::warn;
 
@@ -47,14 +51,14 @@ pub enum ApiErrorLevel {
 }
 
 #[derive(Serialize)]
-pub struct ApiErrorResponse {
+pub struct ApiErrorData {
     pub message: String,
     pub level: ApiErrorLevel,
 }
 
 pub struct ApiResponse<T> {
     pub data: Option<T>,
-    pub errors: Vec<ApiErrorResponse>,
+    pub errors: Vec<ApiErrorData>,
 }
 
 impl<T> ApiResponse<T> {
@@ -90,6 +94,25 @@ where
     }
 }
 
+#[derive(FromRequest)]
+#[from_request(via(axum::Json), rejection(ApiError))]
+pub struct ApiJson<T>(pub T);
+
+impl<T> IntoResponse for ApiJson<T>
+where
+    axum::Json<T>: IntoResponse,
+{
+    fn into_response(self) -> Response {
+        axum::Json(self.0).into_response()
+    }
+}
+
+impl ApiJson<ApiResponse<String>> {
+    pub(crate) fn ok() -> Self {
+        Self(ApiResponse::ok())
+    }
+}
+
 pub type ApiOk = ApiJson<ApiResponse<String>>;
 
 impl IntoResponse for ApiError {
@@ -97,7 +120,7 @@ impl IntoResponse for ApiError {
         let (status, error) = match self {
             Self::ChronoParseError(err) => (
                 StatusCode::INTERNAL_SERVER_ERROR,
-                ApiErrorResponse {
+                ApiErrorData {
                     message: err.to_string(),
                     level: ApiErrorLevel::Error,
                 },
@@ -105,7 +128,7 @@ impl IntoResponse for ApiError {
 
             Self::Database(message) | Self::Config(message) => (
                 StatusCode::INTERNAL_SERVER_ERROR,
-                ApiErrorResponse {
+                ApiErrorData {
                     message,
                     level: ApiErrorLevel::Error,
                 },
@@ -114,7 +137,7 @@ impl IntoResponse for ApiError {
             Self::SqlxError(err) => match err {
                 sqlx::Error::RowNotFound => (
                     StatusCode::NOT_FOUND,
-                    ApiErrorResponse {
+                    ApiErrorData {
                         message: "Not found".into(),
                         level: ApiErrorLevel::Error,
                     },
@@ -124,7 +147,7 @@ impl IntoResponse for ApiError {
                     warn!("{}", &err);
                     (
                         StatusCode::INTERNAL_SERVER_ERROR,
-                        ApiErrorResponse {
+                        ApiErrorData {
                             message: err.to_string(),
                             level: ApiErrorLevel::Error,
                         },
@@ -134,7 +157,7 @@ impl IntoResponse for ApiError {
 
             Self::MigrateError(err) => (
                 StatusCode::INTERNAL_SERVER_ERROR,
-                ApiErrorResponse {
+                ApiErrorData {
                     message: err.to_string(),
                     level: ApiErrorLevel::Error,
                 },
@@ -142,7 +165,7 @@ impl IntoResponse for ApiError {
 
             Self::General(err) => (
                 StatusCode::INTERNAL_SERVER_ERROR,
-                ApiErrorResponse {
+                ApiErrorData {
                     message: err.to_string(),
                     level: ApiErrorLevel::Error,
                 },
@@ -150,7 +173,7 @@ impl IntoResponse for ApiError {
 
             Self::NotFound => (
                 StatusCode::NOT_FOUND,
-                ApiErrorResponse {
+                ApiErrorData {
                     message: "Not found".into(),
                     level: ApiErrorLevel::Info,
                 },
@@ -158,7 +181,7 @@ impl IntoResponse for ApiError {
 
             Self::UnprocessableEntity(message) => (
                 StatusCode::UNPROCESSABLE_ENTITY,
-                ApiErrorResponse {
+                ApiErrorData {
                     message,
                     level: ApiErrorLevel::Error,
                 },
@@ -166,7 +189,7 @@ impl IntoResponse for ApiError {
 
             Self::JsonExtractorRejection(rejection) => (
                 StatusCode::BAD_REQUEST,
-                ApiErrorResponse {
+                ApiErrorData {
                     message: rejection.body_text(),
                     level: ApiErrorLevel::Error,
                 },
@@ -272,11 +295,34 @@ pub struct AnswerConnection {
     pub edges: Vec<AnswerEdge>,
 }
 
-#[derive(Clone, Debug, Deserialize, Serialize)]
+#[derive(Copy, Clone, Debug, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub enum QueueStrategy {
-    Determistic = 0,
-    SpacedRepetitionV1 = 1,
+    Deterministic,
+    SpacedRepetitionV1,
+}
+
+impl Display for QueueStrategy {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let value = match self {
+            Self::SpacedRepetitionV1 => "spacedRepetitionV1",
+            Self::Deterministic => "deterministic",
+        };
+        write!(f, "{}", value)
+    }
+}
+
+impl FromStr for QueueStrategy {
+    type Err = ApiError;
+
+    fn from_str(s: &str) -> std::result::Result<Self, Self::Err> {
+        match s {
+            "spacedRepetitionV1" => Ok(Self::SpacedRepetitionV1),
+            _ => Err(ApiError::UnprocessableEntity(
+                "unknown chooser: ".to_string(),
+            )),
+        }
+    }
 }
 
 #[derive(Clone, Serialize, sqlx::FromRow)]

@@ -5,8 +5,8 @@ use axum::{
 };
 use samasya::{
     approaches, problems, queues, skills,
-    types::{ApiErrorLevel, ApiErrorResponse, Result},
-    ApiContext, ApiJson, Config,
+    types::{ApiErrorData, ApiErrorLevel, ApiJson, ApiResponse, Result},
+    ApiContext, Config,
 };
 use serde::Serialize;
 use sqlx::sqlite::SqlitePoolOptions;
@@ -29,16 +29,10 @@ async fn root() -> ApiJson<RootResponse> {
     })
 }
 
-#[derive(Serialize)]
-struct NotFoundResponse {
-    data: Option<String>,
-    errors: Vec<ApiErrorResponse>,
-}
-
-async fn handle_404() -> ApiJson<NotFoundResponse> {
-    ApiJson(NotFoundResponse {
+async fn handle_404() -> ApiJson<ApiResponse<ApiErrorData>> {
+    ApiJson(ApiResponse {
         data: None,
-        errors: vec![ApiErrorResponse {
+        errors: vec![ApiErrorData {
             level: ApiErrorLevel::Warn,
             message: "No such endpoint".into(),
         }],

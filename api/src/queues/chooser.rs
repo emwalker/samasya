@@ -1,7 +1,7 @@
 use super::{AnsweredProblem, Clock, NextProblem};
 use crate::{
     queues::{AnswerData, AnswerState},
-    types::{ApiError, Result, Timestamp},
+    types::{ApiError, QueueStrategy, Result, Timestamp},
 };
 use chrono::{DateTime, Utc};
 use itertools::Itertools;
@@ -10,6 +10,15 @@ pub(crate) struct SpacedRepetitionV1;
 
 pub(crate) trait Choose {
     fn choose(&self, clock: Clock, history: &[AnsweredProblem]) -> Result<NextProblem>;
+}
+
+impl Choose for QueueStrategy {
+    fn choose(&self, clock: Clock, history: &[AnsweredProblem]) -> Result<NextProblem> {
+        match self {
+            Self::SpacedRepetitionV1 => SpacedRepetitionV1.choose(clock, history),
+            _ => unimplemented!(),
+        }
+    }
 }
 
 impl Choose for SpacedRepetitionV1 {
@@ -102,7 +111,7 @@ mod tests {
     use super::*;
     use crate::queues::{
         AnswerState::{self, *},
-        Tick,
+        Cadence,
     };
 
     fn a(
@@ -123,7 +132,7 @@ mod tests {
     }
 
     fn spaced_repetition() -> (SpacedRepetitionV1, Clock) {
-        (SpacedRepetitionV1, Clock::new(Tick::Minutes))
+        (SpacedRepetitionV1, Clock::new(Cadence::Minutes))
     }
 
     fn time_eq(timestamp: Timestamp, clock: Option<Clock>) -> bool {

@@ -2,7 +2,7 @@ check:
 	$(MAKE) -C api check
 	$(MAKE) -C client check
 
-check-pre-push: git-no-untracked-files
+check-pre-push: lint git-no-changes
 	$(MAKE) -C api check
 	$(MAKE) -C client check-pre-push
 	$(MAKE) prod-build
@@ -14,14 +14,14 @@ fix:
 	$(MAKE) -C api fix
 	$(MAKE) -C client fix
 
-git-no-untracked-files:
+git-no-changes:
 	bash -c '[[ -z "$(shell git status -s -uall)" ]]'
 
 install:
 	$(MAKE) -C client install
 
 lint:
-	$(MAKE) -C client lint
+	$(MAKE) -C api lint
 
 load:
 	rm -f api/development.db

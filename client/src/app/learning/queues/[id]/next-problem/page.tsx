@@ -6,8 +6,9 @@ import React, {
 import moment from 'moment'
 import {
   Anchor, Box, Button, Card, Group,
+  LoadingOverlay,
+  Title,
 } from '@mantine/core'
-// import { useRouter } from 'next/navigation'
 import queueService, { AnswerState, NextProblemResponse } from '@/services/queues'
 import { handleError } from '@/app/handleResponse'
 import { notifications } from '@mantine/notifications'
@@ -30,7 +31,6 @@ type Props = {
 }
 
 export default function Page(props: Props) {
-  // const router = useRouter()
   const [response, setResponse] = useState<NextProblemResponse | null>(null)
   const queueId = props?.params?.id
   const problemId = response?.data?.problemId
@@ -60,7 +60,8 @@ export default function Page(props: Props) {
         message: 'Your answer has been successfully submitted',
         position: 'top-center',
       })
-      // router.push(`/learning/queues/${queueId}/next-problem`)
+      // Refresh page
+      queueService.nextProblem(queueId).then(setResponse)
     } else {
       handleError(answerResponse, 'Problem submitting answer')
     }
@@ -68,44 +69,55 @@ export default function Page(props: Props) {
 
   const submitCorrect = useButtonHandler(updateAnswer, 'correct')
   const submitIncorrect = useButtonHandler(updateAnswer, 'incorrect')
-  const submitTooHard = useButtonHandler(updateAnswer, 'tooHard')
+  const submitTooHard = useButtonHandler(updateAnswer, 'unsure')
 
   const status = response?.data?.status
 
+  useEffect(() => {
+    if (status === 'emptyQueue') {
+      notifications.show({
+        title: 'Queue not ready',
+        color: 'yellow',
+        position: 'top-center',
+        message: 'The queue is not ready',
+      })
+    }
+  }, [status])
+
   if (status === 'emptyQueue') {
-    notifications.show({
-      title: 'Queue not ready',
-      color: 'yellow',
-      position: 'top-center',
-      message: 'The queue is not ready',
-    })
-    return <main>Queue not ready</main>
+    return <Box>This queue is not ready.</Box>
   }
 
   if (response != null && status === 'notReady') {
     const fromNow = moment(response.data.availableAt).fromNow()
     return (
-      <main>
-        <Box pos="relative">
-          No problems are ready to answer at this time.  The next problem will be
-          available {fromNow}
-        </Box>
-      </main>
+      <Box>
+        No problems are ready to answer at this time.  The next problem will be
+        available {fromNow}
+      </Box>
     )
   }
 
+  const queue = response?.data?.queue
   const problem = response?.data?.problem
   const approach = response?.data?.approach
 
   return (
-    <>
-      <TitleAndButton title="Complete the next problem">
-        <Button component="a" href={`/learning/queues/${queueId}`}>Done for now</Button>
-      </TitleAndButton>
+    <Box pos="relative">
+      <LoadingOverlay
+        visible={response == null}
+        zIndex={1000}
+        overlayProps={{ radius: 'sm', blur: 2 }}
+      />
 
-      {problem && (
+      {queue && problem && (
         <Card padding="xl">
-          <Box mb={20}>
+          <TitleAndButton title={queue?.summary || 'Loading page ...'}>
+            <Button component="a" href={`/learning/queues/${queueId}`}>Leave</Button>
+          </TitleAndButton>
+
+          <Box my={30}>
+            <Title order={5}>{problem.summary}</Title>
             {problem.questionText}
 
             {problem.questionUrl && (
@@ -128,6 +140,6 @@ export default function Page(props: Props) {
           </Group>
         </Card>
       )}
-    </>
+    </Box>
   )
 }

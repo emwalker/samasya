@@ -1,6 +1,6 @@
 use crate::{
-    types::{ApiOk, ApiResponse, Approach, Result, WideApproach},
-    ApiContext, ApiJson,
+    types::{ApiJson, ApiOk, ApiResponse, Approach, Result, WideApproach},
+    ApiContext,
 };
 use axum::{extract::Path, Extension};
 use serde::{Deserialize, Serialize};
@@ -48,7 +48,7 @@ pub async fn add(
         .await?;
     }
 
-    Ok(ApiJson(ApiResponse::ok()))
+    Ok(ApiJson::ok())
 }
 
 pub async fn update(
@@ -91,7 +91,7 @@ pub async fn update(
         .await?;
     }
 
-    Ok(ApiJson(ApiResponse::ok()))
+    Ok(ApiJson::ok())
 }
 
 pub async fn fetch(

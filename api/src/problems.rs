@@ -1,6 +1,6 @@
 use crate::{
-    types::{ApiError, ApiOk, ApiResponse, Approach, Problem, Result},
-    ApiContext, ApiJson,
+    types::{ApiError, ApiJson, ApiOk, ApiResponse, Approach, Problem, Result},
+    ApiContext,
 };
 use axum::{
     extract::{Path, Query},
@@ -157,7 +157,7 @@ pub async fn add(
     .execute(&ctx.db)
     .await?;
 
-    Ok(ApiJson(ApiResponse::ok()))
+    Ok(ApiJson::ok())
 }
 
 pub async fn update(
@@ -179,7 +179,7 @@ pub async fn update(
     .execute(&ctx.db)
     .await?;
 
-    Ok(ApiJson(ApiResponse::ok()))
+    Ok(ApiJson::ok())
 }
 
 pub mod prereqs {
@@ -219,7 +219,7 @@ pub mod prereqs {
         .execute(&ctx.db)
         .await?;
 
-        Ok(ApiJson(ApiResponse::ok()))
+        Ok(ApiJson::ok())
     }
 
     #[derive(Debug, Deserialize)]
@@ -264,7 +264,7 @@ pub mod prereqs {
             .await?;
         }
 
-        Ok(ApiJson(ApiResponse::ok()))
+        Ok(ApiJson::ok())
     }
 
     pub type ListData = Vec<Skill>;

@@ -1,5 +1,5 @@
 use crate::types::{ApiOk, ApiResponse, Result, Skill};
-use crate::{ApiContext, ApiJson};
+use crate::{types::ApiJson, ApiContext};
 use axum::extract::Path;
 use axum::{extract::Query, Extension};
 use serde::{Deserialize, Serialize};
@@ -112,7 +112,7 @@ pub async fn add(
     .execute(&ctx.db)
     .await?;
 
-    Ok(ApiJson(ApiResponse::ok()))
+    Ok(ApiJson::ok())
 }
 
 pub async fn update(
@@ -139,7 +139,7 @@ pub async fn update(
         .execute(&ctx.db)
         .await?;
 
-    Ok(ApiJson(ApiResponse::ok()))
+    Ok(ApiJson::ok())
 }
 
 pub mod prereqs {
@@ -148,8 +148,7 @@ pub mod prereqs {
     use super::*;
     use crate::{
         problems::Search,
-        types::{ApiResponse, Problem},
-        ApiJson,
+        types::{ApiJson, ApiResponse, Problem},
     };
 
     pub type ListData = Vec<Problem>;
@@ -230,7 +229,7 @@ pub mod prereqs {
         .execute(&ctx.db)
         .await?;
 
-        Ok(ApiJson(ApiResponse::ok()))
+        Ok(ApiJson::ok())
     }
 
     #[derive(Debug, Deserialize, Serialize)]
@@ -269,6 +268,6 @@ pub mod prereqs {
         .await?;
         info!("prereq problems removed for {:?}: {:?}", payload, result);
 
-        Ok(ApiJson(ApiResponse::ok()))
+        Ok(ApiJson::ok())
     }
 }

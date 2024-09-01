@@ -8,6 +8,7 @@ CREATE TABLE _sqlx_migrations (
     checksum BLOB NOT NULL,
     execution_time BIGINT NOT NULL
 );
+INSERT INTO _sqlx_migrations VALUES(20240901051110,'add-consecutive-correct','2024-09-01 05:12:50',1,X'62ceb8dcf25868644283fb38c35b0966ba8039c67c6d7fa351447c494c1811ed9ff1360f1fefdfd356b08e1d4bdbb34e',2914690);
 CREATE TABLE skills (id primary key, summary text not null, description text);
 INSERT INTO skills VALUES('c21e18ae-951a-4d8f-984a-cff1f03a8906','Computing the length of the opposite side of a right triangle from the length of the adjacent side and the angle between the adjacent side and the hypotenuse',NULL);
 INSERT INTO skills VALUES('6253e17f-b44e-4d80-ac2a-db4474ca6cc8','Measuring angles using degrees',NULL);
@@ -144,24 +145,11 @@ INSERT INTO prereq_problems VALUES('c7299bc0-8604-4469-bec7-c449ba1bf060','359a5
 INSERT INTO prereq_problems VALUES('c7299bc0-8604-4469-bec7-c449ba1bf060','f4e744ac-fc91-4527-bf41-0cb8077a1b5d',NULL,'2024-08-30 20:16:02');
 INSERT INTO prereq_problems VALUES('c7299bc0-8604-4469-bec7-c449ba1bf060','eab3c420-aece-4a84-abdd-a398a438242c',NULL,'2024-08-30 20:16:07');
 INSERT INTO prereq_problems VALUES('c7299bc0-8604-4469-bec7-c449ba1bf060','ad6f42a7-45c2-4029-806f-5231cb3e9abb',NULL,'2024-08-30 20:16:14');
-CREATE TABLE answers (
-  id text primary key not null,
-  added_at timestamp not null default current_timestamp,
-  answered_at timestamp,
-  problem_id text not null,
-  approach_id text,
-  queue_id text not null,
-  state string check(state in ('unseen', 'correct', 'incorrect', 'unsure')) not null,
-  user_id text not null,
-  foreign key(queue_id) references queues(id),
-  foreign key(user_id) references users(id),
-  foreign key(problem_id) references problems(id),
-  foreign key(approach_id) references approaches(id)
-);
 CREATE TABLE queues (
   created_at timestamp not null,
   id text primary key not null,
-  strategy integer not null default 1,
+  strategy text check( strategy in ('spacedRepetitionV1', 'deterministc') ) not null default 'spacedRepetitionV1',
+  cadence text check( cadence in ('minutes', 'hours') ) not null default 'hours',
   summary text not null,
   target_problem_id text not null,
   updated_at timestamp not null default current_timestamp,
@@ -171,7 +159,7 @@ CREATE TABLE queues (
   foreign key(target_approach_id) references approaches(id),
   foreign key(user_id) references users(id)
 );
-INSERT INTO queues VALUES('2024-08-25T23:15:44.653485317+00:00','47b3fd8f-b0b2-45b3-af4b-368eb3ce140e',1,'Rust traits and function invocations','a500f40e-3448-4fee-8de7-06979fd57c35','2024-08-25T23:15:44.653485317+00:00','04e229c9-795e-4f3a-a79e-ec18b5c28b99',NULL);
+INSERT INTO queues VALUES('2024-08-25T23:15:44.653485317+00:00','47b3fd8f-b0b2-45b3-af4b-368eb3ce140e','spacedRepetitionV1','minutes','Rust traits and function invocations','a500f40e-3448-4fee-8de7-06979fd57c35','2024-08-25T23:15:44.653485317+00:00','04e229c9-795e-4f3a-a79e-ec18b5c28b99',NULL);
 CREATE TABLE prereq_skills (
   problem_id text not null,
   approach_id text,
@@ -199,6 +187,21 @@ INSERT INTO prereq_skills VALUES('8c91f5b7-9cf8-4ce2-8626-6756b0d85d52','c1f7839
 INSERT INTO prereq_skills VALUES('8c91f5b7-9cf8-4ce2-8626-6756b0d85d52','c1f78392-d7a2-46b0-a40a-7292d3b8e4ea','bb08e32d-5db5-49fc-97d1-9027bb2b6a29','2024-09-01 04:37:52');
 INSERT INTO prereq_skills VALUES('2e959eb0-fb53-4684-bc7c-29ccb9d3e3a1','eed2ab67-c579-4997-838e-599f9f69a025','909052bb-8d7d-4b90-86f5-ccc443140a18','2024-09-01 04:37:52');
 INSERT INTO prereq_skills VALUES('a500f40e-3448-4fee-8de7-06979fd57c35',NULL,'c7299bc0-8604-4469-bec7-c449ba1bf060','2024-09-01 04:37:52');
+CREATE TABLE answers (
+  id text primary key not null,
+  added_at timestamp not null default current_timestamp,
+  answered_at timestamp,
+  problem_id text not null,
+  approach_id text,
+  queue_id text not null,
+  state string check(state in ('unseen', 'correct', 'incorrect', 'unsure')) not null,
+  user_id text not null,
+  consecutive_correct number not null default 0,
+  foreign key(queue_id) references queues(id),
+  foreign key(user_id) references users(id),
+  foreign key(problem_id) references problems(id),
+  foreign key(approach_id) references approaches(id)
+);
 CREATE UNIQUE INDEX prereq_problems_uniq_idx on prereq_problems
   (skill_id, prereq_problem_id, ifnull(prereq_approach_id, 0));
 COMMIT;

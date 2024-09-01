@@ -2,11 +2,13 @@ mod chooser;
 
 use crate::{
     sqlx::queues::QueueResult,
-    types::{ApiError, ApiResponse, Approach, Problem, Queue, QueueStrategy, Result, Timestamp},
-    ApiContext, ApiJson, PLACHOLDER_USER_ID,
+    types::{
+        ApiError, ApiJson, ApiResponse, Approach, Problem, Queue, QueueStrategy, Result, Timestamp,
+    },
+    ApiContext, PLACHOLDER_USER_ID,
 };
 use axum::{extract::Path, Extension};
-use chooser::{Choose, SpacedRepetitionV1};
+use chooser::Choose;
 use chrono::{TimeDelta, Utc};
 use serde::{Deserialize, Serialize};
 use std::{fmt::Display, str::FromStr};
@@ -46,7 +48,7 @@ pub async fn add(
     )
     .bind(&id)
     .bind(&update.summary)
-    .bind(update.strategy as i32)
+    .bind(update.strategy.to_string())
     .bind(&update.target_problem_id)
     .bind(&user_id)
     .bind(created_at)
@@ -54,7 +56,7 @@ pub async fn add(
     .execute(&ctx.db)
     .await?;
 
-    Ok(ApiJson(ApiResponse::ok()))
+    Ok(ApiJson::ok())
 }
 
 pub async fn fetch(
@@ -100,9 +102,15 @@ impl Display for AnswerState {
     }
 }
 
-#[derive(sqlx::FromRow)]
+#[derive(Serialize, sqlx::FromRow)]
+#[serde(rename_all = "camelCase")]
 struct QueueRow {
+    summary: String,
+    strategy: String,
+    cadence: String,
+    #[serde(skip)]
     target_problem_id: String,
+    #[serde(skip)]
     target_approach_id: Option<String>,
 }
 
@@ -150,33 +158,46 @@ struct AnsweredProblem {
     data: Option<AnswerData>,
 }
 
-#[allow(dead_code)]
-#[derive(Clone, Copy, Debug)]
-enum Tick {
+#[derive(Clone, Copy, Debug, Deserialize, Serialize)]
+#[serde(rename_all = "camelCase")]
+enum Cadence {
     Minutes,
     Hours,
 }
 
-#[allow(dead_code)]
+impl FromStr for Cadence {
+    type Err = ApiError;
+
+    fn from_str(s: &str) -> std::result::Result<Self, Self::Err> {
+        match s {
+            "minutes" => Ok(Self::Minutes),
+            "hours" => Ok(Self::Hours),
+            _ => Err(ApiError::UnprocessableEntity(format!(
+                "unknown cadence: {s}"
+            ))),
+        }
+    }
+}
+
 #[derive(Debug)]
 struct Clock {
     now: Timestamp,
-    unit: Tick,
+    cadence: Cadence,
 }
 
 impl Clock {
     #[allow(dead_code)]
-    fn new(unit: Tick) -> Self {
+    fn new(cadence: Cadence) -> Self {
         Self {
             now: Timestamp::from_timestamp(0).unwrap(),
-            unit,
+            cadence,
         }
     }
 
-    fn now(unit: Tick) -> Self {
+    fn now(cadence: Cadence) -> Self {
         Self {
             now: Timestamp::now(),
-            unit,
+            cadence,
         }
     }
 
@@ -187,15 +208,15 @@ impl Clock {
 
         Some(Self {
             now,
-            unit: self.unit,
+            cadence: self.cadence,
         })
     }
 
     #[allow(dead_code)]
     fn one_tick(&self) -> TimeDelta {
-        match self.unit {
-            Tick::Minutes => TimeDelta::minutes(1),
-            Tick::Hours => TimeDelta::hours(1),
+        match self.cadence {
+            Cadence::Minutes => TimeDelta::minutes(1),
+            Cadence::Hours => TimeDelta::hours(1),
         }
     }
 }
@@ -261,6 +282,7 @@ impl TryFrom<AnsweredProblemRow> for AnsweredProblem {
 
 #[derive(Serialize)]
 pub struct NextProblemData {
+    queue: QueueRow,
     problem: Option<Problem>,
     approach: Option<Approach>,
     #[serde(flatten)]
@@ -278,7 +300,7 @@ pub async fn next_problem(
 
     info!("fetching history for queue {queue_id} ...");
     // Problems that must be mastered for the skills needed for the target problem
-    let history = if let Some(approach_id) = queue.target_approach_id {
+    let history = if let Some(approach_id) = &queue.target_approach_id {
         sqlx::query_as::<_, AnsweredProblemRow>(
             "select
                 pp.prereq_problem_id problem_id,
@@ -290,14 +312,16 @@ pub async fn next_problem(
              join prereq_problems pp on pp.skill_id = ps.prereq_skill_id
              join problems p on p.id = pp.prereq_problem_id
              left join answers a
-                on pp.prereq_problem_id = a.problem_id
+                on a.user_id = ?
+                and a.queue_id = ?
+                and pp.prereq_problem_id = a.problem_id
                 and pp.prereq_approach_id = a.approach_id
-             where ps.problem_id = ? and ps.approach_id = ?
-                and (a.queue_id is null or a.queue_id = ?)",
+             where ps.problem_id = ? and ps.approach_id = ?",
         )
-        .bind(&queue.target_problem_id)
-        .bind(&approach_id)
+        .bind(PLACHOLDER_USER_ID)
         .bind(&queue_id)
+        .bind(&queue.target_problem_id)
+        .bind(approach_id)
         .fetch_all(&ctx.db)
         .await?
     } else {
@@ -312,13 +336,15 @@ pub async fn next_problem(
              join prereq_problems pp on pp.skill_id = ps.prereq_skill_id
              join problems p on p.id = pp.prereq_problem_id
              left join answers a
-                on pp.prereq_problem_id = a.problem_id
-                and pp.prereq_approach_id = a.approach_id
-             where ps.problem_id = ?
-                and (a.queue_id is null or a.queue_id = ?)",
+                on a.user_id = ?
+                and a.queue_id = ?
+                and a.problem_id = pp.prereq_problem_id
+                and a.approach_id is null
+             where ps.problem_id = ? and ps.approach_id is null",
         )
-        .bind(&queue.target_problem_id)
+        .bind(PLACHOLDER_USER_ID)
         .bind(&queue_id)
+        .bind(&queue.target_problem_id)
         .fetch_all(&ctx.db)
         .await?
     };
@@ -327,10 +353,12 @@ pub async fn next_problem(
         .map(AnsweredProblem::try_from)
         .collect::<Result<Vec<_>>>()?;
 
-    let clock = Clock::now(Tick::Minutes);
-    let next_problem = SpacedRepetitionV1.choose(clock, &history)?;
+    let cadence = queue.cadence.parse::<Cadence>()?;
+    let clock = Clock::now(cadence);
+    let strategy = queue.strategy.parse::<QueueStrategy>()?;
+    let next = strategy.choose(clock, &history)?;
 
-    let (problem, approach) = match &next_problem {
+    let (problem, approach) = match &next {
         NextProblem::Ready {
             problem_id,
             approach_id,
@@ -340,24 +368,28 @@ pub async fn next_problem(
                 .bind(problem_id)
                 .fetch_one(&ctx.db)
                 .await?;
-            let approach = sqlx::query_as::<_, Approach>("select * from approaches where id = ?")
-                .bind(approach_id)
-                .fetch_optional(&ctx.db)
-                .await?;
+
+            let approach = if let Some(approach_id) = approach_id {
+                sqlx::query_as::<_, Approach>("select * from approaches where id = ?")
+                    .bind(approach_id)
+                    .fetch_optional(&ctx.db)
+                    .await?
+            } else {
+                None
+            };
+
             (Some(problem), approach)
         }
 
         _ => (None, None),
     };
 
-    Ok(ApiJson(ApiResponse {
-        data: Some(NextProblemData {
-            problem,
-            approach,
-            details: next_problem,
-        }),
-        errors: vec![],
-    }))
+    Ok(ApiJson(ApiResponse::data(NextProblemData {
+        queue,
+        problem,
+        approach,
+        details: next,
+    })))
 }
 
 #[derive(Serialize)]
@@ -392,22 +424,63 @@ pub async fn add_answer(
         )));
     }
 
+    let prev_consecutive_correct = if let Some(approach_id) = &approach_id {
+        sqlx::query_as::<_, (u32,)>(
+            "select consecutive_correct
+             from answers
+             where user_id = ? and queue_id = ? and problem_id = ? and approach_id = ?
+             order by added_at desc
+             limit 1",
+        )
+        .bind(PLACHOLDER_USER_ID)
+        .bind(&queue_id)
+        .bind(&problem_id)
+        .bind(approach_id)
+        .fetch_optional(&ctx.db)
+        .await?
+    } else {
+        sqlx::query_as::<_, (u32,)>(
+            "select consecutive_correct
+             from answers
+             where user_id = ? and queue_id = ? and problem_id = ? and approach_id is null
+             order by added_at desc
+             limit 1",
+        )
+        .bind(PLACHOLDER_USER_ID)
+        .bind(&queue_id)
+        .bind(&problem_id)
+        .fetch_optional(&ctx.db)
+        .await?
+    }
+    .unwrap_or_default()
+    .0;
+
+    let consecutive_correct = match &answer_state {
+        AnswerState::Correct => prev_consecutive_correct.saturating_add(1),
+        _ => prev_consecutive_correct.saturating_sub(1),
+    };
+
     let new_id: String = Uuid::new_v4().into();
     let answer_state: String = answer_state.to_string();
+    let added_at = Utc::now();
 
     let (answer_id,) = sqlx::query_as::<_, (String,)>(
-        "insert into answers
-            (id, answered_at, problem_id, approach_id, queue_id, state, user_id)
-            values (?, ?, ?, ?, ?, ?, ?)
-            returning id",
+        "insert into answers (
+            user_id, id, added_at, answered_at, problem_id, approach_id, queue_id, state,
+            consecutive_correct
+         )
+         values (?, ?, ?, ?, ?, ?, ?, ?, ?)
+         returning id",
     )
+    .bind(PLACHOLDER_USER_ID)
     .bind(&new_id)
-    .bind(Utc::now())
+    .bind(added_at)
+    .bind(added_at)
     .bind(&problem_id)
     .bind(&approach_id)
     .bind(&queue_id)
     .bind(&answer_state)
-    .bind(PLACHOLDER_USER_ID)
+    .bind(consecutive_correct)
     .fetch_one(&ctx.db)
     .await?;
 

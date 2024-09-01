@@ -64,6 +64,7 @@ async function add(userId: string, update: UpdatePayload): Promise<UpdateRespons
 }
 
 type Ready = {
+  queue: QueueType,
   problem: ProblemType,
   problemId: string,
   approach: ApproachType | null,
@@ -73,6 +74,7 @@ type Ready = {
 }
 
 type NotReady = {
+  queue: QueueType,
   problem: null,
   problemId?: undefined,
   approach: null,
@@ -82,6 +84,7 @@ type NotReady = {
 }
 
 type EmptyQueue = {
+  queue: QueueType,
   problem: null,
   problemId?: undefined,
   approach: null,
@@ -106,7 +109,7 @@ async function nextProblem(queueId: string): Promise<NextProblemResponse> {
   return response.json()
 }
 
-export type AnswerState = 'correct' | 'incorrect' | 'tooHard'
+export type AnswerState = 'correct' | 'incorrect' | 'unsure'
 
 export type AnswerProblemPayload = {
   queueId: string,
