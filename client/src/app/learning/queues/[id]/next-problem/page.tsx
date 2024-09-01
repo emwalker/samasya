@@ -84,7 +84,7 @@ export default function Page(props: Props) {
           <Group justify="center">
             <Button size="xl" color="green">Correct</Button>
             <Button size="xl" color="yellow">Incorrect</Button>
-            <Button size="xl" color="blue">Too hard</Button>
+            <Button size="xl" color="orange">Too hard</Button>
           </Group>
         </Card>
       )}
