@@ -341,3 +341,12 @@ pub struct WideQueue {
     pub queue: Queue,
     pub answer_connection: AnswerConnection,
 }
+
+#[derive(Debug, Deserialize, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub enum AnswerState {
+    Unseen,
+    Unsure,
+    Correct,
+    Incorrect,
+}

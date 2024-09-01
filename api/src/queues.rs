@@ -1,9 +1,9 @@
 mod chooser;
 
 use crate::{
-    sqlx::queues::QueueResult,
     types::{
-        ApiError, ApiJson, ApiResponse, Approach, Problem, Queue, QueueStrategy, Result, Timestamp,
+        AnswerState, ApiError, ApiJson, ApiResponse, Approach, Problem, Queue, QueueStrategy,
+        Result, Timestamp,
     },
     ApiContext, PLACHOLDER_USER_ID,
 };
@@ -59,21 +59,76 @@ pub async fn add(
     Ok(ApiJson::ok())
 }
 
-pub async fn fetch(
-    ctx: Extension<ApiContext>,
-    Path(id): Path<String>,
-) -> Result<ApiJson<ApiResponse<QueueResult>>> {
-    let result = crate::sqlx::queues::fetch_wide(&ctx.db, &id).await?;
-    Ok(ApiJson(ApiResponse::data(result)))
+#[derive(Debug, Serialize, sqlx::FromRow)]
+#[serde(rename_all = "camelCase")]
+pub struct QueueAnswer {
+    problem_summary: String,
+    approach_name: Option<String>,
+    answer_id: String,
+    answer_answered_at: String,
+    answer_state: String,
+    answer_consecutive_correct: u32,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
-enum AnswerState {
-    Unseen,
-    Unsure,
-    Correct,
-    Incorrect,
+pub struct FetchData {
+    queue: QueueRow,
+    answers: Vec<QueueAnswer>,
+    target_problem: Problem,
+    target_approach: Option<Approach>,
+}
+
+pub async fn fetch(
+    ctx: Extension<ApiContext>,
+    Path(queue_id): Path<String>,
+) -> Result<ApiJson<ApiResponse<FetchData>>> {
+    let queue = sqlx::query_as::<_, QueueRow>("select * from queues where id = ?")
+        .bind(&queue_id)
+        .fetch_one(&ctx.db)
+        .await?;
+
+    let target_problem = sqlx::query_as::<_, Problem>("select * from problems where id = ?")
+        .bind(&queue.target_problem_id)
+        .fetch_one(&ctx.db)
+        .await?;
+
+    let target_approach = if let Some(approach_id) = &queue.target_approach_id {
+        let approach = sqlx::query_as::<_, Approach>("select * from approaches where id = ?")
+            .bind(approach_id)
+            .fetch_one(&ctx.db)
+            .await?;
+        Some(approach)
+    } else {
+        None
+    };
+
+    let answers = sqlx::query_as::<_, QueueAnswer>(
+        "select
+            p.summary problem_summary,
+            ap.name approach_name,
+            a.id answer_id,
+            a.answered_at answer_answered_at,
+            a.state answer_state,
+            a.consecutive_correct answer_consecutive_correct
+         from answers a
+         join problems p on a.problem_id = p.id
+         left join approaches ap on a.approach_id = ap.id
+         where a.user_id = ? and a.queue_id = ?
+         order by a.answered_at desc
+         limit 15",
+    )
+    .bind(PLACHOLDER_USER_ID)
+    .bind(&queue_id)
+    .fetch_all(&ctx.db)
+    .await?;
+
+    Ok(ApiJson(ApiResponse::data(FetchData {
+        queue,
+        answers,
+        target_problem,
+        target_approach,
+    })))
 }
 
 impl FromStr for AnswerState {

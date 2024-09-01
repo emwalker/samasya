@@ -4,6 +4,7 @@ import React, {
   useCallback, useEffect, useState,
 } from 'react'
 import moment from 'moment'
+import Link from 'next/link'
 import {
   Anchor, Box, Button, Card, Group,
   LoadingOverlay,
@@ -13,6 +14,7 @@ import queueService, { AnswerState, NextProblemResponse } from '@/services/queue
 import { handleError } from '@/app/handleResponse'
 import { notifications } from '@mantine/notifications'
 import TitleAndButton from '@/components/TitleAndButton'
+import classes from './page.module.css'
 
 function useButtonHandler(
   updateAnswer: (arg0: AnswerState) => Promise<void>,
@@ -88,19 +90,27 @@ export default function Page(props: Props) {
     return <Box>This queue is not ready.</Box>
   }
 
-  if (response != null && status === 'notReady') {
-    const fromNow = moment(response.data.availableAt).fromNow()
-    return (
-      <Box>
-        No problems are ready to answer at this time.  The next problem will be
-        available {fromNow}
-      </Box>
-    )
-  }
-
   const queue = response?.data?.queue
   const problem = response?.data?.problem
   const approach = response?.data?.approach
+
+  if (response != null && status === 'notReady') {
+    const fromNow = moment(response.data.availableAt).fromNow()
+    const queueUrl = `/learning/queues/${queueId}`
+    return (
+      <Card padding="xl">
+        <TitleAndButton title={queue?.summary || 'Loading page ...'}>
+          <Button component="a" href={queueUrl}>Leave</Button>
+        </TitleAndButton>
+
+        <Box>
+          No problems are ready to answer at this time.  The next problem will be
+          available {fromNow}.  Follow <Link href={queueUrl}>this link</Link> to
+          return to the queue page.
+        </Box>
+      </Card>
+    )
+  }
 
   return (
     <Box pos="relative">
@@ -111,7 +121,7 @@ export default function Page(props: Props) {
       />
 
       {queue && problem && (
-        <Card padding="xl">
+        <Card padding="xl" className={classes.card} key={problemId}>
           <TitleAndButton title={queue?.summary || 'Loading page ...'}>
             <Button component="a" href={`/learning/queues/${queueId}`}>Leave</Button>
           </TitleAndButton>

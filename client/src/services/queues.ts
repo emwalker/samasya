@@ -1,14 +1,22 @@
 import {
   QueueStrategy, QueueType, ApiError,
-  AnswerConnection,
   ProblemType,
   ApproachType,
+  ApiResponse,
 } from '@/types'
+
+export type QueueAnswerType = {
+  problemSummary: string,
+  answerId: string,
+  answerAnsweredAt: string,
+  answerState: AnswerState,
+  answerConsecutiveCorrect: number,
+}
 
 export type FetchResponse = {
   data: {
     queue: QueueType,
-    answers: AnswerConnection,
+    answers: QueueAnswerType[],
     targetProblem: ProblemType,
   } | null
 }
@@ -49,12 +57,7 @@ export type UpdatePayload = {
   targetProblemId: string,
 }
 
-export type UpdateResponse = {
-  data: any,
-  errors: ApiError[],
-};
-
-async function add(userId: string, update: UpdatePayload): Promise<UpdateResponse> {
+async function add(userId: string, update: UpdatePayload): Promise<ApiResponse<any>> {
   const res = await fetch(`http://localhost:8000/api/v1/users/${userId}/queues`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
