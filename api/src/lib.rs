@@ -13,6 +13,8 @@ pub mod skills;
 pub mod sqlx;
 pub mod types;
 
+pub const PLACHOLDER_USER_ID: &str = "04e229c9-795e-4f3a-a79e-ec18b5c28b99";
+
 #[derive(Deserialize, Serialize)]
 pub struct Config {
     pub db_filename: String,

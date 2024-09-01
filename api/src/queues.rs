@@ -1,31 +1,24 @@
 mod chooser;
 
-use std::str::FromStr;
-
 use crate::{
     sqlx::queues::QueueResult,
-    types::{
-        ApiError, ApiErrorResponse, Approach, Problem, Queue, QueueStrategy, Result, Timestamp,
-    },
-    ApiContext, ApiJson,
+    types::{ApiError, ApiResponse, Approach, Problem, Queue, QueueStrategy, Result, Timestamp},
+    ApiContext, ApiJson, PLACHOLDER_USER_ID,
 };
-use axum::{extract::Path, Extension, Json};
+use axum::{extract::Path, Extension};
 use chooser::{Choose, SpacedRepetitionV1};
-use chrono::TimeDelta;
+use chrono::{TimeDelta, Utc};
 use serde::{Deserialize, Serialize};
+use std::{fmt::Display, str::FromStr};
 use tracing::info;
-
-#[derive(Serialize)]
-pub struct ListResponse {
-    data: Vec<Queue>,
-}
+use uuid::Uuid;
 
 pub async fn list(
     ctx: Extension<ApiContext>,
     Path(user_id): Path<String>,
-) -> Result<Json<ListResponse>> {
+) -> Result<ApiJson<ApiResponse<Vec<Queue>>>> {
     let data = crate::sqlx::queues::fetch_all(&ctx.db, &user_id, 20).await?;
-    Ok(Json(ListResponse { data }))
+    Ok(ApiJson(ApiResponse::data(data)))
 }
 
 #[derive(Deserialize, Debug)]
@@ -36,26 +29,11 @@ pub struct UpdatePayload {
     target_problem_id: String,
 }
 
-#[derive(Serialize)]
-pub struct UpdateResponse {
-    data: Option<String>,
-    errors: Vec<ApiErrorResponse>,
-}
-
-impl UpdateResponse {
-    fn ok() -> Self {
-        Self {
-            data: None,
-            errors: vec![],
-        }
-    }
-}
-
 pub async fn add(
     ctx: Extension<ApiContext>,
     Path(user_id): Path<String>,
     ApiJson(update): ApiJson<UpdatePayload>,
-) -> Result<Json<UpdateResponse>> {
+) -> Result<ApiJson<ApiResponse<String>>> {
     info!("user {}: adding queue: {:?}", user_id, update);
     let id = uuid::Uuid::new_v4().to_string();
     let created_at = chrono::Utc::now();
@@ -76,23 +54,19 @@ pub async fn add(
     .execute(&ctx.db)
     .await?;
 
-    Ok(Json(UpdateResponse::ok()))
-}
-
-#[derive(Serialize)]
-pub struct FetchResponse {
-    data: QueueResult,
+    Ok(ApiJson(ApiResponse::ok()))
 }
 
 pub async fn fetch(
     ctx: Extension<ApiContext>,
     Path(id): Path<String>,
-) -> Result<Json<FetchResponse>> {
+) -> Result<ApiJson<ApiResponse<QueueResult>>> {
     let result = crate::sqlx::queues::fetch_wide(&ctx.db, &id).await?;
-    Ok(Json(FetchResponse { data: result }))
+    Ok(ApiJson(ApiResponse::data(result)))
 }
 
 #[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
 enum AnswerState {
     Unseen,
     Unsure,
@@ -111,6 +85,18 @@ impl FromStr for AnswerState {
             "incorrect" => Ok(Self::Incorrect),
             _ => Err(ApiError::General(format!("unknown answer state: {s}"))),
         }
+    }
+}
+
+impl Display for AnswerState {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let value = match self {
+            Self::Unseen => "unseen",
+            Self::Unsure => "unsure",
+            Self::Correct => "correct",
+            Self::Incorrect => "incorrect",
+        };
+        write!(f, "{}", value)
     }
 }
 
@@ -135,15 +121,15 @@ struct PrereqProblem {
 enum NextProblem {
     EmptyQueue,
 
+    #[serde(rename_all = "camelCase")]
     NotReady {
         available_at: Timestamp,
     },
 
+    #[serde(rename_all = "camelCase")]
     Ready {
         available_at: Timestamp,
-        #[serde(skip)]
         problem_id: String,
-        #[serde(skip)]
         approach_id: Option<String>,
     },
 }
@@ -281,16 +267,10 @@ pub struct NextProblemData {
     details: NextProblem,
 }
 
-#[derive(Serialize)]
-pub struct NextProblemResponse {
-    data: Option<NextProblemData>,
-    errors: Vec<ApiErrorResponse>,
-}
-
 pub async fn next_problem(
     ctx: Extension<ApiContext>,
     Path(queue_id): Path<String>,
-) -> Result<ApiJson<NextProblemResponse>> {
+) -> Result<ApiJson<ApiResponse<NextProblemData>>> {
     let queue = sqlx::query_as::<_, QueueRow>("select * from queues where id = ?")
         .bind(&queue_id)
         .fetch_one(&ctx.db)
@@ -370,7 +350,7 @@ pub async fn next_problem(
         _ => (None, None),
     };
 
-    Ok(ApiJson(NextProblemResponse {
+    Ok(ApiJson(ApiResponse {
         data: Some(NextProblemData {
             problem,
             approach,
@@ -378,4 +358,61 @@ pub async fn next_problem(
         }),
         errors: vec![],
     }))
+}
+
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct AddAnswerData {
+    answer_id: String,
+    message: String,
+}
+
+#[derive(Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct AddAnswerPayload {
+    queue_id: String,
+    problem_id: String,
+    approach_id: Option<String>,
+    answer_state: AnswerState,
+}
+
+pub async fn add_answer(
+    ctx: Extension<ApiContext>,
+    Path(path_queue_id): Path<String>,
+    ApiJson(AddAnswerPayload {
+        queue_id,
+        problem_id,
+        approach_id,
+        answer_state,
+    }): ApiJson<AddAnswerPayload>,
+) -> Result<ApiJson<ApiResponse<AddAnswerData>>> {
+    if path_queue_id != queue_id {
+        return Err(ApiError::UnprocessableEntity(String::from(
+            "queue id must match the payload",
+        )));
+    }
+
+    let new_id: String = Uuid::new_v4().into();
+    let answer_state: String = answer_state.to_string();
+
+    let (answer_id,) = sqlx::query_as::<_, (String,)>(
+        "insert into answers
+            (id, answered_at, problem_id, approach_id, queue_id, state, user_id)
+            values (?, ?, ?, ?, ?, ?, ?)
+            returning id",
+    )
+    .bind(&new_id)
+    .bind(Utc::now())
+    .bind(&problem_id)
+    .bind(&approach_id)
+    .bind(&queue_id)
+    .bind(&answer_state)
+    .bind(PLACHOLDER_USER_ID)
+    .fetch_one(&ctx.db)
+    .await?;
+
+    Ok(ApiJson(ApiResponse::data(AddAnswerData {
+        answer_id,
+        message: String::from("ok"),
+    })))
 }

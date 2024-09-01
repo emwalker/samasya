@@ -65,21 +65,27 @@ async function add(userId: string, update: UpdatePayload): Promise<UpdateRespons
 
 type Ready = {
   problem: ProblemType,
+  problemId: string,
   approach: ApproachType | null,
+  approachId: string | null,
   availableAt: Date,
   status: 'ready',
 }
 
 type NotReady = {
   problem: null,
+  problemId?: undefined,
   approach: null,
+  approachId?: undefined,
   availableAt: Date,
   status: 'notReady',
 }
 
 type EmptyQueue = {
   problem: null,
+  problemId?: undefined,
   approach: null,
+  approachId?: undefined,
   availableAt: null,
   status: 'emptyQueue',
 }
@@ -100,6 +106,35 @@ async function nextProblem(queueId: string): Promise<NextProblemResponse> {
   return response.json()
 }
 
+export type AnswerState = 'correct' | 'incorrect' | 'tooHard'
+
+export type AnswerProblemPayload = {
+  queueId: string,
+  problemId: string,
+  approachId: string | null,
+  answerState: AnswerState,
+}
+
+type AnswerProblemResponse = {
+  data: {
+    answerId: string,
+    message: string,
+  } | null,
+  errors: ApiError[],
+}
+
+async function addAnswer(payload: AnswerProblemPayload): Promise<AnswerProblemResponse> {
+  const response = await fetch(
+    `http://localhost:8000/api/v1/queues/${payload.queueId}/add-answer`,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    },
+  )
+  return response.json()
+}
+
 export default {
-  fetch: fetchQueue, list, add, nextProblem,
+  fetch: fetchQueue, list, add, nextProblem, addAnswer,
 }

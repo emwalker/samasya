@@ -1,14 +1,27 @@
 'use client'
 
-import React, { useEffect, useState } from 'react'
+import React, {
+  useCallback, useEffect, useState,
+} from 'react'
 import moment from 'moment'
 import {
   Anchor, Box, Button, Card, Group,
 } from '@mantine/core'
-import queueService, { NextProblemResponse } from '@/services/queues'
+// import { useRouter } from 'next/navigation'
+import queueService, { AnswerState, NextProblemResponse } from '@/services/queues'
 import { handleError } from '@/app/handleResponse'
 import { notifications } from '@mantine/notifications'
 import TitleAndButton from '@/components/TitleAndButton'
+
+function useButtonHandler(
+  updateAnswer: (arg0: AnswerState) => Promise<void>,
+  answerState: AnswerState,
+) {
+  const callback = useCallback(async () => {
+    updateAnswer(answerState)
+  }, [updateAnswer, answerState])
+  return callback
+}
 
 type Props = {
   params: {
@@ -17,8 +30,11 @@ type Props = {
 }
 
 export default function Page(props: Props) {
+  // const router = useRouter()
   const [response, setResponse] = useState<NextProblemResponse | null>(null)
   const queueId = props?.params?.id
+  const problemId = response?.data?.problemId
+  const approachId = response?.data?.approachId
 
   useEffect(() => {
     async function fetchData() {
@@ -29,6 +45,30 @@ export default function Page(props: Props) {
     }
     fetchData()
   }, [queueId, setResponse])
+
+  const updateAnswer = useCallback(async (answerState: AnswerState) => {
+    if (queueId == null || problemId == null) return
+
+    const answerResponse = await queueService.addAnswer({
+      queueId, problemId, approachId: approachId || null, answerState,
+    })
+
+    if (answerResponse.data?.message === 'ok') {
+      notifications.show({
+        title: 'Answer submitted',
+        color: 'blue',
+        message: 'Your answer has been successfully submitted',
+        position: 'top-center',
+      })
+      // router.push(`/learning/queues/${queueId}/next-problem`)
+    } else {
+      handleError(answerResponse, 'Problem submitting answer')
+    }
+  }, [queueId, problemId, approachId])
+
+  const submitCorrect = useButtonHandler(updateAnswer, 'correct')
+  const submitIncorrect = useButtonHandler(updateAnswer, 'incorrect')
+  const submitTooHard = useButtonHandler(updateAnswer, 'tooHard')
 
   const status = response?.data?.status
 
@@ -82,9 +122,9 @@ export default function Page(props: Props) {
           <Box mb={30}>How did you do?</Box>
 
           <Group justify="center">
-            <Button size="xl" color="green">Correct</Button>
-            <Button size="xl" color="yellow">Incorrect</Button>
-            <Button size="xl" color="orange">Too hard</Button>
+            <Button size="xl" color="green" onClick={submitCorrect}>Correct</Button>
+            <Button size="xl" color="yellow" onClick={submitIncorrect}>Incorrect</Button>
+            <Button size="xl" color="orange" onClick={submitTooHard}>Too hard</Button>
           </Group>
         </Card>
       )}

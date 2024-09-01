@@ -1,10 +1,10 @@
-use std::str::FromStr;
-
+use crate::ApiJson;
 use axum::{extract::rejection::JsonRejection, response::IntoResponse, Json};
 use chrono::{DateTime, TimeDelta, Utc};
 use hyper::StatusCode;
 use serde::{ser::SerializeMap, Deserialize, Serialize};
 use sqlx::migrate::MigrateError;
+use std::str::FromStr;
 use thiserror::Error;
 use tracing::warn;
 
@@ -52,25 +52,45 @@ pub struct ApiErrorResponse {
     pub level: ApiErrorLevel,
 }
 
-struct ApiResponse<T> {
-    #[allow(dead_code)]
-    data: Option<T>,
-    #[allow(dead_code)]
-    errors: Vec<ApiErrorResponse>,
+pub struct ApiResponse<T> {
+    pub data: Option<T>,
+    pub errors: Vec<ApiErrorResponse>,
 }
 
-impl<T> Serialize for ApiResponse<T> {
+impl<T> ApiResponse<T> {
+    pub fn data(data: T) -> Self {
+        Self {
+            data: Some(data),
+            errors: vec![],
+        }
+    }
+}
+
+impl ApiResponse<String> {
+    pub fn ok() -> Self {
+        Self {
+            data: Some(String::from("ok")),
+            errors: vec![],
+        }
+    }
+}
+
+impl<T> Serialize for ApiResponse<T>
+where
+    T: Serialize,
+{
     fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
     where
         S: serde::Serializer,
     {
         let mut map = serializer.serialize_map(Some(2))?;
-        let value: Option<String> = None;
-        map.serialize_entry("data", &value)?;
+        map.serialize_entry("data", &self.data)?;
         map.serialize_entry("errors", &self.errors)?;
         map.end()
     }
 }
+
+pub type ApiOk = ApiJson<ApiResponse<String>>;
 
 impl IntoResponse for ApiError {
     fn into_response(self) -> axum::response::Response {

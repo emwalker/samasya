@@ -87,6 +87,7 @@ async fn main() -> Result<()> {
         )
         .route("/api/v1/queues/:id", get(queues::fetch))
         .route("/api/v1/queues/:id/next-problem", get(queues::next_problem))
+        .route("/api/v1/queues/:id/add-answer", post(queues::add_answer))
         .route("/api/v1/skills", get(skills::list))
         .route("/api/v1/skills", post(skills::add))
         .route("/api/v1/skills/:id", get(skills::fetch))

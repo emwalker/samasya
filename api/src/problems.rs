@@ -1,13 +1,12 @@
 use crate::{
-    types::{ApiError, ApiErrorResponse, Approach, Problem, Result},
+    types::{ApiError, ApiOk, ApiResponse, Approach, Problem, Result},
     ApiContext, ApiJson,
 };
 use axum::{
     extract::{Path, Query},
-    Extension, Json,
+    Extension,
 };
 use serde::{Deserialize, Serialize};
-use serde_json::json;
 use tracing::info;
 
 #[derive(Serialize, sqlx::FromRow)]
@@ -21,22 +20,16 @@ struct PrereqSkill {
 
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
-struct ProblemData {
+pub struct ProblemData {
     problem: Problem,
     approaches: Vec<Approach>,
     prereq_skills: Vec<PrereqSkill>,
 }
 
-#[derive(Serialize)]
-pub struct FetchResponse {
-    data: Option<ProblemData>,
-    errors: Vec<ApiErrorResponse>,
-}
-
 pub async fn fetch(
     ctx: Extension<ApiContext>,
     Path(problem_id): Path<String>,
-) -> Result<ApiJson<FetchResponse>> {
+) -> Result<ApiJson<ApiResponse<ProblemData>>> {
     let problem = sqlx::query_as::<_, Problem>("select * from problems where id = ?")
         .bind(&problem_id)
         .fetch_one(&ctx.db)
@@ -61,14 +54,11 @@ pub async fn fetch(
     .fetch_all(&ctx.db)
     .await?;
 
-    Ok(ApiJson(FetchResponse {
-        data: Some(ProblemData {
-            problem,
-            approaches,
-            prereq_skills,
-        }),
-        errors: vec![],
-    }))
+    Ok(ApiJson(ApiResponse::data(ProblemData {
+        problem,
+        approaches,
+        prereq_skills,
+    })))
 }
 
 #[derive(Debug, Default, Deserialize)]
@@ -86,19 +76,16 @@ impl Search {
     }
 }
 
-#[derive(Serialize)]
-pub struct ListResponse {
-    data: Vec<Problem>,
-}
+pub type ListData = Vec<Problem>;
 
 pub async fn list(
     ctx: Extension<ApiContext>,
     search: Option<Query<Search>>,
-) -> Result<Json<ListResponse>> {
+) -> Result<ApiJson<ApiResponse<ListData>>> {
     let search = search.unwrap_or_default().0;
     info!("searching problems: {:?}", search);
     let data = crate::sqlx::problems::list(&ctx.db, 20, search).await?;
-    Ok(Json(ListResponse { data }))
+    Ok(ApiJson(ApiResponse::data(data)))
 }
 
 fn ensure_valid_problem_update(
@@ -153,8 +140,8 @@ pub struct UpdatePayload {
 
 pub async fn add(
     ctx: Extension<ApiContext>,
-    Json(update): Json<UpdatePayload>,
-) -> Result<Json<serde_json::Value>> {
+    ApiJson(update): ApiJson<UpdatePayload>,
+) -> Result<ApiJson<ApiResponse<String>>> {
     info!("adding problem: {:?}", update);
     let id = uuid::Uuid::new_v4().to_string();
 
@@ -170,14 +157,14 @@ pub async fn add(
     .execute(&ctx.db)
     .await?;
 
-    Ok(Json(json!({})))
+    Ok(ApiJson(ApiResponse::ok()))
 }
 
 pub async fn update(
     ctx: Extension<ApiContext>,
     Path(problem_id): Path<String>,
-    Json(update): Json<UpdatePayload>,
-) -> Result<Json<serde_json::Value>> {
+    ApiJson(update): ApiJson<UpdatePayload>,
+) -> Result<ApiOk> {
     info!("updating problem: {:?}", update);
 
     let (summary, question_text, question_url) = ensure_valid_problem_update(update)?;
@@ -192,19 +179,13 @@ pub async fn update(
     .execute(&ctx.db)
     .await?;
 
-    Ok(Json(json!({})))
+    Ok(ApiJson(ApiResponse::ok()))
 }
 
 pub mod prereqs {
     use super::*;
-    use crate::types::Skill;
+    use crate::types::{ApiResponse, Skill};
     use sqlx::{QueryBuilder, Sqlite};
-
-    #[derive(Serialize)]
-    pub struct PrereqResponse {
-        data: Option<String>,
-        errors: Vec<ApiErrorResponse>,
-    }
 
     #[derive(Debug, Deserialize)]
     #[serde(rename_all = "camelCase")]
@@ -218,7 +199,7 @@ pub mod prereqs {
         ctx: Extension<ApiContext>,
         Path(problem_id): Path<String>,
         ApiJson(payload): ApiJson<AddSkillPayload>,
-    ) -> Result<ApiJson<PrereqResponse>> {
+    ) -> Result<ApiOk> {
         info!("adding prerequisite skill: {payload:?}");
 
         if problem_id != payload.problem_id {
@@ -238,10 +219,7 @@ pub mod prereqs {
         .execute(&ctx.db)
         .await?;
 
-        Ok(ApiJson(PrereqResponse {
-            data: None,
-            errors: vec![],
-        }))
+        Ok(ApiJson(ApiResponse::ok()))
     }
 
     #[derive(Debug, Deserialize)]
@@ -256,7 +234,7 @@ pub mod prereqs {
         ctx: Extension<ApiContext>,
         Path(problem_id): Path<String>,
         ApiJson(payload): ApiJson<RemoveSkillPayload>,
-    ) -> Result<ApiJson<PrereqResponse>> {
+    ) -> Result<ApiOk> {
         info!("adding prerequisite skill: {payload:?}");
 
         if problem_id != payload.problem_id {
@@ -286,22 +264,16 @@ pub mod prereqs {
             .await?;
         }
 
-        Ok(ApiJson(PrereqResponse {
-            data: None,
-            errors: vec![],
-        }))
+        Ok(ApiJson(ApiResponse::ok()))
     }
 
-    #[derive(Serialize)]
-    pub struct ListResponse {
-        data: Vec<Skill>,
-    }
+    pub type ListData = Vec<Skill>;
 
     pub async fn available_skills(
         ctx: Extension<ApiContext>,
         Path(problem_id): Path<String>,
         search: Option<Query<Search>>,
-    ) -> Result<Json<ListResponse>> {
+    ) -> Result<ApiJson<ApiResponse<ListData>>> {
         let search = search.unwrap_or_default().0;
         info!(
             "searching for available skills for {problem_id}: {:?}",
@@ -344,6 +316,6 @@ pub mod prereqs {
             .push_bind(7);
         let skills = builder.build_query_as::<Skill>().fetch_all(&ctx.db).await?;
 
-        Ok(Json(ListResponse { data: skills }))
+        Ok(ApiJson(ApiResponse::data(skills)))
     }
 }

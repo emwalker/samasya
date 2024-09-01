@@ -1,10 +1,9 @@
 use crate::{
-    types::{Approach, Result, WideApproach},
-    ApiContext,
+    types::{ApiOk, ApiResponse, Approach, Result, WideApproach},
+    ApiContext, ApiJson,
 };
-use axum::{extract::Path, Extension, Json};
+use axum::{extract::Path, Extension};
 use serde::{Deserialize, Serialize};
-use serde_json::json;
 use tracing::info;
 
 #[derive(Deserialize, Serialize, Debug)]
@@ -18,8 +17,8 @@ pub struct UpdatePayload {
 
 pub async fn add(
     ctx: Extension<ApiContext>,
-    Json(update): Json<UpdatePayload>,
-) -> Result<Json<serde_json::Value>> {
+    ApiJson(update): ApiJson<UpdatePayload>,
+) -> Result<ApiOk> {
     info!("adding approach: {:?}", update);
     let id = uuid::Uuid::new_v4().to_string();
 
@@ -49,14 +48,14 @@ pub async fn add(
         .await?;
     }
 
-    Ok(Json(json!({})))
+    Ok(ApiJson(ApiResponse::ok()))
 }
 
 pub async fn update(
     ctx: Extension<ApiContext>,
     Path(id): Path<String>,
-    Json(update): Json<UpdatePayload>,
-) -> Result<Json<serde_json::Value>> {
+    ApiJson(update): ApiJson<UpdatePayload>,
+) -> Result<ApiOk> {
     sqlx::query("update approaches set name = $1 where id = $2")
         .bind(&update.name)
         .bind(&id)
@@ -92,32 +91,24 @@ pub async fn update(
         .await?;
     }
 
-    Ok(Json(json!({})))
-}
-
-#[derive(Serialize)]
-pub struct ApproachResponse {
-    data: WideApproach,
+    Ok(ApiJson(ApiResponse::ok()))
 }
 
 pub async fn fetch(
     ctx: Extension<ApiContext>,
     Path(id): Path<String>,
-) -> Result<Json<ApproachResponse>> {
+) -> Result<ApiJson<ApiResponse<WideApproach>>> {
     let data = crate::sqlx::approaches::fetch_wide(&ctx.db, &id).await?;
-    Ok(Json(ApproachResponse { data }))
+    Ok(ApiJson(ApiResponse::data(data)))
 }
 
-#[derive(Serialize)]
-pub struct ApproachListResponse {
-    data: Vec<Approach>,
-}
+pub type ListData = Vec<Approach>;
 
 pub async fn list(
     ctx: Extension<ApiContext>,
     Path(id): Path<String>,
-) -> Result<Json<ApproachListResponse>> {
+) -> Result<ApiJson<ApiResponse<ListData>>> {
     let problem_id = id;
     let data = crate::sqlx::approaches::fetch_all(&ctx.db, &problem_id, 20).await?;
-    Ok(Json(ApproachListResponse { data }))
+    Ok(ApiJson(ApiResponse::data(data)))
 }

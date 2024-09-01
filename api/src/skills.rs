@@ -1,9 +1,8 @@
-use crate::types::{ApiErrorResponse, Result, Skill};
-use crate::ApiContext;
+use crate::types::{ApiOk, ApiResponse, Result, Skill};
+use crate::{ApiContext, ApiJson};
 use axum::extract::Path;
-use axum::{extract::Query, Extension, Json};
+use axum::{extract::Query, Extension};
 use serde::{Deserialize, Serialize};
-use serde_json::json;
 use tracing::info;
 
 #[derive(Deserialize)]
@@ -11,12 +10,12 @@ pub struct Filter {
     q: Option<String>,
 }
 
-#[derive(Serialize)]
-pub struct ListResponse {
-    data: Vec<Skill>,
-}
+pub type ListData = Vec<Skill>;
 
-pub async fn list(ctx: Extension<ApiContext>, query: Query<Filter>) -> Result<Json<ListResponse>> {
+pub async fn list(
+    ctx: Extension<ApiContext>,
+    query: Query<Filter>,
+) -> Result<ApiJson<ApiResponse<ListData>>> {
     let filter = query.0;
 
     let data = if let Some(filter) = filter.q {
@@ -29,7 +28,7 @@ pub async fn list(ctx: Extension<ApiContext>, query: Query<Filter>) -> Result<Js
     .fetch_all(&ctx.db)
     .await?;
 
-    Ok(Json(ListResponse { data }))
+    Ok(ApiJson(ApiResponse::data(data)))
 }
 
 #[derive(Serialize, sqlx::FromRow)]
@@ -49,30 +48,22 @@ pub struct WideSkill {
     prereq_problems: Vec<PrereqProblem>,
 }
 
-#[derive(Serialize)]
-pub struct FetchResponse {
-    data: Option<WideSkill>,
-    errors: Vec<ApiErrorResponse>,
-}
-
 pub async fn fetch(
     ctx: Extension<ApiContext>,
     Path(id): Path<String>,
-) -> Result<Json<FetchResponse>> {
+) -> Result<ApiJson<ApiResponse<WideSkill>>> {
     let skill = sqlx::query_as::<_, Skill>("select * from skills where id = ?")
         .bind(&id)
         .fetch_one(&ctx.db)
         .await?;
 
     let prereq_problems = sqlx::query_as::<_, PrereqProblem>(
-        r#"
-        select pp.*, p.summary prereq_problem_summary, a.name prereq_approach_name
-        from prereq_problems pp
-        join problems p on pp.prereq_problem_id = p.id
-        left join approaches a on pp.prereq_approach_id = a.id
-        where pp.skill_id = ?
-        order by pp.added_at desc
-        "#,
+        "select pp.*, p.summary prereq_problem_summary, a.name prereq_approach_name
+         from prereq_problems pp
+         join problems p on pp.prereq_problem_id = p.id
+         left join approaches a on pp.prereq_approach_id = a.id
+         where pp.skill_id = ?
+         order by pp.added_at desc",
     )
     .bind(&id)
     .fetch_all(&ctx.db)
@@ -83,10 +74,7 @@ pub async fn fetch(
         prereq_problems,
     };
 
-    Ok(Json(FetchResponse {
-        data: Some(skill),
-        errors: vec![],
-    }))
+    Ok(ApiJson(ApiResponse::data(skill)))
 }
 
 #[derive(Deserialize, Serialize, Debug)]
@@ -98,8 +86,8 @@ pub struct UpdatePayload {
 
 pub async fn add(
     ctx: Extension<ApiContext>,
-    Json(payload): Json<UpdatePayload>,
-) -> Result<Json<serde_json::Value>> {
+    ApiJson(payload): ApiJson<UpdatePayload>,
+) -> Result<ApiOk> {
     info!("{:?}", payload);
     let id = uuid::Uuid::new_v4().to_string();
 
@@ -124,14 +112,14 @@ pub async fn add(
     .execute(&ctx.db)
     .await?;
 
-    Ok(Json(json!({})))
+    Ok(ApiJson(ApiResponse::ok()))
 }
 
 pub async fn update(
     ctx: Extension<ApiContext>,
     Path(id): Path<String>,
-    Json(payload): Json<UpdatePayload>,
-) -> Result<Json<serde_json::Value>> {
+    ApiJson(payload): ApiJson<UpdatePayload>,
+) -> Result<ApiOk> {
     info!("{:?}", payload);
 
     let description = if let Some(description) = &payload.description {
@@ -151,25 +139,26 @@ pub async fn update(
         .execute(&ctx.db)
         .await?;
 
-    Ok(Json(json!({})))
+    Ok(ApiJson(ApiResponse::ok()))
 }
 
 pub mod prereqs {
     use sqlx::{QueryBuilder, Sqlite};
 
     use super::*;
-    use crate::{problems::Search, types::Problem};
+    use crate::{
+        problems::Search,
+        types::{ApiResponse, Problem},
+        ApiJson,
+    };
 
-    #[derive(Serialize)]
-    pub struct ListResponse {
-        data: Vec<Problem>,
-    }
+    pub type ListData = Vec<Problem>;
 
     pub async fn available_problems(
         ctx: Extension<ApiContext>,
         Path(skill_id): Path<String>,
         search: Option<Query<Search>>,
-    ) -> Result<Json<ListResponse>> {
+    ) -> Result<ApiJson<ApiResponse<ListData>>> {
         let search = search.unwrap_or_default().0;
         info!(
             "searching for available problems for {skill_id}: {:?}",
@@ -209,7 +198,7 @@ pub mod prereqs {
             .fetch_all(&ctx.db)
             .await?;
 
-        Ok(Json(ListResponse { data: problems }))
+        Ok(ApiJson(ApiResponse::data(problems)))
     }
 
     #[derive(Deserialize)]
@@ -220,29 +209,14 @@ pub mod prereqs {
         prereq_approach_id: Option<String>,
     }
 
-    #[derive(Serialize)]
-    pub struct AddProblemResponse {
-        data: Option<String>,
-        errors: Vec<ApiErrorResponse>,
-    }
-
-    impl AddProblemResponse {
-        fn ok() -> Self {
-            Self {
-                data: None,
-                errors: vec![],
-            }
-        }
-    }
-
     pub async fn add_problem(
         ctx: Extension<ApiContext>,
-        Json(AddProblemPayload {
+        ApiJson(AddProblemPayload {
             skill_id,
             prereq_problem_id,
             prereq_approach_id,
-        }): Json<AddProblemPayload>,
-    ) -> Result<Json<AddProblemResponse>> {
+        }): ApiJson<AddProblemPayload>,
+    ) -> Result<ApiOk> {
         sqlx::query(
             r#"
             insert into prereq_problems (skill_id, prereq_problem_id, prereq_approach_id)
@@ -256,7 +230,7 @@ pub mod prereqs {
         .execute(&ctx.db)
         .await?;
 
-        Ok(Json(AddProblemResponse::ok()))
+        Ok(ApiJson(ApiResponse::ok()))
     }
 
     #[derive(Debug, Deserialize, Serialize)]
@@ -267,16 +241,10 @@ pub mod prereqs {
         prereq_approach_id: Option<String>,
     }
 
-    #[derive(Serialize)]
-    pub struct RemoveProblemResponse {
-        data: Option<RemoveProblemPayload>,
-        errors: Vec<ApiErrorResponse>,
-    }
-
     pub async fn remove_problem(
         ctx: Extension<ApiContext>,
-        Json(payload): Json<RemoveProblemPayload>,
-    ) -> Result<Json<RemoveProblemResponse>> {
+        ApiJson(payload): ApiJson<RemoveProblemPayload>,
+    ) -> Result<ApiOk> {
         let result = if let Some(approach_id) = &payload.prereq_approach_id {
             sqlx::query(
                 r#"
@@ -301,9 +269,6 @@ pub mod prereqs {
         .await?;
         info!("prereq problems removed for {:?}: {:?}", payload, result);
 
-        Ok(Json(RemoveProblemResponse {
-            data: Some(payload),
-            errors: vec![],
-        }))
+        Ok(ApiJson(ApiResponse::ok()))
     }
 }
