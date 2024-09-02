@@ -235,6 +235,10 @@ impl Timestamp {
     pub fn checked_add_signed(&self, delta: TimeDelta) -> Option<Self> {
         self.0.checked_add_signed(delta).map(Self)
     }
+
+    pub fn to_iso_8601(&self) -> String {
+        self.0.to_rfc3339()
+    }
 }
 
 #[derive(Clone, Serialize, sqlx::FromRow)]
@@ -342,6 +346,69 @@ pub struct WideQueue {
     pub answer_connection: AnswerConnection,
 }
 
+#[derive(Clone, Copy, Debug, Deserialize, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub enum Cadence {
+    Minutes,
+    Hours,
+}
+
+impl FromStr for Cadence {
+    type Err = ApiError;
+
+    fn from_str(s: &str) -> std::result::Result<Self, Self::Err> {
+        match s {
+            "minutes" => Ok(Self::Minutes),
+            "hours" => Ok(Self::Hours),
+            _ => Err(ApiError::UnprocessableEntity(format!(
+                "unknown cadence: {s}"
+            ))),
+        }
+    }
+}
+
+#[derive(Debug)]
+pub struct Clock {
+    pub(crate) now: Timestamp,
+    cadence: Cadence,
+}
+
+impl Clock {
+    #[allow(dead_code)]
+    pub fn new(cadence: Cadence) -> Self {
+        Self {
+            now: Timestamp::from_timestamp(0).unwrap(),
+            cadence,
+        }
+    }
+
+    pub fn now(cadence: Cadence) -> Self {
+        Self {
+            now: Timestamp::now(),
+            cadence,
+        }
+    }
+
+    #[allow(dead_code)]
+    pub fn ticks(&self, n: i32) -> Option<Self> {
+        let ticks = self.one_tick().checked_mul(n)?;
+        let now = self.now.checked_add_signed(ticks)?;
+
+        Some(Self {
+            now,
+            cadence: self.cadence,
+        })
+    }
+
+    #[allow(dead_code)]
+    fn one_tick(&self) -> TimeDelta {
+        match self.cadence {
+            Cadence::Minutes => TimeDelta::minutes(1),
+            Cadence::Hours => TimeDelta::hours(1),
+        }
+    }
+}
+
 #[derive(Debug, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub enum AnswerState {
@@ -349,4 +416,28 @@ pub enum AnswerState {
     Unsure,
     Correct,
     Incorrect,
+}
+
+impl AnswerState {
+    pub fn next_available_at(
+        &self,
+        clock: &Clock,
+        answered_at: &Timestamp,
+        consecutive_correct: u32,
+    ) -> Result<Timestamp> {
+        let n = match self {
+            Self::Unsure => 90,
+            _ => 2i32.pow(consecutive_correct),
+        };
+        debug_assert!(n > 0, "expected 1 or more ticks");
+
+        let delta = clock
+            .one_tick()
+            .checked_mul(n)
+            .ok_or_else(|| ApiError::General(format!("invalid duration: {n} ticks")))?;
+
+        answered_at
+            .checked_add_signed(delta)
+            .ok_or_else(|| ApiError::General(String::from("date shift failed")))
+    }
 }

@@ -1,7 +1,7 @@
 use super::{AnsweredProblem, Clock, NextProblem};
 use crate::{
-    queues::{AnswerData, AnswerState},
-    types::{ApiError, QueueStrategy, Result, Timestamp},
+    queues::AnswerData,
+    types::{QueueStrategy, Result, Timestamp},
 };
 use chrono::{DateTime, Utc};
 use itertools::Itertools;
@@ -50,20 +50,7 @@ impl SpacedRepetitionV1 {
         clock: Clock,
         history: &[AnsweredProblem],
     ) -> Result<(Option<String>, Option<String>, Timestamp)> {
-        // Select the most recent answers for each problem in the available history, then sort
-        // by oldest to newest.
-        let sorted = history
-            .iter()
-            .filter_map(|row| {
-                row.data
-                    .as_ref()
-                    .map(|data| (&row.problem_id, &row.approach_id, data))
-            })
-            .sorted_by_key(|(_, _, data)| &data.answered_at)
-            .rev()
-            .unique_by(|&(problem_id, approach_id, _)| (problem_id, approach_id))
-            .sorted_by_key(|(_, _, data)| &data.answered_at);
-
+        let sorted = self.sort_history(history);
         let mut next_available_at: Timestamp = DateTime::<Utc>::MAX_UTC.into();
 
         for (problem_id, approach_id, data) in sorted {
@@ -73,20 +60,8 @@ impl SpacedRepetitionV1 {
                 answered_at,
             } = data;
 
-            let n = match state {
-                AnswerState::Unsure => 90,
-                _ => 2i32.pow(*consecutive_correct),
-            };
-            debug_assert!(n > 0, "expected 1 or more ticks");
-
-            let delta = clock
-                .one_tick()
-                .checked_mul(n)
-                .ok_or_else(|| ApiError::General(format!("invalid duration: {n} ticks")))?;
-
-            let available_at = answered_at
-                .checked_add_signed(delta)
-                .ok_or_else(|| ApiError::General(String::from("date shift failed")))?;
+            let available_at =
+                state.next_available_at(&clock, answered_at, *consecutive_correct)?;
 
             if available_at <= clock.now {
                 return Ok((Some(problem_id.clone()), approach_id.clone(), available_at));
@@ -103,6 +78,25 @@ impl SpacedRepetitionV1 {
         }
 
         Ok((None, None, next_available_at))
+    }
+
+    fn sort_history<'h>(
+        &'h self,
+        history: &'h [AnsweredProblem],
+    ) -> impl Iterator<Item = (&String, &Option<String>, &AnswerData)> + '_ {
+        // Select the most recent answers for each problem in the available history, then sort
+        // by oldest to newest.
+        history
+            .iter()
+            .filter_map(|row| {
+                row.data
+                    .as_ref()
+                    .map(|data| (&row.problem_id, &row.approach_id, data))
+            })
+            .sorted_by_key(|(_, _, data)| &data.answered_at)
+            .rev()
+            .unique_by(|&(problem_id, approach_id, _)| (problem_id, approach_id))
+            .sorted_by_key(|(_, _, data)| &data.answered_at)
     }
 }
 

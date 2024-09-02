@@ -9,6 +9,7 @@ export type QueueAnswerType = {
   problemSummary: string,
   answerId: string,
   answerAnsweredAt: string,
+  answerAvailableAt: string,
   answerState: AnswerState,
   answerConsecutiveCorrect: number,
 }

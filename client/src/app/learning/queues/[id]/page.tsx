@@ -4,10 +4,7 @@ import React, { useEffect, useState } from 'react'
 import queueService, { AnswerState, FetchResponse, QueueAnswerType } from '@/services/queues'
 import TitleAndButton from '@/components/TitleAndButton'
 import {
-  Button, Card, Box, LoadingOverlay,
-  Table,
-  Badge,
-  Center,
+  Button, Card, Box, LoadingOverlay, Table, Badge, Center,
 } from '@mantine/core'
 import moment from 'moment'
 
@@ -28,17 +25,20 @@ function AnswerRow({
   problemSummary,
   answerId,
   answerAnsweredAt,
+  answerAvailableAt,
   answerState,
   answerConsecutiveCorrect: correct,
 }: QueueAnswerType) {
   const statusColor = badgeColors[answerState] || 'red'
   const correctColor = colorForConsecutiveCorrect(correct)
-  const fromNow = moment(answerAnsweredAt).fromNow()
+  const answeredAt = moment(answerAnsweredAt).fromNow()
+  const availableAt = moment(answerAvailableAt).fromNow()
 
   return (
     <Table.Tr key={answerId}>
       <Table.Td>{problemSummary}</Table.Td>
-      <Table.Td>{fromNow}</Table.Td>
+      <Table.Td>{answeredAt}</Table.Td>
+      <Table.Td>{availableAt}</Table.Td>
       <Table.Td align="center"><Badge color={statusColor}>{answerState}</Badge></Table.Td>
       <Table.Td align="center"><Badge color={correctColor}>{correct}</Badge></Table.Td>
     </Table.Tr>
@@ -97,6 +97,7 @@ export default function Page(props: Props) {
                 <Table.Tr>
                   <Table.Th>Problem</Table.Th>
                   <Table.Th>Answered</Table.Th>
+                  <Table.Th>Available again</Table.Th>
                   <Table.Th><Center>Result</Center></Table.Th>
                   <Table.Th><Center>Answered correctly</Center></Table.Th>
                 </Table.Tr>

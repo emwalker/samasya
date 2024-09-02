@@ -2,14 +2,14 @@ mod chooser;
 
 use crate::{
     types::{
-        AnswerState, ApiError, ApiJson, ApiResponse, Approach, Problem, Queue, QueueStrategy,
-        Result, Timestamp,
+        AnswerState, ApiError, ApiJson, ApiResponse, Approach, Cadence, Clock, Problem, Queue,
+        QueueStrategy, Result, Timestamp,
     },
     ApiContext, PLACHOLDER_USER_ID,
 };
 use axum::{extract::Path, Extension};
 use chooser::Choose;
-use chrono::{TimeDelta, Utc};
+use chrono::Utc;
 use serde::{Deserialize, Serialize};
 use std::{fmt::Display, str::FromStr};
 use tracing::info;
@@ -72,9 +72,17 @@ pub struct QueueAnswer {
 
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
+pub struct WideQueueAnswer {
+    #[serde(flatten)]
+    answer: QueueAnswer,
+    answer_available_at: String,
+}
+
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct FetchData {
     queue: QueueRow,
-    answers: Vec<QueueAnswer>,
+    answers: Vec<WideQueueAnswer>,
     target_problem: Problem,
     target_approach: Option<Approach>,
 }
@@ -103,6 +111,9 @@ pub async fn fetch(
         None
     };
 
+    let cadence = queue.cadence.parse::<Cadence>()?;
+    let clock = Clock::now(cadence);
+
     let answers = sqlx::query_as::<_, QueueAnswer>(
         "select
             p.summary problem_summary,
@@ -122,6 +133,21 @@ pub async fn fetch(
     .bind(&queue_id)
     .fetch_all(&ctx.db)
     .await?;
+
+    let answers = answers
+        .into_iter()
+        .map(|answer| {
+            let state = answer.answer_state.parse::<AnswerState>()?;
+            let answered_at = answer.answer_answered_at.parse::<Timestamp>()?;
+            let answer_available_at: String = state
+                .next_available_at(&clock, &answered_at, answer.answer_consecutive_correct)?
+                .to_iso_8601();
+            Ok(WideQueueAnswer {
+                answer,
+                answer_available_at,
+            })
+        })
+        .collect::<Result<Vec<_>>>()?;
 
     Ok(ApiJson(ApiResponse::data(FetchData {
         queue,
@@ -211,69 +237,6 @@ struct AnsweredProblem {
     problem_id: String,
     approach_id: Option<String>,
     data: Option<AnswerData>,
-}
-
-#[derive(Clone, Copy, Debug, Deserialize, Serialize)]
-#[serde(rename_all = "camelCase")]
-enum Cadence {
-    Minutes,
-    Hours,
-}
-
-impl FromStr for Cadence {
-    type Err = ApiError;
-
-    fn from_str(s: &str) -> std::result::Result<Self, Self::Err> {
-        match s {
-            "minutes" => Ok(Self::Minutes),
-            "hours" => Ok(Self::Hours),
-            _ => Err(ApiError::UnprocessableEntity(format!(
-                "unknown cadence: {s}"
-            ))),
-        }
-    }
-}
-
-#[derive(Debug)]
-struct Clock {
-    now: Timestamp,
-    cadence: Cadence,
-}
-
-impl Clock {
-    #[allow(dead_code)]
-    fn new(cadence: Cadence) -> Self {
-        Self {
-            now: Timestamp::from_timestamp(0).unwrap(),
-            cadence,
-        }
-    }
-
-    fn now(cadence: Cadence) -> Self {
-        Self {
-            now: Timestamp::now(),
-            cadence,
-        }
-    }
-
-    #[allow(dead_code)]
-    fn ticks(&self, n: i32) -> Option<Self> {
-        let ticks = self.one_tick().checked_mul(n)?;
-        let now = self.now.checked_add_signed(ticks)?;
-
-        Some(Self {
-            now,
-            cadence: self.cadence,
-        })
-    }
-
-    #[allow(dead_code)]
-    fn one_tick(&self) -> TimeDelta {
-        match self.cadence {
-            Cadence::Minutes => TimeDelta::minutes(1),
-            Cadence::Hours => TimeDelta::hours(1),
-        }
-    }
 }
 
 #[derive(sqlx::FromRow)]
