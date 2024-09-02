@@ -1,6 +1,6 @@
-use super::{AnsweredProblem, Clock, NextProblem};
+use super::{Clock, NextProblem, Outcome};
 use crate::{
-    queues::AnswerData,
+    queues::OutcomeData,
     types::{QueueStrategy, Result, Timestamp},
 };
 use chrono::{DateTime, Utc};
@@ -9,11 +9,11 @@ use itertools::Itertools;
 pub(crate) struct SpacedRepetitionV1;
 
 pub(crate) trait Choose {
-    fn choose(&self, clock: Clock, history: &[AnsweredProblem]) -> Result<NextProblem>;
+    fn choose(&self, clock: Clock, history: &[Outcome]) -> Result<NextProblem>;
 }
 
 impl Choose for QueueStrategy {
-    fn choose(&self, clock: Clock, history: &[AnsweredProblem]) -> Result<NextProblem> {
+    fn choose(&self, clock: Clock, history: &[Outcome]) -> Result<NextProblem> {
         match self {
             Self::SpacedRepetitionV1 => SpacedRepetitionV1.choose(clock, history),
             _ => unimplemented!(),
@@ -22,16 +22,15 @@ impl Choose for QueueStrategy {
 }
 
 impl Choose for SpacedRepetitionV1 {
-    fn choose(&self, clock: Clock, history: &[AnsweredProblem]) -> Result<NextProblem> {
+    fn choose(&self, clock: Clock, history: &[Outcome]) -> Result<NextProblem> {
         if history.is_empty() {
             return Ok(NextProblem::EmptyQueue);
         }
 
-        let (problem_id, approach_id, next_available_at) = self.next_problem(clock, history)?;
+        let (approach_id, next_available_at) = self.next_problem(clock, history)?;
 
-        if let Some(problem_id) = problem_id {
+        if let Some(approach_id) = approach_id {
             return Ok(NextProblem::Ready {
-                problem_id,
                 approach_id,
                 available_at: next_available_at,
             });
@@ -48,55 +47,47 @@ impl SpacedRepetitionV1 {
     fn next_problem(
         &self,
         clock: Clock,
-        history: &[AnsweredProblem],
-    ) -> Result<(Option<String>, Option<String>, Timestamp)> {
+        history: &[Outcome],
+    ) -> Result<(Option<String>, Timestamp)> {
         let sorted = self.sort_history(history);
         let mut next_available_at: Timestamp = DateTime::<Utc>::MAX_UTC.into();
 
-        for (problem_id, approach_id, data) in sorted {
-            let AnswerData {
-                consecutive_correct,
+        for (approach_id, data) in sorted {
+            let OutcomeData {
+                progress,
                 state,
-                answered_at,
+                added_at,
+                ..
             } = data;
 
-            let available_at =
-                state.next_available_at(&clock, answered_at, *consecutive_correct)?;
+            let available_at = state.next_available_at(&clock, added_at, *progress)?;
 
             if available_at <= clock.now {
-                return Ok((Some(problem_id.clone()), approach_id.clone(), available_at));
+                return Ok((Some(approach_id.clone()), available_at));
             }
             next_available_at = next_available_at.min(available_at);
         }
 
         if let Some(row) = history.iter().find(|row| row.data.is_none()) {
-            return Ok((
-                Some(row.problem_id.clone()),
-                row.approach_id.clone(),
-                clock.now,
-            ));
+            return Ok((Some(row.approach_id.clone()), clock.now));
         }
 
-        Ok((None, None, next_available_at))
+        Ok((None, next_available_at))
     }
 
     fn sort_history<'h>(
         &'h self,
-        history: &'h [AnsweredProblem],
-    ) -> impl Iterator<Item = (&String, &Option<String>, &AnswerData)> + '_ {
+        history: &'h [Outcome],
+    ) -> impl Iterator<Item = (&String, &OutcomeData)> + '_ {
         // Select the most recent answers for each problem in the available history, then sort
         // by oldest to newest.
         history
             .iter()
-            .filter_map(|row| {
-                row.data
-                    .as_ref()
-                    .map(|data| (&row.problem_id, &row.approach_id, data))
-            })
-            .sorted_by_key(|(_, _, data)| &data.answered_at)
+            .filter_map(|row| row.data.as_ref().map(|data| (&row.approach_id, data)))
+            .sorted_by_key(|(_, data)| &data.added_at)
             .rev()
-            .unique_by(|&(problem_id, approach_id, _)| (problem_id, approach_id))
-            .sorted_by_key(|(_, _, data)| &data.answered_at)
+            .unique_by(|&(approach_id, _)| approach_id)
+            .sorted_by_key(|(_, data)| &data.added_at)
     }
 }
 
@@ -104,22 +95,21 @@ impl SpacedRepetitionV1 {
 mod tests {
     use super::*;
     use crate::queues::{
-        AnswerState::{self, *},
         Cadence,
+        OutcomeType::{self, *},
     };
 
     fn a(
-        problem_id: &str,
+        approach_id: &str,
         consecutive_correct: u32,
         answered_at: Option<Clock>,
-        state: AnswerState,
-    ) -> AnsweredProblem {
-        AnsweredProblem {
-            problem_id: problem_id.to_string(),
-            approach_id: None,
-            data: Some(AnswerData {
-                consecutive_correct,
-                answered_at: answered_at.unwrap().now,
+        state: OutcomeType,
+    ) -> Outcome {
+        Outcome {
+            approach_id: approach_id.to_string(),
+            data: Some(OutcomeData {
+                progress: consecutive_correct,
+                added_at: answered_at.unwrap().now,
                 state,
             }),
         }
@@ -137,22 +127,20 @@ mod tests {
     fn simple_case() {
         let (chooser, clock) = spaced_repetition();
         let history = vec![
-            a("0", 0, clock.ticks(1), Unseen),
-            a("1", 2, clock.ticks(-1), Correct),
-            a("2", 0, clock.ticks(-2), Incorrect),
+            a("0", 0, clock.ticks(1), NeedsRetry),
+            a("1", 2, clock.ticks(-1), Completed),
+            a("2", 0, clock.ticks(-2), NeedsRetry),
         ];
         let next = chooser.choose(clock.ticks(-1).unwrap(), &history).unwrap();
 
         let NextProblem::Ready {
-            problem_id,
             approach_id,
             available_at,
         } = next
         else {
             panic!()
         };
-        assert_eq!(problem_id, "2");
-        assert!(approach_id.is_none());
+        assert_eq!(approach_id, "2");
         assert!(time_eq(available_at, clock.ticks(-1)));
     }
 
@@ -169,22 +157,20 @@ mod tests {
     fn several_available_problems() {
         let (chooser, clock) = spaced_repetition();
         let history = vec![
-            a("0", 1, clock.ticks(-1), Correct),
-            a("1", 2, clock.ticks(-3), Correct),
-            a("2", 3, clock.ticks(-10), Correct),
+            a("0", 1, clock.ticks(-1), Completed),
+            a("1", 2, clock.ticks(-3), Completed),
+            a("2", 3, clock.ticks(-10), Completed),
         ];
 
         let next = chooser.choose(clock.ticks(-2).unwrap(), &history).unwrap();
         let NextProblem::Ready {
-            problem_id,
             approach_id,
             available_at,
         } = next
         else {
             panic!()
         };
-        assert_eq!(problem_id, "2");
-        assert!(approach_id.is_none());
+        assert_eq!(approach_id, "2");
         assert!(time_eq(available_at, clock.ticks(-2)));
     }
 
@@ -192,9 +178,9 @@ mod tests {
     fn more_than_one_choice() {
         let (chooser, clock) = spaced_repetition();
         let history = vec![
-            a("0", 1, clock.ticks(0), Correct),
-            a("0", 0, clock.ticks(-1), Incorrect),
-            a("0", 0, clock.ticks(-2), Incorrect),
+            a("0", 1, clock.ticks(0), Completed),
+            a("0", 0, clock.ticks(-1), NeedsRetry),
+            a("0", 0, clock.ticks(-2), NeedsRetry),
         ];
         let next = chooser.choose(clock.ticks(1).unwrap(), &history).unwrap();
 
@@ -208,9 +194,9 @@ mod tests {
     fn no_ready_questions_1() {
         let (chooser, clock) = spaced_repetition();
         let history = vec![
-            a("0", 1, clock.ticks(0), Correct),
-            a("1", 2, clock.ticks(0), Correct),
-            a("2", 3, clock.ticks(0), Correct),
+            a("0", 1, clock.ticks(0), Completed),
+            a("1", 2, clock.ticks(0), Completed),
+            a("2", 3, clock.ticks(0), Completed),
         ];
         let next = chooser.choose(clock.ticks(1).unwrap(), &history).unwrap();
 
@@ -224,9 +210,9 @@ mod tests {
     fn no_ready_questions_2() {
         let (chooser, clock) = spaced_repetition();
         let history = vec![
-            a("0", 1, clock.ticks(0), Correct),
-            a("1", 1, clock.ticks(-1), Correct),
-            a("2", 4, clock.ticks(-1), Correct),
+            a("0", 1, clock.ticks(0), Completed),
+            a("1", 1, clock.ticks(-1), Completed),
+            a("2", 4, clock.ticks(-1), Completed),
         ];
         let next = chooser.choose(clock.ticks(0).unwrap(), &history).unwrap();
 
@@ -239,7 +225,7 @@ mod tests {
     #[test]
     fn no_ready_questions_3() {
         let (chooser, clock) = spaced_repetition();
-        let history = vec![a("0", 2, clock.ticks(0), Correct)];
+        let history = vec![a("0", 2, clock.ticks(0), Completed)];
         let next = chooser.choose(clock.ticks(3).unwrap(), &history).unwrap();
 
         let NextProblem::NotReady { available_at } = next else {
@@ -252,29 +238,25 @@ mod tests {
     fn unsolved_problems() {
         let (chooser, clock) = spaced_repetition();
         let history = vec![
-            AnsweredProblem {
-                problem_id: String::from("0"),
-                approach_id: None,
+            Outcome {
+                approach_id: String::from("0"),
                 data: None,
             },
-            AnsweredProblem {
-                problem_id: String::from("1"),
-                approach_id: None,
+            Outcome {
+                approach_id: String::from("1"),
                 data: None,
             },
         ];
         let next = chooser.choose(clock.ticks(0).unwrap(), &history).unwrap();
 
         let NextProblem::Ready {
-            problem_id,
             approach_id,
             available_at,
         } = next
         else {
             panic!()
         };
-        assert_eq!(problem_id, "0");
-        assert!(approach_id.is_none());
+        assert_eq!(approach_id, "0");
         assert!(time_eq(available_at, clock.ticks(0)));
     }
 
@@ -282,9 +264,9 @@ mod tests {
     fn hard_problems() {
         let (chooser, clock) = spaced_repetition();
         let history = vec![
-            a("0", 0, clock.ticks(0), Unsure),
-            a("1", 0, clock.ticks(-1), Unsure),
-            a("2", 0, clock.ticks(-2), Unsure),
+            a("0", 0, clock.ticks(0), TooHard),
+            a("1", 0, clock.ticks(-1), TooHard),
+            a("2", 0, clock.ticks(-2), TooHard),
         ];
         let next = chooser.choose(clock.ticks(0).unwrap(), &history).unwrap();
 
@@ -299,10 +281,10 @@ mod tests {
         // The next available time is not taken from the first unanswered question
         let (chooser, clock) = spaced_repetition();
         let history = vec![
-            a("0", 0, clock.ticks(-2), Unsure),
-            a("1", 1, clock.ticks(-1), Correct),
-            a("2", 0, clock.ticks(0), Incorrect),
-            a("3", 1, clock.ticks(1), Correct),
+            a("0", 0, clock.ticks(-2), TooHard),
+            a("1", 1, clock.ticks(-1), Completed),
+            a("2", 0, clock.ticks(0), NeedsRetry),
+            a("3", 1, clock.ticks(1), Completed),
         ];
         let next = chooser.choose(clock.ticks(0).unwrap(), &history).unwrap();
 

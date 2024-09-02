@@ -1,5 +1,5 @@
 use crate::{
-    types::{ApiError, ApiJson, ApiOk, ApiResponse, Approach, Problem, Result},
+    types::{ApiError, ApiJson, ApiOk, ApiResponse, Approach, Result, Task},
     ApiContext,
 };
 use axum::{
@@ -21,7 +21,7 @@ struct PrereqSkill {
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ProblemData {
-    problem: Problem,
+    problem: Task,
     approaches: Vec<Approach>,
     prereq_skills: Vec<PrereqSkill>,
 }
@@ -30,7 +30,7 @@ pub async fn fetch(
     ctx: Extension<ApiContext>,
     Path(problem_id): Path<String>,
 ) -> Result<ApiJson<ApiResponse<ProblemData>>> {
-    let problem = sqlx::query_as::<_, Problem>("select * from problems where id = ?")
+    let problem = sqlx::query_as::<_, Task>("select * from problems where id = ?")
         .bind(&problem_id)
         .fetch_one(&ctx.db)
         .await?;
@@ -76,7 +76,7 @@ impl Search {
     }
 }
 
-pub type ListData = Vec<Problem>;
+pub type ListData = Vec<Task>;
 
 pub async fn list(
     ctx: Extension<ApiContext>,
@@ -84,7 +84,7 @@ pub async fn list(
 ) -> Result<ApiJson<ApiResponse<ListData>>> {
     let search = search.unwrap_or_default().0;
     info!("searching problems: {:?}", search);
-    let data = crate::sqlx::problems::list(&ctx.db, 20, search).await?;
+    let data = crate::sqlx::tasks::list(&ctx.db, 20, search).await?;
     Ok(ApiJson(ApiResponse::data(data)))
 }
 
@@ -195,7 +195,7 @@ pub mod prereqs {
         prereq_skill_id: String,
     }
 
-    pub async fn add_skill(
+    pub async fn add_approach(
         ctx: Extension<ApiContext>,
         Path(problem_id): Path<String>,
         ApiJson(payload): ApiJson<AddSkillPayload>,
@@ -230,7 +230,7 @@ pub mod prereqs {
         prereq_skill_id: String,
     }
 
-    pub async fn remove_skill(
+    pub async fn remove_approach(
         ctx: Extension<ApiContext>,
         Path(problem_id): Path<String>,
         ApiJson(payload): ApiJson<RemoveSkillPayload>,
@@ -269,7 +269,7 @@ pub mod prereqs {
 
     pub type ListData = Vec<Skill>;
 
-    pub async fn available_skills(
+    pub async fn available_approaches(
         ctx: Extension<ApiContext>,
         Path(problem_id): Path<String>,
         search: Option<Query<Search>>,

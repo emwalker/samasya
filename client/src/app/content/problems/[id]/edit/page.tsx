@@ -4,7 +4,7 @@ import React, {
   ChangeEvent, useCallback, useEffect, useState,
 } from 'react'
 import problemService, { FetchResponse } from '@/services/problems'
-import { ProblemType } from '@/types'
+import { TaskType } from '@/types'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import {
@@ -43,7 +43,7 @@ function SaveButton({
   )
 }
 
-function EditForm({ problem }: { problem: ProblemType }) {
+function EditForm({ problem }: { problem: TaskType }) {
   const [summary, setSummary] = useState(problem.summary)
   const [questionText, setQuestionText] = useState(problem.questionText || '')
   const [questionUrl, setQuestionUrl] = useState(problem.questionUrl || '')

@@ -1,49 +1,44 @@
 import {
-  ProblemType, ApiError, ApproachType,
+  TaskType, ApiError, ApproachType,
   SkillType,
 } from '@/types'
 
-export type PrereqSkillType = {
-  problemId: string,
-  approachId: string | null,
-  prereqSkillId: string,
-  prereqSkillSummary: string,
+export type PrereqTaskType = {
+  taskId: string,
+  approachId: string,
+  prereqTaskId: string,
+  prereqTaskSummary: string,
 }
 
 export type FetchResponse = {
   data: {
-    problem: ProblemType,
+    task: TaskType,
     approaches: ApproachType[],
-    prereqSkills: PrereqSkillType[],
+    prereqTasks: PrereqTaskType[],
   } | null,
   errors: ApiError[]
 }
 
-async function fetchProblem(id: string): Promise<FetchResponse> {
+async function fetchTask(id: string): Promise<FetchResponse> {
   const response = await fetch(
-    `http://localhost:8000/api/v1/problems/${id}`,
+    `http://localhost:8000/api/v1/tasks/${id}`,
     { cache: 'no-store' },
   )
   return response.json()
 }
 
 export type ListResponse = {
-  data: ProblemType[]
+  data: TaskType[]
 }
 
 async function list(
   args?: { searchString: string | null } | undefined,
 ): Promise<ListResponse> {
   const url = args?.searchString
-    ? `http://localhost:8000/api/v1/problems?q=${encodeURIComponent(args?.searchString)}`
-    : 'http://localhost:8000/api/v1/problems'
-  const res = await fetch(url, { cache: 'no-store' })
-
-  if (!res.ok) {
-    return Promise.resolve({ data: [] })
-  }
-
-  return res.json()
+    ? `http://localhost:8000/api/v1/tasks?q=${encodeURIComponent(args?.searchString)}`
+    : 'http://localhost:8000/api/v1/tasks'
+  const response = await fetch(url, { cache: 'no-store' })
+  return response.json()
 }
 
 export type UpdatePayload = {
@@ -53,7 +48,7 @@ export type UpdatePayload = {
 }
 
 async function update(id: string, payload: UpdatePayload) {
-  return fetch(`http://localhost:8000/api/v1/problems/${id}`, {
+  return fetch(`http://localhost:8000/api/v1/tasks/${id}`, {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload),
@@ -61,7 +56,7 @@ async function update(id: string, payload: UpdatePayload) {
 }
 
 async function add(payload: UpdatePayload) {
-  return fetch('http://localhost:8000/api/v1/problems', {
+  return fetch('http://localhost:8000/api/v1/tasks', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload),
@@ -73,15 +68,15 @@ type PrereqResponse = {
   errors: ApiError[],
 }
 
-type AddSkillPayload = {
-  problemId: string,
-  approachId: string | null,
+type AddTaskPayload = {
+  taskId: string,
+  approachId: string,
   prereqSkillId: string,
 }
 
-async function addSkill(payload: AddSkillPayload): Promise<PrereqResponse> {
+async function addPrereqTask(payload: AddTaskPayload): Promise<PrereqResponse> {
   const response = await fetch(
-    `http://localhost:8000/api/v1/problems/${payload.problemId}/prereqs/add-skill`,
+    `http://localhost:8000/api/v1/tasks/${payload.taskId}/prereqs/add-task`,
     {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -91,15 +86,15 @@ async function addSkill(payload: AddSkillPayload): Promise<PrereqResponse> {
   return response.json()
 }
 
-export type RemoveSkillPayload = {
-  problemId: string,
-  approachId: string | null,
+export type RemoveTaskPayload = {
+  taskId: string,
+  approachId: string,
   prereqSkillId: string,
 }
 
-async function removeSkill(payload: RemoveSkillPayload): Promise<PrereqResponse> {
+async function removePrereqTask(payload: RemoveTaskPayload): Promise<PrereqResponse> {
   const response = await fetch(
-    `http://localhost:8000/api/v1/problems/${payload.problemId}/prereqs/remove-skill`,
+    `http://localhost:8000/api/v1/tasks/${payload.taskId}/prereqs/remove-task`,
     {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -119,10 +114,10 @@ type AvailablePrereqSkillsResponse = {
   errors: ApiError[],
 }
 
-async function availablePrereqSkills(
+async function availablePrereqTasks(
   { problemId, searchString }: AvailablePrereqSkillsProps,
 ): Promise<AvailablePrereqSkillsResponse> {
-  const urlBase = `http://localhost:8000/api/v1/problems/${problemId}/prereqs/available-skills`
+  const urlBase = `http://localhost:8000/api/v1/tasks/${problemId}/prereqs/available-tasks`
   const url = searchString
     ? `${urlBase}?q=${encodeURIComponent(searchString)}`
     : urlBase
@@ -134,5 +129,5 @@ async function availablePrereqSkills(
 }
 
 export default {
-  fetch: fetchProblem, list, update, add, addSkill, removeSkill, availablePrereqSkills,
+  fetch: fetchTask, list, update, add, addPrereqTask, removePrereqTask, availablePrereqTasks,
 }

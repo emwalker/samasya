@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useEffect, useState } from 'react'
-import queueService, { AnswerState, FetchResponse, QueueAnswerType } from '@/services/queues'
+import queueService, { OutcomeType, FetchResponse, QueueAnswerType } from '@/services/queues'
 import TitleAndButton from '@/components/TitleAndButton'
 import {
   Button, Card, Box, LoadingOverlay, Table, Badge, Center,
@@ -23,7 +23,7 @@ function colorForConsecutiveCorrect(correct: number) {
   return 'lime.1'
 }
 
-const badgeColors: Record<AnswerState, string> = {
+const badgeColors: Record<OutcomeType, string> = {
   correct: 'green',
   incorrect: 'yellow',
   unsure: 'orange',
@@ -105,7 +105,7 @@ export default function Page(props: Props) {
           <Box mb={10}>This queue will help to work towards mastery of this problem:</Box>
 
           <Card shadow="lg" mb={30}>
-            {data.targetProblem.summary}
+            {data.targetTask.summary}
           </Card>
 
           <Table>

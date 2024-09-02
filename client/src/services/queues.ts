@@ -1,8 +1,10 @@
 import {
-  QueueStrategy, QueueType, ApiError,
-  ProblemType,
-  ApproachType,
+  ApiError,
   ApiResponse,
+  ApproachType,
+  QueueStrategy,
+  QueueType,
+  TaskType,
 } from '@/types'
 
 export type QueueAnswerType = {
@@ -10,7 +12,7 @@ export type QueueAnswerType = {
   answerId: string,
   answerAnsweredAt: string,
   answerAvailableAt: string,
-  answerState: AnswerState,
+  answerState: OutcomeType,
   answerConsecutiveCorrect: number,
 }
 
@@ -18,7 +20,7 @@ export type FetchResponse = {
   data: {
     queue: QueueType,
     answers: QueueAnswerType[],
-    targetProblem: ProblemType,
+    targetTask: TaskType,
   } | null
 }
 
@@ -55,7 +57,7 @@ async function list(userId: string): Promise<ListResponse> {
 export type UpdatePayload = {
   strategy: QueueStrategy,
   summary: string,
-  targetProblemId: string,
+  targetTaskId: string,
 }
 
 async function add(userId: string, update: UpdatePayload): Promise<ApiResponse<any>> {
@@ -69,8 +71,8 @@ async function add(userId: string, update: UpdatePayload): Promise<ApiResponse<a
 
 type Ready = {
   queue: QueueType,
-  problem: ProblemType,
-  problemId: string,
+  task: TaskType,
+  taskId: string,
   approach: ApproachType | null,
   approachId: string | null,
   availableAt: Date,
@@ -79,8 +81,8 @@ type Ready = {
 
 type NotReady = {
   queue: QueueType,
-  problem: null,
-  problemId?: undefined,
+  task: null,
+  taskId?: undefined,
   approach: null,
   approachId?: undefined,
   availableAt: Date,
@@ -89,23 +91,23 @@ type NotReady = {
 
 type EmptyQueue = {
   queue: QueueType,
-  problem: null,
-  problemId?: undefined,
+  task: null,
+  taskId?: undefined,
   approach: null,
   approachId?: undefined,
   availableAt: null,
   status: 'emptyQueue',
 }
 
-type NextProblemData = Ready | NotReady | EmptyQueue
+type NextTaskData = Ready | NotReady | EmptyQueue
 
-export type NextProblemResponse = {
-  data: NextProblemData,
+export type NextTaskResponse = {
+  data: NextTaskData,
   errors: ApiError[],
 }
 
-async function nextProblem(queueId: string): Promise<NextProblemResponse> {
-  const response = await fetch(`http://localhost:8000/api/v1/queues/${queueId}/next-problem`, {
+async function nextTask(queueId: string): Promise<NextTaskResponse> {
+  const response = await fetch(`http://localhost:8000/api/v1/queues/${queueId}/next-task`, {
     method: 'GET',
     headers: { 'Content-Type': 'application/json' },
     cache: 'no-store',
@@ -113,26 +115,26 @@ async function nextProblem(queueId: string): Promise<NextProblemResponse> {
   return response.json()
 }
 
-export type AnswerState = 'correct' | 'incorrect' | 'unsure'
+export type OutcomeType = 'completed' | 'needsRetry' | 'tooHard'
 
 export type AnswerProblemPayload = {
   queueId: string,
-  problemId: string,
+  taskId: string,
   approachId: string | null,
-  answerState: AnswerState,
+  outcome: OutcomeType,
 }
 
-type AnswerProblemResponse = {
+type OutcomeResponse = {
   data: {
-    answerId: string,
+    outcomeId: string,
     message: string,
   } | null,
   errors: ApiError[],
 }
 
-async function addAnswer(payload: AnswerProblemPayload): Promise<AnswerProblemResponse> {
+async function addOutcome(payload: AnswerProblemPayload): Promise<OutcomeResponse> {
   const response = await fetch(
-    `http://localhost:8000/api/v1/queues/${payload.queueId}/add-answer`,
+    `http://localhost:8000/api/v1/queues/${payload.queueId}/add-outcome`,
     {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -143,5 +145,5 @@ async function addAnswer(payload: AnswerProblemPayload): Promise<AnswerProblemRe
 }
 
 export default {
-  fetch: fetchQueue, list, add, nextProblem, addAnswer,
+  fetch: fetchQueue, list, add, nextTask, addOutcome,
 }

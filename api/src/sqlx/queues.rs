@@ -1,30 +1,28 @@
-use crate::types::{
-    Answer, AnswerConnection, AnswerEdge, ApiError, Problem, Queue, QueueStrategy, Result,
-};
-use serde::Serialize;
+use crate::types::{ApiError, Cadence, Queue, QueueStrategy, Result};
 use sqlx::SqlitePool;
-
-use super::problems;
 
 #[derive(sqlx::FromRow)]
 struct QueueRow {
     pub id: String,
     pub summary: String,
     pub strategy: String,
-    pub target_problem_id: String,
+    pub target_approach_id: String,
+    pub cadence: String,
 }
 
 impl TryFrom<QueueRow> for Queue {
     type Error = ApiError;
 
-    fn try_from(value: QueueRow) -> std::result::Result<Self, Self::Error> {
-        let strategy = value.strategy.parse::<QueueStrategy>()?;
+    fn try_from(row: QueueRow) -> std::result::Result<Self, Self::Error> {
+        let strategy = row.strategy.parse::<QueueStrategy>()?;
+        let cadence = row.cadence.parse::<Cadence>()?;
 
         Ok(Self {
-            id: value.id,
-            summary: value.summary,
+            id: row.id,
+            summary: row.summary,
             strategy,
-            target_problem_id: value.target_problem_id,
+            target_approach_id: row.target_approach_id,
+            cadence,
         })
     }
 }
@@ -39,40 +37,4 @@ pub async fn fetch_all(db: &SqlitePool, user_id: &String, limit: i32) -> Result<
     rows.into_iter()
         .map(|row| row.try_into())
         .collect::<Result<Vec<Queue>>>()
-}
-
-#[derive(Serialize)]
-#[serde(rename_all = "camelCase")]
-pub struct QueueResult {
-    queue: Queue,
-    target_problem: Problem,
-    answers: AnswerConnection,
-}
-
-pub async fn fetch_wide(db: &SqlitePool, id: &String) -> Result<QueueResult> {
-    let queue: Queue = sqlx::query_as::<_, QueueRow>("select * from queues where id = $1")
-        .bind(id)
-        .fetch_one(db)
-        .await?
-        .try_into()?;
-
-    let target_problem = problems::fetch_one(db, &queue.target_problem_id).await?;
-
-    let answers = sqlx::query_as::<_, Answer>("select * from answers where queue_id = $1 limit 20")
-        .bind(id)
-        .fetch_all(db)
-        .await?;
-
-    let answers = AnswerConnection {
-        edges: answers
-            .into_iter()
-            .map(|answer| AnswerEdge { node: answer })
-            .collect(),
-    };
-
-    Ok(QueueResult {
-        queue,
-        target_problem,
-        answers,
-    })
 }

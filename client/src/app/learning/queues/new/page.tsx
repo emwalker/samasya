@@ -7,8 +7,8 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import queueService from '@/services/queues'
 import contants from '@/constants'
-import ProblemList from '@/components/ProblemList'
-import problemService from '@/services/problems'
+import AvailableTasks from '@/components/AvailableTasks'
+import taskService from '@/services/tasks'
 import { Button, ComboboxData, TextInput } from '@mantine/core'
 import handleResponse from '@/app/handleResponse'
 
@@ -18,17 +18,17 @@ type AddButtonProps = {
   targetProblemId: string,
 }
 
-function AddButton({ disabled, summary, targetProblemId }: AddButtonProps) {
+function AddButton({ disabled, summary, targetProblemId: targetTaskId }: AddButtonProps) {
   const router = useRouter()
 
   const onClick = useCallback(async () => {
     const response = await queueService.add(
       contants.placeholderUserId,
-      { summary, targetProblemId, strategy: 'spacedRepetitionV1' },
+      { summary, targetTaskId: targetTaskId, strategy: 'spacedRepetitionV1' },
     )
 
     handleResponse(router, response, '/learning/queues', 'Unable to add queue')
-  }, [summary, targetProblemId, router])
+  }, [summary, targetTaskId, router])
 
   return (
     <Button disabled={disabled} onClick={onClick} type="submit">Start</Button>
@@ -37,7 +37,7 @@ function AddButton({ disabled, summary, targetProblemId }: AddButtonProps) {
 
 export default function Page() {
   const [summary, setSummary] = useState('')
-  const [targetProblemId, setTargetProblemId] = useState('')
+  const [targetTaskId, setTargetProblemId] = useState('')
   const [initialProblems, setInitialProblems] = useState<ComboboxData>([])
 
   const summaryOnChange = useCallback(
@@ -46,14 +46,14 @@ export default function Page() {
   )
 
   useEffect(() => {
-    problemService.list()
+    taskService.list()
       .then(({ data }) => {
         const options = data.map(({ id: value, summary: label }) => ({ value, label }))
         setInitialProblems(options)
       })
   }, [setInitialProblems])
 
-  const problemOnChange = useCallback(
+  const taskOnChange = useCallback(
     (problemId: string | null) => {
       if (problemId == null) {
         setTargetProblemId('')
@@ -64,7 +64,7 @@ export default function Page() {
     [setTargetProblemId],
   )
 
-  const disabled = summary.length === 0 || targetProblemId.length === 0
+  const disabled = summary.length === 0 || targetTaskId.length === 0
 
   return (
     <main>
@@ -81,10 +81,10 @@ export default function Page() {
         <br />
 
         <div>
-          <ProblemList
+          <AvailableTasks
             initialProblems={initialProblems}
-            label="Problem to work towards"
-            setProblem={problemOnChange}
+            label="Challenge to work towards"
+            setProblem={taskOnChange}
           />
         </div>
 
@@ -92,7 +92,7 @@ export default function Page() {
           <AddButton
             disabled={disabled}
             summary={summary}
-            targetProblemId={targetProblemId}
+            targetProblemId={targetTaskId}
           />
           {' or '}
           <Link href="/learning/queues">cancel</Link>

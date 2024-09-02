@@ -1,10 +1,9 @@
-use super::problems;
-use crate::types::{ApiError, Approach, Problem, Result, Skill, WideApproach};
+use crate::types::{ApiError, Approach, Result, Skill, Task, WideApproach};
 use sqlx::sqlite::SqlitePool;
 
 async fn add_relations(
     db: &SqlitePool,
-    problem: &Problem,
+    problem: &Task,
     rows: Vec<Approach>,
 ) -> Result<Vec<WideApproach>> {
     let mut approaches: Vec<WideApproach> = vec![];
@@ -67,7 +66,7 @@ pub async fn fetch_wide(db: &SqlitePool, id: &str) -> Result<WideApproach> {
     .fetch_one(db)
     .await?;
 
-    let problem = problems::fetch_one(db, &approach.problem_id).await?;
+    let problem = super::tasks::fetch_one(db, &approach.task_id).await?;
 
     let mut wide_approaches = add_relations(db, &problem, vec![approach]).await?;
     if wide_approaches.len() == 1 {

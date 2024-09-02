@@ -18,7 +18,7 @@ pub enum ApiError {
     ChronoParseError(#[from] chrono::ParseError),
 
     #[error("failed to load config")]
-    Config(String),
+    Config(#[from] envy::Error),
 
     #[error("sqlx error: {0}")]
     SqlxError(#[from] sqlx::Error),
@@ -42,7 +42,7 @@ pub enum ApiError {
     JsonExtractorRejection(#[from] JsonRejection),
 }
 
-#[derive(Serialize)]
+#[derive(Debug, Deserialize, Eq, PartialEq, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub enum ApiErrorLevel {
     Error,
@@ -50,12 +50,13 @@ pub enum ApiErrorLevel {
     Warn,
 }
 
-#[derive(Serialize)]
+#[derive(Debug, Deserialize, Eq, PartialEq, Serialize)]
 pub struct ApiErrorData {
     pub message: String,
     pub level: ApiErrorLevel,
 }
 
+#[derive(Debug, Deserialize)]
 pub struct ApiResponse<T> {
     pub data: Option<T>,
     pub errors: Vec<ApiErrorData>,
@@ -126,10 +127,18 @@ impl IntoResponse for ApiError {
                 },
             ),
 
-            Self::Database(message) | Self::Config(message) => (
+            Self::Database(message) => (
                 StatusCode::INTERNAL_SERVER_ERROR,
                 ApiErrorData {
                     message,
+                    level: ApiErrorLevel::Error,
+                },
+            ),
+
+            Self::Config(err) => (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                ApiErrorData {
+                    message: err.to_string(),
                     level: ApiErrorLevel::Error,
                 },
             ),
@@ -207,7 +216,7 @@ impl IntoResponse for ApiError {
 
 pub type Result<T> = std::result::Result<T, ApiError>;
 
-#[derive(Debug, Eq, Ord, PartialEq, PartialOrd, Serialize)]
+#[derive(Debug, Deserialize, Eq, Ord, PartialEq, PartialOrd, Serialize)]
 pub struct Timestamp(pub(crate) DateTime<Utc>);
 
 impl From<DateTime<Utc>> for Timestamp {
@@ -248,31 +257,27 @@ pub struct Skill {
     pub description: Option<String>,
 }
 
-#[derive(Clone, Serialize, sqlx::FromRow)]
+#[derive(Clone, Debug, Deserialize, Serialize, sqlx::FromRow)]
 #[serde(rename_all = "camelCase")]
-pub struct Problem {
+pub struct Task {
     pub id: String,
     pub summary: String,
-    pub question_text: Option<String>,
-    pub question_url: Option<String>,
 }
 
 #[derive(Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct WideProblem {
     #[serde(flatten)]
-    pub problem: Problem,
+    pub problem: Task,
     pub approaches: Vec<WideApproach>,
 }
 
-#[derive(Clone, Serialize, sqlx::FromRow)]
+#[derive(Clone, Debug, Deserialize, Serialize, sqlx::FromRow)]
 #[serde(rename_all = "camelCase")]
 pub struct Approach {
-    pub default: bool,
+    pub unspecified: bool,
     pub id: String,
-    pub name: String,
-    #[serde(skip)]
-    pub problem_id: String,
+    pub task_id: String,
     pub summary: String,
 }
 
@@ -283,7 +288,7 @@ pub struct WideApproach {
     pub approach: Approach,
     pub prereq_approaches: Vec<Approach>,
     pub prereq_skills: Vec<Skill>,
-    pub problem: Problem,
+    pub problem: Task,
 }
 
 #[derive(Clone, Serialize, sqlx::FromRow)]
@@ -329,13 +334,14 @@ impl FromStr for QueueStrategy {
     }
 }
 
-#[derive(Clone, Serialize, sqlx::FromRow)]
+#[derive(Clone, Deserialize, Serialize, sqlx::FromRow)]
 #[serde(rename_all = "camelCase")]
 pub struct Queue {
     pub id: String,
     pub summary: String,
     pub strategy: QueueStrategy,
-    pub target_problem_id: String,
+    pub target_approach_id: String,
+    pub cadence: Cadence,
 }
 
 #[derive(Clone, Serialize, sqlx::FromRow)]
@@ -351,6 +357,16 @@ pub struct WideQueue {
 pub enum Cadence {
     Minutes,
     Hours,
+}
+
+impl Display for Cadence {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let value = match self {
+            Self::Minutes => "minutes",
+            Self::Hours => "hours",
+        };
+        f.write_str(value)
+    }
 }
 
 impl FromStr for Cadence {
@@ -411,14 +427,13 @@ impl Clock {
 
 #[derive(Debug, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
-pub enum AnswerState {
-    Unseen,
-    Unsure,
-    Correct,
-    Incorrect,
+pub enum OutcomeType {
+    Completed,
+    NeedsRetry,
+    TooHard,
 }
 
-impl AnswerState {
+impl OutcomeType {
     pub fn next_available_at(
         &self,
         clock: &Clock,
@@ -426,7 +441,7 @@ impl AnswerState {
         consecutive_correct: u32,
     ) -> Result<Timestamp> {
         let n = match self {
-            Self::Unsure => 90,
+            Self::TooHard => 90,
             _ => 2i32.pow(consecutive_correct),
         };
         debug_assert!(n > 0, "expected 1 or more ticks");

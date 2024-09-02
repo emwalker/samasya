@@ -1,5 +1,4 @@
 PRAGMA foreign_keys=OFF;
-BEGIN TRANSACTION;
 CREATE TABLE users (
   created_at timestamp not null,
   id text primary key not null,
@@ -204,14 +203,14 @@ CREATE TABLE outcomes (
   foreign key(approach_id) references approaches(id),
   foreign key(user_id) references users(id)
 );
-CREATE TABLE _sqlx_migrations (
-    version BIGINT PRIMARY KEY,
-    description TEXT NOT NULL,
-    installed_on TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    success BOOLEAN NOT NULL,
-    checksum BLOB NOT NULL,
-    execution_time BIGINT NOT NULL
-);
 CREATE UNIQUE INDEX task_versions_uniq_idx on task_versions
   (task_id, ifnull(parent_version_id, 0));
-COMMIT;
+
+insert into tasks (id, action, summary)
+  values ('5bfdf4f7-c0bf-48eb-aa89-5643314738ec', 'completeProblem', 'Problem to be solved');
+
+insert into approaches (id, task_id, summary, unspecified)
+  values ('e1994385-5e8f-4651-a13b-429bad75bc54', '5bfdf4f7-c0bf-48eb-aa89-5643314738ec', 'Unspecified', true);
+
+insert into queues (id, strategy, cadence, summary, target_approach_id)
+  values ('2df309a7-8ece-4a14-a5f5-49699d2cba54', 'spacedRepetitionV1', 'minutes', 'A queue of test problems', 'e1994385-5e8f-4651-a13b-429bad75bc54');

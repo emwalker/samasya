@@ -27,6 +27,9 @@ load:
 	rm -f api/development.db
 	sqlite3 api/development.db < data/fixtures.sql
 
+migrate:
+	$(MAKE) -C api migrate
+
 prod-build:
 	$(MAKE) -C api prod-build
 	$(MAKE) -C client prod-build

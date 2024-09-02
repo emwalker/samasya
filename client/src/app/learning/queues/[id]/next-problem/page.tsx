@@ -8,7 +8,7 @@ import Link from 'next/link'
 import {
   Box, Button, Card, Group, LoadingOverlay, Title,
 } from '@mantine/core'
-import queueService, { AnswerState, NextProblemResponse } from '@/services/queues'
+import queueService, { OutcomeType, NextTaskResponse } from '@/services/queues'
 import { handleError } from '@/app/handleResponse'
 import { notifications } from '@mantine/notifications'
 import TitleAndButton from '@/components/TitleAndButton'
@@ -16,8 +16,8 @@ import QuestionUrlPrompt from '@/components/QuestionUrlPrompt/page'
 import classes from './page.module.css'
 
 function useButtonHandler(
-  updateAnswer: (arg0: AnswerState) => Promise<void>,
-  answerState: AnswerState,
+  updateAnswer: (arg0: OutcomeType) => Promise<void>,
+  answerState: OutcomeType,
 ) {
   const callback = useCallback(async () => {
     updateAnswer(answerState)
@@ -32,26 +32,26 @@ type Props = {
 }
 
 export default function Page(props: Props) {
-  const [response, setResponse] = useState<NextProblemResponse | null>(null)
+  const [response, setResponse] = useState<NextTaskResponse | null>(null)
   const queueId = props?.params?.id
-  const problemId = response?.data?.problemId
+  const problemId = response?.data?.taskId
   const approachId = response?.data?.approachId
 
   useEffect(() => {
     async function fetchData() {
       if (queueId == null) return
-      const currResponse = await queueService.nextProblem(queueId)
+      const currResponse = await queueService.nextTask(queueId)
       handleError(currResponse, 'Failed to get problem')
       setResponse(currResponse)
     }
     fetchData()
   }, [queueId, setResponse])
 
-  const updateAnswer = useCallback(async (answerState: AnswerState) => {
+  const updateAnswer = useCallback(async (answerState: OutcomeType) => {
     if (queueId == null || problemId == null) return
 
-    const answerResponse = await queueService.addAnswer({
-      queueId, problemId, approachId: approachId || null, answerState,
+    const answerResponse = await queueService.addOutcome({
+      queueId, taskId: problemId, approachId: approachId || null, outcome: answerState,
     })
 
     if (answerResponse.data?.message === 'ok') {
@@ -62,7 +62,7 @@ export default function Page(props: Props) {
         position: 'top-center',
       })
       // Refresh page
-      queueService.nextProblem(queueId).then(setResponse)
+      queueService.nextTask(queueId).then(setResponse)
     } else {
       handleError(answerResponse, 'Problem submitting answer')
     }
@@ -90,7 +90,7 @@ export default function Page(props: Props) {
   }
 
   const queue = response?.data?.queue
-  const problem = response?.data?.problem
+  const problem = response?.data?.task
   const approach = response?.data?.approach
 
   if (response != null && status === 'notReady') {

@@ -2,89 +2,106 @@ mod chooser;
 
 use crate::{
     types::{
-        AnswerState, ApiError, ApiJson, ApiResponse, Approach, Cadence, Clock, Problem, Queue,
-        QueueStrategy, Result, Timestamp,
+        ApiError, ApiJson, ApiResponse, Approach, Cadence, Clock, OutcomeType, Queue,
+        QueueStrategy, Result, Task, Timestamp,
     },
     ApiContext, PLACHOLDER_USER_ID,
 };
-use axum::{extract::Path, Extension};
+use axum::{extract::Path, response::IntoResponse, Extension};
 use chooser::Choose;
 use chrono::Utc;
+use hyper::StatusCode;
 use serde::{Deserialize, Serialize};
 use std::{fmt::Display, str::FromStr};
 use tracing::info;
 use uuid::Uuid;
 
+pub type ListData = Vec<Queue>;
+
 pub async fn list(
     ctx: Extension<ApiContext>,
     Path(user_id): Path<String>,
-) -> Result<ApiJson<ApiResponse<Vec<Queue>>>> {
+) -> Result<ApiJson<ApiResponse<ListData>>> {
     let data = crate::sqlx::queues::fetch_all(&ctx.db, &user_id, 20).await?;
     Ok(ApiJson(ApiResponse::data(data)))
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(Debug, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
-pub struct UpdatePayload {
-    strategy: QueueStrategy,
-    summary: String,
-    target_problem_id: String,
+pub struct AddPayload {
+    pub strategy: QueueStrategy,
+    pub summary: String,
+    pub target_approach_id: String,
+    pub cadence: Cadence,
+}
+
+#[derive(Debug, Deserialize, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct AddData {
+    pub added_queue_id: String,
 }
 
 pub async fn add(
     ctx: Extension<ApiContext>,
     Path(user_id): Path<String>,
-    ApiJson(update): ApiJson<UpdatePayload>,
-) -> Result<ApiJson<ApiResponse<String>>> {
-    info!("user {}: adding queue: {:?}", user_id, update);
+    ApiJson(payload): ApiJson<AddPayload>,
+) -> Result<impl IntoResponse> {
+    info!("user {}: adding queue: {:?}", user_id, payload);
     let id = uuid::Uuid::new_v4().to_string();
-    let created_at = chrono::Utc::now();
+
+    if user_id != PLACHOLDER_USER_ID {
+        return Err(ApiError::UnprocessableEntity(format!(
+            "unknown user: {user_id}"
+        )));
+    }
 
     sqlx::query(
         "insert into queues (
-            id, summary, strategy, target_problem_id, user_id, created_at, updated_at
+            id, target_approach_id, summary, strategy, user_id, cadence
          )
-         values ($1, $2, $3, $4, $5, $6, $7)",
+         values ($1, $2, $3, $4, $5, $6)",
     )
     .bind(&id)
-    .bind(&update.summary)
-    .bind(update.strategy.to_string())
-    .bind(&update.target_problem_id)
+    .bind(&payload.target_approach_id)
+    .bind(&payload.summary)
+    .bind(payload.strategy.to_string())
     .bind(&user_id)
-    .bind(created_at)
-    .bind(created_at)
+    .bind(payload.cadence.to_string())
     .execute(&ctx.db)
     .await?;
 
-    Ok(ApiJson::ok())
+    Ok((
+        StatusCode::CREATED,
+        ApiJson(ApiResponse::data(AddData { added_queue_id: id })),
+    ))
 }
 
-#[derive(Debug, Serialize, sqlx::FromRow)]
+#[derive(Debug, Deserialize, Serialize, sqlx::FromRow)]
 #[serde(rename_all = "camelCase")]
-pub struct QueueAnswer {
-    problem_summary: String,
-    approach_name: Option<String>,
-    answer_id: String,
-    answer_answered_at: String,
-    answer_state: String,
-    answer_consecutive_correct: u32,
+pub struct QueueOutcomeRow {
+    task_name: String,
+    approach_name: String,
+    outcome_id: String,
+    added_at: String,
+    outcome: String,
+    progress: u32,
 }
 
-#[derive(Serialize)]
+#[derive(Debug, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
-pub struct WideQueueAnswer {
+pub struct QueueOutcome {
     #[serde(flatten)]
-    answer: QueueAnswer,
-    answer_available_at: String,
+    outcome: QueueOutcomeRow,
+    task_available_at: String,
 }
 
-#[derive(Serialize)]
+#[derive(Debug, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct FetchData {
-    queue: QueueRow,
-    answers: Vec<WideQueueAnswer>,
-    target_problem: Problem,
-    target_approach: Option<Approach>,
+    pub queue: QueueRow,
+    pub outcomes: Vec<QueueOutcome>,
+    pub target_problem: Task,
+    pub target_approach: Approach,
 }
 
 pub async fn fetch(
@@ -96,37 +113,32 @@ pub async fn fetch(
         .fetch_one(&ctx.db)
         .await?;
 
-    let target_problem = sqlx::query_as::<_, Problem>("select * from problems where id = ?")
-        .bind(&queue.target_problem_id)
+    let target_approach = sqlx::query_as::<_, Approach>("select * from approaches where id = ?")
+        .bind(&queue.target_approach_id)
         .fetch_one(&ctx.db)
         .await?;
 
-    let target_approach = if let Some(approach_id) = &queue.target_approach_id {
-        let approach = sqlx::query_as::<_, Approach>("select * from approaches where id = ?")
-            .bind(approach_id)
-            .fetch_one(&ctx.db)
-            .await?;
-        Some(approach)
-    } else {
-        None
-    };
+    let target_problem = sqlx::query_as::<_, Task>("select * from tasks where id = ?")
+        .bind(&target_approach.task_id)
+        .fetch_one(&ctx.db)
+        .await?;
 
     let cadence = queue.cadence.parse::<Cadence>()?;
     let clock = Clock::now(cadence);
 
-    let answers = sqlx::query_as::<_, QueueAnswer>(
+    let outcomes = sqlx::query_as::<_, QueueOutcomeRow>(
         "select
-            p.summary problem_summary,
-            ap.name approach_name,
-            a.id answer_id,
-            a.answered_at answer_answered_at,
-            a.state answer_state,
-            a.consecutive_correct answer_consecutive_correct
-         from answers a
-         join problems p on a.problem_id = p.id
-         left join approaches ap on a.approach_id = ap.id
-         where a.user_id = ? and a.queue_id = ?
-         order by a.answered_at desc
+            t.summary task_summary,
+            ap.summary approach_summary,
+            o.id outcome_id,
+            o.added_at,
+            o.outcome,
+            o.progress
+         from outcomes o
+         join tasks t on ap.task_id = t.id
+         join approaches ap on o.approach_id = ap.id
+         where o.user_id = ? and o.queue_id = ?
+         order by o.added_at desc
          limit 15",
     )
     .bind(PLACHOLDER_USER_ID)
@@ -134,65 +146,61 @@ pub async fn fetch(
     .fetch_all(&ctx.db)
     .await?;
 
-    let answers = answers
+    let outcomes = outcomes
         .into_iter()
-        .map(|answer| {
-            let state = answer.answer_state.parse::<AnswerState>()?;
-            let answered_at = answer.answer_answered_at.parse::<Timestamp>()?;
-            let answer_available_at: String = state
-                .next_available_at(&clock, &answered_at, answer.answer_consecutive_correct)?
+        .map(|outcome| {
+            let state = outcome.outcome.parse::<OutcomeType>()?;
+            let added_at = outcome.added_at.parse::<Timestamp>()?;
+            let task_available_at: String = state
+                .next_available_at(&clock, &added_at, outcome.progress)?
                 .to_iso_8601();
-            Ok(WideQueueAnswer {
-                answer,
-                answer_available_at,
+            Ok(QueueOutcome {
+                outcome,
+                task_available_at,
             })
         })
         .collect::<Result<Vec<_>>>()?;
 
     Ok(ApiJson(ApiResponse::data(FetchData {
         queue,
-        answers,
+        outcomes,
         target_problem,
         target_approach,
     })))
 }
 
-impl FromStr for AnswerState {
+impl FromStr for OutcomeType {
     type Err = ApiError;
 
     fn from_str(s: &str) -> std::result::Result<Self, Self::Err> {
         match s {
-            "unseen" => Ok(Self::Unseen),
-            "unsure" => Ok(Self::Unsure),
-            "correct" => Ok(Self::Correct),
-            "incorrect" => Ok(Self::Incorrect),
+            "completed" => Ok(Self::Completed),
+            "needsRetry" => Ok(Self::NeedsRetry),
+            "tooHard" => Ok(Self::TooHard),
             _ => Err(ApiError::General(format!("unknown answer state: {s}"))),
         }
     }
 }
 
-impl Display for AnswerState {
+impl Display for OutcomeType {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let value = match self {
-            Self::Unseen => "unseen",
-            Self::Unsure => "unsure",
-            Self::Correct => "correct",
-            Self::Incorrect => "incorrect",
+            Self::Completed => "completed",
+            Self::NeedsRetry => "needsRetry",
+            Self::TooHard => "tooHard",
         };
         write!(f, "{}", value)
     }
 }
 
-#[derive(Serialize, sqlx::FromRow)]
+#[derive(Debug, Deserialize, Serialize, sqlx::FromRow)]
 #[serde(rename_all = "camelCase")]
-struct QueueRow {
-    summary: String,
-    strategy: String,
-    cadence: String,
+pub struct QueueRow {
+    pub summary: String,
+    pub strategy: String,
+    pub cadence: String,
     #[serde(skip)]
-    target_problem_id: String,
-    #[serde(skip)]
-    target_approach_id: Option<String>,
+    pub target_approach_id: Option<String>,
 }
 
 #[derive(sqlx::FromRow, Serialize)]
@@ -205,8 +213,8 @@ struct PrereqProblem {
     prereq_approach_name: Option<String>,
 }
 
-#[derive(Debug, Serialize)]
-#[serde(rename_all = "camelCase", tag = "status")]
+#[derive(Debug, Deserialize, Serialize)]
+#[serde(rename_all = "camelCase", tag = "outcome")]
 enum NextProblem {
     EmptyQueue,
 
@@ -218,99 +226,95 @@ enum NextProblem {
     #[serde(rename_all = "camelCase")]
     Ready {
         available_at: Timestamp,
-        problem_id: String,
-        approach_id: Option<String>,
+        approach_id: String,
     },
 }
 
 #[allow(dead_code)]
 #[derive(Debug)]
-struct AnswerData {
-    consecutive_correct: u32,
-    answered_at: Timestamp,
-    state: AnswerState,
+struct OutcomeData {
+    progress: u32,
+    added_at: Timestamp,
+    state: OutcomeType,
 }
 
 #[allow(dead_code)]
 #[derive(Debug)]
-struct AnsweredProblem {
-    problem_id: String,
-    approach_id: Option<String>,
-    data: Option<AnswerData>,
+struct Outcome {
+    approach_id: String,
+    data: Option<OutcomeData>,
 }
 
 #[derive(sqlx::FromRow)]
-struct AnsweredProblemRow {
-    problem_id: String,
-    approach_id: Option<String>,
-    answered_at: Option<String>,
-    consecutive_correct: Option<u32>,
-    state: Option<String>,
+struct OutcomeRow {
+    #[allow(unused)]
+    task_id: String,
+    approach_id: String,
+    added_at: Option<String>,
+    progress: Option<u32>,
+    outcome: Option<String>,
 }
 
-impl TryFrom<AnsweredProblemRow> for AnsweredProblem {
+impl TryFrom<OutcomeRow> for Outcome {
     type Error = ApiError;
 
     fn try_from(
-        AnsweredProblemRow {
-            problem_id,
+        OutcomeRow {
             approach_id,
-            answered_at,
-            consecutive_correct,
-            state,
-        }: AnsweredProblemRow,
+            added_at,
+            progress,
+            outcome,
+            ..
+        }: OutcomeRow,
     ) -> std::result::Result<Self, Self::Error> {
-        let Some(answered_at) = answered_at else {
-            return Ok(AnsweredProblem {
-                problem_id: problem_id.clone(),
-                approach_id,
+        let Some(answered_at) = added_at else {
+            return Ok(Outcome {
+                approach_id: approach_id.clone(),
                 data: None,
             });
         };
         let answered_at = answered_at.parse::<Timestamp>()?;
 
-        let Some(consecutive_correct) = consecutive_correct else {
-            return Ok(AnsweredProblem {
-                problem_id: problem_id.clone(),
-                approach_id,
+        let Some(progress) = progress else {
+            return Ok(Outcome {
+                approach_id: approach_id.clone(),
                 data: None,
             });
         };
 
-        let Some(state) = state else {
-            return Ok(AnsweredProblem {
-                problem_id: problem_id.clone(),
-                approach_id,
+        let Some(outcome) = outcome else {
+            return Ok(Outcome {
+                approach_id: approach_id.clone(),
                 data: None,
             });
         };
-        let state = state.parse::<AnswerState>()?;
+        let state = outcome.parse::<OutcomeType>()?;
 
-        Ok(AnsweredProblem {
-            problem_id: problem_id.clone(),
-            approach_id,
-            data: Some(AnswerData {
-                answered_at,
-                consecutive_correct,
+        Ok(Outcome {
+            approach_id: approach_id.clone(),
+            data: Some(OutcomeData {
+                added_at: answered_at,
+                progress,
                 state,
             }),
         })
     }
 }
 
-#[derive(Serialize)]
-pub struct NextProblemData {
+#[derive(Debug, Deserialize, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct NextTaskData {
     queue: QueueRow,
-    problem: Option<Problem>,
+    task: Option<Task>,
     approach: Option<Approach>,
     #[serde(flatten)]
     details: NextProblem,
 }
 
-pub async fn next_problem(
+pub async fn next_task(
     ctx: Extension<ApiContext>,
     Path(queue_id): Path<String>,
-) -> Result<ApiJson<ApiResponse<NextProblemData>>> {
+) -> Result<ApiJson<ApiResponse<NextTaskData>>> {
     let queue = sqlx::query_as::<_, QueueRow>("select * from queues where id = ?")
         .bind(&queue_id)
         .fetch_one(&ctx.db)
@@ -318,57 +322,28 @@ pub async fn next_problem(
 
     info!("fetching history for queue {queue_id} ...");
     // Problems that must be mastered for the skills needed for the target problem
-    let history = if let Some(approach_id) = &queue.target_approach_id {
-        sqlx::query_as::<_, AnsweredProblemRow>(
-            "select
-                pp.prereq_problem_id problem_id,
-                pp.prereq_approach_id approach_id,
-                a.answered_at,
-                a.state,
-                a.consecutive_correct
-             from prereq_skills ps
-             join prereq_problems pp on pp.skill_id = ps.prereq_skill_id
-             join problems p on p.id = pp.prereq_problem_id
-             left join answers a
-                on a.user_id = ?
-                and a.queue_id = ?
-                and pp.prereq_problem_id = a.problem_id
-                and pp.prereq_approach_id = a.approach_id
-             where ps.problem_id = ? and ps.approach_id = ?",
-        )
-        .bind(PLACHOLDER_USER_ID)
-        .bind(&queue_id)
-        .bind(&queue.target_problem_id)
-        .bind(approach_id)
-        .fetch_all(&ctx.db)
-        .await?
-    } else {
-        sqlx::query_as::<_, AnsweredProblemRow>(
-            "select
-                pp.prereq_problem_id problem_id,
-                pp.prereq_approach_id approach_id,
-                a.answered_at,
-                a.state,
-                a.consecutive_correct
-             from prereq_skills ps
-             join prereq_problems pp on pp.skill_id = ps.prereq_skill_id
-             join problems p on p.id = pp.prereq_problem_id
-             left join answers a
-                on a.user_id = ?
-                and a.queue_id = ?
-                and a.problem_id = pp.prereq_problem_id
-                and a.approach_id is null
-             where ps.problem_id = ? and ps.approach_id is null",
-        )
-        .bind(PLACHOLDER_USER_ID)
-        .bind(&queue_id)
-        .bind(&queue.target_problem_id)
-        .fetch_all(&ctx.db)
-        .await?
-    };
+    let history = sqlx::query_as::<_, OutcomeRow>(
+        "select
+                ap.prereq_approach_id approach_id,
+                o.added_at,
+                o.outcome,
+                o.progress
+             from approach_prereqs ap
+             left join outcomes o
+                on o.user_id = ?
+                and o.queue_id = ?
+                and ap.prereq_approach_id = o.approach_id
+             where ap.approach_id = ?",
+    )
+    .bind(PLACHOLDER_USER_ID)
+    .bind(&queue_id)
+    .bind(&queue.target_approach_id)
+    .fetch_all(&ctx.db)
+    .await?;
+
     let history = history
         .into_iter()
-        .map(AnsweredProblem::try_from)
+        .map(Outcome::try_from)
         .collect::<Result<Vec<_>>>()?;
 
     let cadence = queue.cadence.parse::<Cadence>()?;
@@ -376,35 +351,27 @@ pub async fn next_problem(
     let strategy = queue.strategy.parse::<QueueStrategy>()?;
     let next = strategy.choose(clock, &history)?;
 
-    let (problem, approach) = match &next {
-        NextProblem::Ready {
-            problem_id,
-            approach_id,
-            ..
-        } => {
-            let problem = sqlx::query_as::<_, Problem>("select * from problems where id = ?")
-                .bind(problem_id)
+    let (task, approach) = match &next {
+        NextProblem::Ready { approach_id, .. } => {
+            let approach = sqlx::query_as::<_, Approach>("select * from approaches where id = ?")
+                .bind(approach_id)
                 .fetch_one(&ctx.db)
                 .await?;
 
-            let approach = if let Some(approach_id) = approach_id {
-                sqlx::query_as::<_, Approach>("select * from approaches where id = ?")
-                    .bind(approach_id)
-                    .fetch_optional(&ctx.db)
-                    .await?
-            } else {
-                None
-            };
+            let task = sqlx::query_as::<_, Task>("select * from tasks where id = ?")
+                .bind(&approach.task_id)
+                .fetch_one(&ctx.db)
+                .await?;
 
-            (Some(problem), approach)
+            (Some(task), Some(approach))
         }
 
         _ => (None, None),
     };
 
-    Ok(ApiJson(ApiResponse::data(NextProblemData {
+    Ok(ApiJson(ApiResponse::data(NextTaskData {
         queue,
-        problem,
+        task,
         approach,
         details: next,
     })))
@@ -412,80 +379,62 @@ pub async fn next_problem(
 
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
-pub struct AddAnswerData {
+pub struct AddOutcomeData {
     answer_id: String,
     message: String,
 }
 
 #[derive(Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub struct AddAnswerPayload {
+pub struct AddOutcomePayload {
     queue_id: String,
-    problem_id: String,
-    approach_id: Option<String>,
-    answer_state: AnswerState,
+    approach_id: String,
+    outcome: OutcomeType,
 }
 
-pub async fn add_answer(
+pub async fn add_outcome(
     ctx: Extension<ApiContext>,
     Path(path_queue_id): Path<String>,
-    ApiJson(AddAnswerPayload {
+    ApiJson(AddOutcomePayload {
         queue_id,
-        problem_id,
         approach_id,
-        answer_state,
-    }): ApiJson<AddAnswerPayload>,
-) -> Result<ApiJson<ApiResponse<AddAnswerData>>> {
+        outcome,
+    }): ApiJson<AddOutcomePayload>,
+) -> Result<ApiJson<ApiResponse<AddOutcomeData>>> {
     if path_queue_id != queue_id {
         return Err(ApiError::UnprocessableEntity(String::from(
             "queue id must match the payload",
         )));
     }
 
-    let prev_consecutive_correct = if let Some(approach_id) = &approach_id {
-        sqlx::query_as::<_, (u32,)>(
-            "select consecutive_correct
-             from answers
-             where user_id = ? and queue_id = ? and problem_id = ? and approach_id = ?
-             order by added_at desc
-             limit 1",
-        )
-        .bind(PLACHOLDER_USER_ID)
-        .bind(&queue_id)
-        .bind(&problem_id)
-        .bind(approach_id)
-        .fetch_optional(&ctx.db)
-        .await?
-    } else {
-        sqlx::query_as::<_, (u32,)>(
-            "select consecutive_correct
-             from answers
-             where user_id = ? and queue_id = ? and problem_id = ? and approach_id is null
-             order by added_at desc
-             limit 1",
-        )
-        .bind(PLACHOLDER_USER_ID)
-        .bind(&queue_id)
-        .bind(&problem_id)
-        .fetch_optional(&ctx.db)
-        .await?
-    }
+    let prev_progress = sqlx::query_as::<_, (u32,)>(
+        "select progress
+         from outcomes
+         where user_id = ? and queue_id = ? and approach_id = ?
+         order by added_at desc
+         limit 1",
+    )
+    .bind(PLACHOLDER_USER_ID)
+    .bind(&queue_id)
+    .bind(&approach_id)
+    .fetch_optional(&ctx.db)
+    .await?
     .unwrap_or_default()
     .0;
 
-    let consecutive_correct = match &answer_state {
-        AnswerState::Correct => prev_consecutive_correct.saturating_add(1),
-        _ => prev_consecutive_correct.saturating_sub(1),
+    let progress = match &outcome {
+        OutcomeType::Completed => prev_progress.saturating_add(1),
+        _ => prev_progress.saturating_sub(1),
     };
 
     let new_id: String = Uuid::new_v4().into();
-    let answer_state: String = answer_state.to_string();
+    let answer_state: String = outcome.to_string();
     let added_at = Utc::now();
 
     let (answer_id,) = sqlx::query_as::<_, (String,)>(
-        "insert into answers (
-            user_id, id, added_at, answered_at, problem_id, approach_id, queue_id, state,
-            consecutive_correct
+        "insert into outcomes (
+            user_id, id, added_at, answered_at, approach_id, queue_id, outcome,
+            progress
          )
          values (?, ?, ?, ?, ?, ?, ?, ?, ?)
          returning id",
@@ -494,15 +443,14 @@ pub async fn add_answer(
     .bind(&new_id)
     .bind(added_at)
     .bind(added_at)
-    .bind(&problem_id)
     .bind(&approach_id)
     .bind(&queue_id)
     .bind(&answer_state)
-    .bind(consecutive_correct)
+    .bind(progress)
     .fetch_one(&ctx.db)
     .await?;
 
-    Ok(ApiJson(ApiResponse::data(AddAnswerData {
+    Ok(ApiJson(ApiResponse::data(AddOutcomeData {
         answer_id,
         message: String::from("ok"),
     })))

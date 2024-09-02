@@ -1,13 +1,13 @@
 import React from 'react'
 import Link from 'next/link'
 import { Button, Card } from '@mantine/core'
-import { ProblemType } from '@/types'
+import { TaskType } from '@/types'
 import TitleAndButton from '@/components/TitleAndButton'
 import problemService from '@/services/problems'
 import ListOr from '@/components/ListOr'
 import classes from './page.module.css'
 
-function ProblemCard({ id, summary }: ProblemType) {
+function ProblemCard({ id, summary }: TaskType) {
   return (
     <Card className={classes.card} key={id} mb={10}>
       <Link href={`/content/problems/${id}`}>

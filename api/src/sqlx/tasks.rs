@@ -1,22 +1,22 @@
 use super::approaches;
 use crate::{
-    problems::Search,
-    types::{Problem, Result, WideProblem},
+    tasks::Search,
+    types::{Result, Task, WideProblem},
 };
 use sqlx::{sqlite::SqlitePool, QueryBuilder, Sqlite};
 
-pub async fn list(db: &SqlitePool, limit: i32, search: Search) -> Result<Vec<Problem>> {
+pub async fn list(db: &SqlitePool, limit: i32, search: Search) -> Result<Vec<Task>> {
     let problems = if search.is_empty() {
-        sqlx::query_as::<_, Problem>("select * from problems order by added_at desc limit ?")
+        sqlx::query_as::<_, Task>("select * from tasks order by added_at desc limit ?")
             .bind(limit)
             .fetch_all(db)
             .await?
     } else {
-        let mut builder: QueryBuilder<Sqlite> = QueryBuilder::new("select p.* from problems p ");
+        let mut builder: QueryBuilder<Sqlite> = QueryBuilder::new("select t.* from tasks t ");
         let mut wheres = vec![];
 
         for (i, substring) in search.substrings().enumerate() {
-            builder.push(format!("join problems p{i} on p.id = p{i}.id "));
+            builder.push(format!("join tasks t{i} on t.id = t{i}.id "));
             wheres.push(substring);
         }
 
@@ -24,7 +24,7 @@ pub async fn list(db: &SqlitePool, limit: i32, search: Search) -> Result<Vec<Pro
         let mut separated = builder.separated(" and ");
 
         for (i, substring) in wheres.into_iter().enumerate() {
-            separated.push(format!("lower(p{i}.summary) like '%'||lower("));
+            separated.push(format!("lower(t{i}.summary) like '%'||lower("));
             separated.push_bind_unseparated(substring);
             separated.push_unseparated(")||'%'");
         }
@@ -32,14 +32,14 @@ pub async fn list(db: &SqlitePool, limit: i32, search: Search) -> Result<Vec<Pro
         builder
             .push("order by p.added_at desc limit ")
             .push_bind(limit);
-        builder.build_query_as::<Problem>().fetch_all(db).await?
+        builder.build_query_as::<Task>().fetch_all(db).await?
     };
 
     Ok(problems)
 }
 
-pub async fn fetch_one(db: &SqlitePool, id: &String) -> Result<Problem> {
-    let problem = sqlx::query_as::<_, Problem>("select * from problems where id = ? limit 1")
+pub async fn fetch_one(db: &SqlitePool, id: &String) -> Result<Task> {
+    let problem = sqlx::query_as::<_, Task>("select * from problems where id = ? limit 1")
         .bind(id)
         .fetch_one(db)
         .await?;
@@ -47,7 +47,7 @@ pub async fn fetch_one(db: &SqlitePool, id: &String) -> Result<Problem> {
 }
 
 pub async fn fetch_wide(db: &SqlitePool, id: &String) -> Result<WideProblem> {
-    let problem = sqlx::query_as::<_, Problem>("select * from problems where id = ? limit 1")
+    let problem = sqlx::query_as::<_, Task>("select * from problems where id = ? limit 1")
         .bind(id)
         .fetch_one(db)
         .await?;

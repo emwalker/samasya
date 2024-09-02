@@ -1,3 +1,3 @@
 pub mod approaches;
-pub mod problems;
 pub mod queues;
+pub mod tasks;
