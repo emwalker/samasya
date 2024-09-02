@@ -12,7 +12,7 @@ export default function TitleAndButton({ title, children }: Props) {
     <div className={classes.articleHeader}>
       <Title className={classes.title}>{title}</Title>
 
-      <div className={classes.button}>
+      <div className={classes.buttons}>
         {children}
       </div>
     </div>

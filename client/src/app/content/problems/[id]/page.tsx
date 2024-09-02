@@ -10,6 +10,7 @@ import TitleAndButton from '@/components/TitleAndButton'
 import MarkdownPreview from '@/components/MarkdownPreview'
 import PrereqSkills from '@/components/PrereqSkills'
 import PrereqSkill from '@/components/PrereqSkill'
+import QuestionUrlPrompt from '@/components/QuestionUrlPrompt/page'
 
 type Params = {
   params?: { id: string } | null
@@ -60,9 +61,7 @@ export default function Page(params: Params) {
               <Button>Edit</Button>
             </TitleAndButton>
 
-            <p>
-              {problem.questionUrl}
-            </p>
+            {problem.questionUrl && <QuestionUrlPrompt questionUrl={problem.questionUrl} />}
 
             <MarkdownPreview markdown={problem.questionText || ''} />
 

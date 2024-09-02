@@ -1,13 +1,6 @@
 .articleHeader {
   display: flex;
   align-items: center;
+  justify-content: space-between;
   margin-bottom: rem(10);
-}
-
-.title {
-  flex: 15;
-}
-
-.button {
-  flex: 1;
 }

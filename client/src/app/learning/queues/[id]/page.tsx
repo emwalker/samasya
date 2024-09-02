@@ -5,14 +5,22 @@ import queueService, { AnswerState, FetchResponse, QueueAnswerType } from '@/ser
 import TitleAndButton from '@/components/TitleAndButton'
 import {
   Button, Card, Box, LoadingOverlay, Table, Badge, Center,
+  Group,
 } from '@mantine/core'
 import moment from 'moment'
 
 function colorForConsecutiveCorrect(correct: number) {
   if (correct < 2) return 'orange'
   if (correct < 6) return 'yellow'
-  if (correct < 10) return 'green'
-  return 'lime.4'
+  if (correct < 7) return 'green'
+  if (correct < 8) return 'lime.8'
+  if (correct < 9) return 'lime.7'
+  if (correct < 10) return 'lime.6'
+  if (correct < 11) return 'lime.5'
+  if (correct < 12) return 'lime.4'
+  if (correct < 13) return 'lime.3'
+  if (correct < 14) return 'lime.2'
+  return 'lime.1'
 }
 
 const badgeColors: Record<AnswerState, string> = {
@@ -67,48 +75,55 @@ export default function Page(props: Props) {
   const data = response?.data
 
   return (
-    <main>
-      <Box pos="relative">
-        <LoadingOverlay
-          visible={isLoading}
-          zIndex={1000}
-          overlayProps={{ radius: 'sm', blur: 2 }}
-        />
+    <Box pos="relative">
+      <LoadingOverlay
+        visible={isLoading}
+        zIndex={1000}
+        overlayProps={{ radius: 'sm', blur: 2 }}
+      />
 
-        {data && (
-          <>
-            <TitleAndButton title={data.queue.summary}>
+      {data && (
+        <>
+          <TitleAndButton title={data.queue.summary}>
+            <Group>
+              <Button
+                component="a"
+                variant="outline"
+                href={`/learning/queues/${queueId}/edit`}
+              >
+                Edit
+              </Button>
               <Button
                 component="a"
                 href={`/learning/queues/${queueId}/next-problem`}
               >
                 Continue
               </Button>
-            </TitleAndButton>
+            </Group>
+          </TitleAndButton>
 
-            <Box mb={10}>This queue will help to work towards mastery of this problem:</Box>
+          <Box mb={10}>This queue will help to work towards mastery of this problem:</Box>
 
-            <Card shadow="lg" mb={30}>
-              {data.targetProblem.summary}
-            </Card>
+          <Card shadow="lg" mb={30}>
+            {data.targetProblem.summary}
+          </Card>
 
-            <Table>
-              <Table.Thead>
-                <Table.Tr>
-                  <Table.Th>Problem</Table.Th>
-                  <Table.Th>Answered</Table.Th>
-                  <Table.Th>Available again</Table.Th>
-                  <Table.Th><Center>Result</Center></Table.Th>
-                  <Table.Th><Center>Answered correctly</Center></Table.Th>
-                </Table.Tr>
-              </Table.Thead>
-              <Table.Tbody>
-                {data.answers.map(AnswerRow)}
-              </Table.Tbody>
-            </Table>
-          </>
-        )}
-      </Box>
-    </main>
+          <Table>
+            <Table.Thead>
+              <Table.Tr>
+                <Table.Th>Problem</Table.Th>
+                <Table.Th>Answered</Table.Th>
+                <Table.Th>Will be seen again</Table.Th>
+                <Table.Th><Center>Result</Center></Table.Th>
+                <Table.Th><Center>Progress</Center></Table.Th>
+              </Table.Tr>
+            </Table.Thead>
+            <Table.Tbody>
+              {data.answers.map(AnswerRow)}
+            </Table.Tbody>
+          </Table>
+        </>
+      )}
+    </Box>
   )
 }

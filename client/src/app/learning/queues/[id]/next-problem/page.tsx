@@ -6,14 +6,13 @@ import React, {
 import moment from 'moment'
 import Link from 'next/link'
 import {
-  Anchor, Box, Button, Card, Group,
-  LoadingOverlay,
-  Title,
+  Box, Button, Card, Group, LoadingOverlay, Title,
 } from '@mantine/core'
 import queueService, { AnswerState, NextProblemResponse } from '@/services/queues'
 import { handleError } from '@/app/handleResponse'
 import { notifications } from '@mantine/notifications'
 import TitleAndButton from '@/components/TitleAndButton'
+import QuestionUrlPrompt from '@/components/QuestionUrlPrompt/page'
 import classes from './page.module.css'
 
 function useButtonHandler(
@@ -129,15 +128,7 @@ export default function Page(props: Props) {
           <Box my={30}>
             <Title order={5}>{problem.summary}</Title>
             {problem.questionText}
-
-            {problem.questionUrl && (
-              <Box>
-                Visit <Anchor target="_blank" href={problem.questionUrl}>this link</Anchor> and
-                complete the problem.  Click on the button below that corresponds to the result of
-                your first attempt this round.
-              </Box>
-            )}
-
+            {problem.questionUrl && <QuestionUrlPrompt questionUrl={problem.questionUrl} />}
             {approach && <Box>Use the &ldquo;{approach.name}&rdquo; approach</Box>}
           </Box>
 
