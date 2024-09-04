@@ -8,20 +8,22 @@ import {
   TaskType,
 } from '@/types'
 
-export type QueueAnswerType = {
-  problemSummary: string,
-  answerId: string,
-  answerAnsweredAt: string,
-  answerAvailableAt: string,
-  answerState: OutcomeType,
-  answerConsecutiveCorrect: number,
+export type QueueOutcomeType = {
+  approachSummary: string,
+  outcome: OutcomeType,
+  outcomeAddedAt: string,
+  outcomeId: string,
+  progress: number,
+  taskAvailableAt: string,
+  taskSummary: string,
 }
 
 export type FetchResponse = {
   data: {
     queue: QueueType,
-    answers: QueueAnswerType[],
+    outcomes: QueueOutcomeType[],
     targetTask: TaskType,
+    targetApproach: ApproachType,
   } | null
 }
 
@@ -58,17 +60,17 @@ async function list(userId: string): Promise<ListResponse> {
 export type UpdatePayload = {
   strategy: QueueStrategy,
   summary: string,
-  targetTaskId: string,
+  targetApproachId: string,
   cadence: Cadence,
 }
 
 async function add(userId: string, update: UpdatePayload): Promise<ApiResponse<any>> {
-  const res = await fetch(`http://localhost:8000/api/v1/users/${userId}/queues`, {
+  const response = await fetch(`http://localhost:8000/api/v1/users/${userId}/queues`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(update),
   })
-  return res.json()
+  return response.json()
 }
 
 type Ready = {
@@ -119,14 +121,13 @@ async function nextTask(queueId: string): Promise<NextTaskResponse> {
 
 export type OutcomeType = 'completed' | 'needsRetry' | 'tooHard'
 
-export type AnswerProblemPayload = {
+export type AddOutcomePayload = {
   queueId: string,
-  taskId: string,
-  approachId: string | null,
+  approachId: string,
   outcome: OutcomeType,
 }
 
-type OutcomeResponse = {
+type AddOutcomeResponse = {
   data: {
     outcomeId: string,
     message: string,
@@ -134,7 +135,7 @@ type OutcomeResponse = {
   errors: ApiError[],
 }
 
-async function addOutcome(payload: AnswerProblemPayload): Promise<OutcomeResponse> {
+async function addOutcome(payload: AddOutcomePayload): Promise<AddOutcomeResponse> {
   const response = await fetch(
     `http://localhost:8000/api/v1/queues/${payload.queueId}/add-outcome`,
     {

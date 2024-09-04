@@ -165,38 +165,40 @@ pub async fn update(
 
 pub mod prereqs {
     use super::*;
-    use crate::types::{ApiResponse, Skill};
-    use sqlx::{QueryBuilder, Sqlite};
+    use uuid::Uuid;
 
-    #[derive(Debug, Deserialize)]
+    #[derive(Debug, Deserialize, Serialize)]
     #[serde(rename_all = "camelCase")]
-    pub struct AddSkillPayload {
-        problem_id: String,
-        approach_id: Option<String>,
-        prereq_skill_id: String,
+    pub struct AddPayload {
+        pub task_id: String,
+        pub approach_id: String,
+        pub prereq_task_id: String,
+        pub prereq_approach_id: String,
     }
 
-    pub async fn add_approach(
+    pub async fn add(
         ctx: Extension<ApiContext>,
-        Path(problem_id): Path<String>,
-        ApiJson(payload): ApiJson<AddSkillPayload>,
+        Path(task_id): Path<String>,
+        ApiJson(payload): ApiJson<AddPayload>,
     ) -> Result<ApiOk> {
-        info!("adding prerequisite skill: {payload:?}");
+        info!("adding prerequisite task: {payload:?}");
 
-        if problem_id != payload.problem_id {
+        if task_id != payload.task_id {
             return Err(ApiError::UnprocessableEntity(String::from(
-                "problem id must match the payload",
+                "task id must match the payload",
             )));
         }
 
+        let new_id: String = Uuid::new_v4().into();
+
         sqlx::query(
-            "insert into prereq_skills (problem_id, approach_id, prereq_skill_id)
+            "insert into approach_prereqs (id, approach_id, prereq_approach_id)
                 values (?, ?, ?)
                 on conflict do nothing",
         )
-        .bind(&problem_id)
+        .bind(&new_id)
         .bind(&payload.approach_id)
-        .bind(&payload.prereq_skill_id)
+        .bind(&payload.prereq_approach_id)
         .execute(&ctx.db)
         .await?;
 
@@ -205,98 +207,36 @@ pub mod prereqs {
 
     #[derive(Debug, Deserialize)]
     #[serde(rename_all = "camelCase")]
-    pub struct RemoveSkillPayload {
-        problem_id: String,
-        approach_id: Option<String>,
-        prereq_skill_id: String,
+    pub struct RemovePayload {
+        task_id: String,
+        approach_id: String,
+        prereq_task_id: String,
+        prereq_approach_id: String,
     }
 
-    pub async fn remove_approach(
+    pub async fn remove(
         ctx: Extension<ApiContext>,
-        Path(problem_id): Path<String>,
-        ApiJson(payload): ApiJson<RemoveSkillPayload>,
+        Path(task_id): Path<String>,
+        ApiJson(payload): ApiJson<RemovePayload>,
     ) -> Result<ApiOk> {
         info!("adding prerequisite skill: {payload:?}");
 
-        if problem_id != payload.problem_id {
+        if task_id != payload.task_id {
             return Err(ApiError::UnprocessableEntity(String::from(
-                "problem id must match the payload",
+                "task id must match the payload",
             )));
         }
 
-        if let Some(approach_id) = payload.approach_id {
-            sqlx::query(
-                "delete from prereq_skills
-                 where problem_id = ? and approach_id = ? and prereq_skill_id = ?",
-            )
-            .bind(&problem_id)
-            .bind(&approach_id)
-            .bind(&payload.prereq_skill_id)
-            .execute(&ctx.db)
-            .await?;
-        } else {
-            sqlx::query(
-                "delete from prereq_skills
-                     where problem_id = ? and approach_id is null and prereq_skill_id = ?",
-            )
-            .bind(&problem_id)
-            .bind(&payload.prereq_skill_id)
-            .execute(&ctx.db)
-            .await?;
-        }
+        sqlx::query(
+            "delete from approach_prereqs
+             where approach_id = ? and prereq_skill_id = ? and prereq_approach_id = ?",
+        )
+        .bind(&payload.approach_id)
+        .bind(&payload.prereq_task_id)
+        .bind(&payload.prereq_approach_id)
+        .execute(&ctx.db)
+        .await?;
 
         Ok(ApiJson::ok())
-    }
-
-    pub type ListData = Vec<Skill>;
-
-    pub async fn available_approaches(
-        ctx: Extension<ApiContext>,
-        Path(problem_id): Path<String>,
-        search: Option<Query<Search>>,
-    ) -> Result<ApiJson<ApiResponse<ListData>>> {
-        let search = search.unwrap_or_default().0;
-        info!(
-            "searching for available skills for {problem_id}: {:?}",
-            search
-        );
-
-        let mut builder: QueryBuilder<Sqlite> = QueryBuilder::new(
-            "select distinct s.*
-             from prereq_skills ps
-             join skills s on ps.prereq_skill_id = s.id ",
-        );
-        let mut wheres = vec![];
-
-        for (i, substring) in search.substrings().enumerate() {
-            builder.push(format!("join skills s{i} on s.id = s{i}.id "));
-            wheres.push(substring);
-        }
-
-        builder.push("where ");
-        let mut separated = builder.separated(" and ");
-
-        for (i, substring) in wheres.into_iter().enumerate() {
-            separated.push(format!("lower(s{i}.summary) like '%'||lower("));
-            separated.push_bind_unseparated(substring);
-            separated.push_unseparated(")||'%'");
-        }
-
-        separated.push(
-            "not exists (
-                select ps.prereq_skill_id
-                from prereq_skills ps
-                where ps.prereq_skill_id = s.id
-                    and ps.problem_id = ",
-        );
-        separated.push_bind_unseparated(problem_id);
-        separated.push_unseparated(")");
-
-        builder
-            .push("order by ps.added_at desc limit ")
-            .push_bind(7);
-        let skills = builder.build_query_as::<Skill>().fetch_all(&ctx.db).await?;
-
-        Ok(ApiJson(ApiResponse::data(skills)))
     }
 }

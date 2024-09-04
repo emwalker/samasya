@@ -34,7 +34,7 @@ type Props = {
 export default function Page(props: Props) {
   const [response, setResponse] = useState<NextTaskResponse | null>(null)
   const queueId = props?.params?.id
-  const problemId = response?.data?.taskId
+  const taskId = response?.data?.taskId
   const approachId = response?.data?.approachId
 
   useEffect(() => {
@@ -47,12 +47,10 @@ export default function Page(props: Props) {
     fetchData()
   }, [queueId, setResponse])
 
-  const updateAnswer = useCallback(async (answerState: OutcomeType) => {
-    if (queueId == null || problemId == null) return
+  const updateAnswer = useCallback(async (outcome: OutcomeType) => {
+    if (queueId == null || taskId == null || approachId == null) return
 
-    const answerResponse = await queueService.addOutcome({
-      queueId, taskId: problemId, approachId: approachId || null, outcome: answerState,
-    })
+    const answerResponse = await queueService.addOutcome({ queueId, approachId, outcome })
 
     if (answerResponse.data?.message === 'ok') {
       notifications.show({
@@ -66,12 +64,11 @@ export default function Page(props: Props) {
     } else {
       handleError(answerResponse, 'Problem submitting answer')
     }
-  }, [queueId, problemId, approachId])
+  }, [queueId, taskId, approachId])
 
   const submitCorrect = useButtonHandler(updateAnswer, 'completed')
   const submitIncorrect = useButtonHandler(updateAnswer, 'needsRetry')
   const submitTooHard = useButtonHandler(updateAnswer, 'tooHard')
-
   const status = response?.data?.status
 
   useEffect(() => {
@@ -120,7 +117,7 @@ export default function Page(props: Props) {
       />
 
       {queue && problem && (
-        <Card padding="xl" className={classes.card} key={problemId}>
+        <Card padding="xl" className={classes.card} key={taskId}>
           <TitleAndButton title={queue?.summary || 'Loading page ...'}>
             <Button component="a" href={`/learning/queues/${queueId}`}>Leave</Button>
           </TitleAndButton>
@@ -129,7 +126,11 @@ export default function Page(props: Props) {
             <Title order={5}>{problem.summary}</Title>
             {problem.questionText}
             {problem.questionUrl && <QuestionUrlPrompt questionUrl={problem.questionUrl} />}
-            {approach && <Box>Use the &ldquo;{approach.name}&rdquo; approach</Box>}
+            {approach && (
+              approach.unspecified
+                ? 'Any approach'
+                : <Box>Use the following approach: {approach.summary}</Box>
+            )}
           </Box>
 
           <Box mb={30}>How did you do?</Box>

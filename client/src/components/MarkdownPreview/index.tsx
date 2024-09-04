@@ -29,7 +29,7 @@ export default function MarkdownPreview({ markdown }: Props) {
   }, [setPreview, markdown])
 
   return (
-    <Card shadow="lg">
+    <Card shadow="lg" mb={20}>
       <TypographyStylesProvider>
         <div
           // eslint-disable-next-line react/no-danger

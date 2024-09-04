@@ -1,25 +1,15 @@
 import {
-  TaskType, ApiError, ApproachType,
+  ApiResponse,
+  ApproachType,
+  TaskType,
 } from '@/types'
 
-export type PrereqTaskType = {
-  taskId: string,
-  prereqApproachId: string,
-  prereqApproachName: string,
-  prereqTaskId: string,
-  prereqTaskSummary: string,
+export type FetchData = {
+  task: TaskType,
+  approaches: ApproachType[],
 }
 
-export type FetchResponse = {
-  data: {
-    task: TaskType,
-    approaches: ApproachType[],
-    prereqTasks: PrereqTaskType[],
-  } | null,
-  errors: ApiError[]
-}
-
-async function fetchTask(id: string): Promise<FetchResponse> {
+async function fetchTask(id: string): Promise<ApiResponse<FetchData>> {
   const response = await fetch(
     `http://localhost:8000/api/v1/tasks/${id}`,
     { cache: 'no-store' },
@@ -27,13 +17,11 @@ async function fetchTask(id: string): Promise<FetchResponse> {
   return response.json()
 }
 
-export type ListResponse = {
-  data: TaskType[]
-}
+export type ListData = TaskType[]
 
 async function list(
   searchString?: string | null,
-): Promise<ListResponse> {
+): Promise<ApiResponse<ListData>> {
   const url = searchString
     ? `http://localhost:8000/api/v1/tasks?q=${encodeURIComponent(searchString)}`
     : 'http://localhost:8000/api/v1/tasks'
@@ -63,20 +51,16 @@ async function add(payload: UpdatePayload) {
   })
 }
 
-type PrereqResponse = {
-  data: string | null,
-  errors: ApiError[],
-}
-
-type AddPrereqTaskPayload = {
+export type AddPrereqPayload = {
   taskId: string,
+  approachId: string,
   prereqTaskId: string,
   prereqApproachId: string,
 }
 
-async function addPrereqTask(payload: AddPrereqTaskPayload): Promise<PrereqResponse> {
+async function addPrereq(payload: AddPrereqPayload): Promise<ApiResponse<string>> {
   const response = await fetch(
-    `http://localhost:8000/api/v1/tasks/${payload.taskId}/prereqs/add-task`,
+    `http://localhost:8000/api/v1/tasks/${payload.taskId}/prereqs/add`,
     {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -92,7 +76,7 @@ export type RemoveTaskPayload = {
   prereqApproachId: string,
 }
 
-async function removePrereqTask(payload: RemoveTaskPayload): Promise<PrereqResponse> {
+async function removePrereq(payload: RemoveTaskPayload): Promise<ApiResponse<string>> {
   const response = await fetch(
     `http://localhost:8000/api/v1/tasks/${payload.taskId}/prereqs/remove-task`,
     {
@@ -104,26 +88,6 @@ async function removePrereqTask(payload: RemoveTaskPayload): Promise<PrereqRespo
   return response.json()
 }
 
-type AvailablePrereqTasksResponse = {
-  data: TaskType[] | null,
-  errors: ApiError[],
-}
-
-async function availablePrereqTasks(
-  taskId: string,
-  searchString: string,
-): Promise<AvailablePrereqTasksResponse> {
-  const urlBase = `http://localhost:8000/api/v1/tasks/${taskId}/prereqs/available-tasks`
-  const url = searchString
-    ? `${urlBase}?q=${encodeURIComponent(searchString)}`
-    : urlBase
-  const response = await fetch(url, {
-    method: 'GET',
-    headers: { 'Content-Type': 'application/json' },
-  })
-  return response.json()
-}
-
 export default {
-  fetch: fetchTask, list, update, add, addPrereqTask, removePrereqTask, availablePrereqTasks,
+  fetch: fetchTask, list, update, add, addPrereq, removePrereq,
 }

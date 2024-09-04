@@ -95,7 +95,7 @@ where
     }
 }
 
-#[derive(FromRequest)]
+#[derive(Debug, Deserialize, FromRequest)]
 #[from_request(via(axum::Json), rejection(ApiError))]
 pub struct ApiJson<T>(pub T);
 
@@ -192,7 +192,7 @@ impl IntoResponse for ApiError {
                 StatusCode::UNPROCESSABLE_ENTITY,
                 ApiErrorData {
                     message,
-                    level: ApiErrorLevel::Error,
+                    level: ApiErrorLevel::Warn,
                 },
             ),
 
@@ -264,14 +264,6 @@ pub struct Task {
     pub summary: String,
 }
 
-#[derive(Clone, Serialize)]
-#[serde(rename_all = "camelCase")]
-pub struct WideProblem {
-    #[serde(flatten)]
-    pub problem: Task,
-    pub approaches: Vec<WideApproach>,
-}
-
 #[derive(Clone, Debug, Deserialize, Serialize, sqlx::FromRow)]
 #[serde(rename_all = "camelCase")]
 pub struct Approach {
@@ -279,16 +271,6 @@ pub struct Approach {
     pub id: String,
     pub task_id: String,
     pub summary: String,
-}
-
-#[derive(Clone, Serialize)]
-#[serde(rename_all = "camelCase")]
-pub struct WideApproach {
-    #[serde(flatten)]
-    pub approach: Approach,
-    pub prereq_approaches: Vec<Approach>,
-    pub prereq_skills: Vec<Skill>,
-    pub problem: Task,
 }
 
 #[derive(Clone, Serialize, sqlx::FromRow)]

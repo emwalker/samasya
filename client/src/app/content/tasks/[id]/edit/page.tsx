@@ -3,7 +3,7 @@
 import React, {
   ChangeEvent, useCallback, useEffect, useState,
 } from 'react'
-import taskService, { FetchResponse } from '@/services/tasks'
+import taskService, { FetchData } from '@/services/tasks'
 import { TaskType } from '@/types'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
@@ -128,20 +128,20 @@ type Params = {
 
 export default function Page(params: Params) {
   const [isLoading, setIsLoading] = useState(true)
-  const [response, setResponse] = useState<FetchResponse | null>(null)
+  const [fetchData, setFetchData] = useState<FetchData | null>(null)
   const problemId = params?.params?.id
 
   useEffect(() => {
-    async function fetchData() {
+    async function loadData() {
       if (problemId == null) return
       const currResponse = await taskService.fetch(problemId)
-      setResponse(currResponse)
+      setFetchData(currResponse?.data || null)
       setIsLoading(false)
     }
-    fetchData()
-  }, [problemId, setIsLoading, setResponse])
+    loadData()
+  }, [problemId, setIsLoading, setFetchData])
 
-  const task = response?.data?.task
+  const task = fetchData?.task
 
   return (
     <main>

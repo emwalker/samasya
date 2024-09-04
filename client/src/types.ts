@@ -4,9 +4,12 @@ export type SkillType = {
   description: string | null,
 }
 
+type ActionType = 'acquireSkill' | 'completeProblem'
+
 export interface TaskType {
   id: string,
   summary: string,
+  action: ActionType,
   questionText: string | null,
   questionUrl: string | null,
 }
@@ -24,8 +27,8 @@ export interface ProblemSlice {
 export interface ApproachType {
   unspecified: boolean,
   id: string,
-  name: string,
   summary: string,
+  taskId: string,
 }
 
 export type WideApproach = ApproachType & {

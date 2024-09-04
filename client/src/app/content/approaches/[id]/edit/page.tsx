@@ -2,64 +2,54 @@
 
 import React, {
   ChangeEvent,
-  useCallback, useState,
+  useCallback, useEffect, useState,
 } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import PrereqApproachList from '@/components/PrereqApproachList'
-import { SkillType, WideApproach, ApproachType } from '@/types'
-import approachService from '@/services/approaches'
-import styles from './style.module.css'
+import { ApproachType } from '@/types'
+import approachService, { FetchData } from '@/services/approaches'
+import { Box } from '@mantine/core'
+import { handleError } from '@/app/handleResponse'
+import styles from './page.module.css'
 
 type SaveButtonProps = {
   disabled: boolean,
-  id: string,
+  approachId: string,
   name: string,
-  prereqApproaches: ApproachType[],
-  prereqSkills: SkillType[],
-  problemId: string,
 }
 
 function SaveButton({
-  disabled, id, problemId, name, prereqSkills, prereqApproaches,
+  disabled, approachId, name,
 }: SaveButtonProps) {
   const router = useRouter()
-  const prereqSkillIds = prereqSkills.map(({ id: id_ }) => id_)
-  const prereqApproachIds = prereqApproaches.map(({ id: id_ }) => id_)
 
   const onClick = useCallback(async () => {
-    const res = await approachService.put(id, {
-      name, problemId, prereqApproachIds, prereqSkillIds,
-    })
+    const response = await approachService.update(approachId, { name })
 
-    if (res.ok) {
-      router.push(`/content/problems/${problemId}`)
+    if (response.ok) {
+      router.push(`/content/approaches/${approachId}`)
     }
-  }, [id, name, problemId, prereqApproachIds, prereqSkillIds, router])
+  }, [approachId, name, router])
 
   return (
     <button disabled={disabled} onClick={onClick} type="submit">Update</button>
   )
 }
 
-type Params = {
-  params?: { id: string } | null
+type EditFormProps = {
+  approach: ApproachType,
 }
 
-function EditForm({ approach }: { approach: WideApproach }) {
+function EditForm({ approach }: EditFormProps) {
   const {
-    id,
-    name: initialName,
-    prereqTasks: initialTasks,
-    prereqApproaches: initialApproaches,
+    id: approachId,
+    summary: initialSummary,
   } = approach
-  const [name, setName] = useState(initialName)
-  const [prereqSkills] = useState(initialTasks)
-  const [prereqApproaches, setPrereqApproaches] = useState(initialApproaches)
+  const [name, setSummary] = useState(initialSummary)
 
   const nameOnChange = useCallback(
-    (event: ChangeEvent<HTMLInputElement>) => setName(event.target.value),
-    [setName],
+    (event: ChangeEvent<HTMLInputElement>) => setSummary(event.target.value),
+    [setSummary],
   )
 
   return (
@@ -78,59 +68,46 @@ function EditForm({ approach }: { approach: WideApproach }) {
         />
       </div>
 
-      <div>
-        Select task
-      </div>
-
-      <div>
-        <PrereqApproachList
-          prereqApproaches={prereqApproaches}
-          setPrereqApproaches={setPrereqApproaches}
-        />
-      </div>
-
       <p>
         <SaveButton
           disabled={false}
-          id={id}
+          approachId={approachId}
           name={name}
-          prereqApproaches={prereqApproaches}
-          prereqSkills={prereqSkills}
-          problemId={approach.problem.id}
         />
         {' or '}
-        <Link href={`/content/problems/${approach.problem.id}`}>cancel</Link>
+        <Link href={`/content/approaches/${approachId}`}>cancel</Link>
       </p>
     </div>
   )
 }
 
-// eslint-disable-next-line @next/next/no-async-client-component
-export default async function Page(params: Params) {
-  if (params?.params == null) {
-    return <div>Loading ...</div>
-  }
+type Props = {
+  params?: { id: string } | null
+}
 
-  const { params: { id } } = params
-  const approach = (await approachService.get(id)).data
-  if (approach == null) {
-    return (
-      <div>
-        Approach not found:
-        {id}
-      </div>
-    )
-  }
+export default function Page(props: Props) {
+  const [fetchData, setFetchData] = useState<FetchData | null>(null)
+  const approachId = props?.params?.id || null
+
+  useEffect(() => {
+    async function loadData() {
+      if (approachId == null) return
+      const response = await approachService.fetch(approachId)
+      handleError(response, 'Failed to fetch approach')
+      setFetchData(response?.data || null)
+    }
+    loadData()
+  }, [approachId])
+
+  const approach = fetchData?.approach || null
 
   return (
-    <main>
-      <div>
-        <h1>
-          Update approach
-        </h1>
+    <Box>
+      <h1>
+        Update approach
+      </h1>
 
-        <EditForm approach={approach} />
-      </div>
-    </main>
+      {approach && <EditForm approach={approach} />}
+    </Box>
   )
 }

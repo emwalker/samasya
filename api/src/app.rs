@@ -58,6 +58,10 @@ pub async fn router(config: Config, db: SqlitePool) -> Result<Router> {
         .route("/api/v1/approaches", post(approaches::add))
         .route("/api/v1/approaches/:id", get(approaches::fetch))
         .route("/api/v1/approaches/:id", put(approaches::update))
+        .route(
+            "/api/v1/approaches/:id/prereqs/available",
+            get(approaches::prereqs::available),
+        )
         .route("/api/v1/queues/:id", get(queues::fetch))
         .route("/api/v1/queues/:id/next-task", get(queues::next_task))
         .route("/api/v1/queues/:id/add-outcome", post(queues::add_outcome))
@@ -65,17 +69,10 @@ pub async fn router(config: Config, db: SqlitePool) -> Result<Router> {
         .route("/api/v1/tasks", post(tasks::add))
         .route("/api/v1/tasks/:id", get(tasks::fetch))
         .route("/api/v1/tasks/:id", put(tasks::update))
+        .route("/api/v1/tasks/:id/prereqs/add", post(tasks::prereqs::add))
         .route(
-            "/api/v1/tasks/:id/prereqs/add-approach",
-            post(tasks::prereqs::add_approach),
-        )
-        .route(
-            "/api/v1/tasks/:id/prereqs/remove-approach",
-            post(tasks::prereqs::remove_approach),
-        )
-        .route(
-            "/api/v1/tasks/:id/prereqs/available-approaches",
-            get(tasks::prereqs::available_approaches),
+            "/api/v1/tasks/:id/prereqs/remove",
+            post(tasks::prereqs::remove),
         )
         .route("/api/v1/users/:id/queues", get(queues::list))
         .route("/api/v1/users/:id/queues", post(queues::add))
@@ -225,7 +222,7 @@ mod tests {
         assert!(!response.data.unwrap().added_queue_id.is_empty());
     }
 
-    #[sqlx::test(fixtures("seeds"))]
+    #[sqlx::test(fixtures("seeds", "simple"))]
     async fn fetch_queue(pool: SqlitePool) {
         let router = setup(pool).await;
         let queue_id = "2df309a7-8ece-4a14-a5f5-49699d2cba54";
@@ -246,9 +243,12 @@ mod tests {
         let response: ApiResponse<queues::FetchData> = serde_json::from_slice(&body).unwrap();
         let data: queues::FetchData = response.data.unwrap();
         assert_eq!(data.queue.summary, "A queue of test problems");
+        assert_eq!(data.target_task.summary, "Problem to be solved");
+        assert_eq!(data.target_approach.summary, "Unspecified");
+        assert!(data.outcomes.is_empty());
     }
 
-    #[sqlx::test(fixtures("seeds"))]
+    #[sqlx::test(fixtures("seeds", "simple"))]
     async fn next_task(pool: SqlitePool) {
         let router = setup(pool).await;
         let queue_id = "2df309a7-8ece-4a14-a5f5-49699d2cba54";
@@ -267,7 +267,8 @@ mod tests {
         assert_eq!(response.status(), StatusCode::OK);
         let body = response.to_bytes().await;
         let response: ApiResponse<queues::NextTaskData> = serde_json::from_slice(&body).unwrap();
-        assert!(response.data.is_some());
+        let data: queues::NextTaskData = response.data.unwrap();
+        assert!(matches!(data.details, queues::NextTask::EmptyQueue));
     }
 
     #[sqlx::test(fixtures("seeds"))]
@@ -278,6 +279,27 @@ mod tests {
             .oneshot(
                 Request::builder()
                     .uri("/api/v1/tasks".to_string())
+                    .method("GET")
+                    .body(Body::empty())
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+
+        assert_eq!(response.status(), StatusCode::OK);
+        let body = response.to_bytes().await;
+        let response: ApiResponse<tasks::ListData> = serde_json::from_slice(&body).unwrap();
+        assert!(response.data.is_some());
+    }
+
+    #[sqlx::test(fixtures("seeds"))]
+    async fn search_tasks(pool: SqlitePool) {
+        let router = setup(pool).await;
+
+        let response = router
+            .oneshot(
+                Request::builder()
+                    .uri("/api/v1/tasks?q=D".to_string())
                     .method("GET")
                     .body(Body::empty())
                     .unwrap(),
@@ -311,5 +333,84 @@ mod tests {
         let body = response.to_bytes().await;
         let response: ApiResponse<tasks::FetchData> = serde_json::from_slice(&body).unwrap();
         assert!(response.data.is_some());
+    }
+
+    #[sqlx::test(fixtures("seeds"))]
+    async fn add_task(pool: SqlitePool) {
+        let router = setup(pool).await;
+        let task_id = "c7299bc0-8604-4469-bec7-c449ba1bf060";
+        let data = tasks::prereqs::AddPayload {
+            task_id: task_id.to_string(),
+            approach_id: String::from("81359cd2-ec5f-498f-b9c4-281a1d034e59"),
+            prereq_task_id: String::from("ad6f42a7-45c2-4029-806f-5231cb3e9abb"),
+            prereq_approach_id: String::from("b5f55bb7-8dd9-4a64-bda4-11df290902b2"),
+        };
+        let payload: String = serde_json::to_string(&data).unwrap();
+
+        let response = router
+            .oneshot(
+                Request::builder()
+                    .uri(format!("/api/v1/tasks/{task_id}/prereqs/add"))
+                    .header("Content-Type", "application/json")
+                    .method("POST")
+                    .body(Body::from(payload))
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+
+        assert_eq!(response.status(), StatusCode::OK);
+        let body = response.to_bytes().await;
+        let response: ApiResponse<String> = serde_json::from_slice(&body).unwrap();
+        assert_eq!(response.data, Some("ok".into()));
+    }
+
+    #[sqlx::test(fixtures("seeds"))]
+    async fn available_prereqs(pool: SqlitePool) {
+        let router = setup(pool).await;
+        let approach_id = "c7299bc0-8604-4469-bec7-c449ba1bf060";
+
+        let response = router
+            .oneshot(
+                Request::builder()
+                    .uri(format!(
+                        "/api/v1/approaches/{approach_id}/prereqs/available?q=A"
+                    ))
+                    .method("GET")
+                    .body(Body::empty())
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+
+        // assert_eq!(response.status(), StatusCode::OK);
+        let body = response.to_bytes().await;
+        let response: ApiResponse<approaches::prereqs::ListData> =
+            serde_json::from_slice(&body).unwrap();
+        dbg!(&response);
+        assert!(!response.data.unwrap().is_empty());
+    }
+
+    #[sqlx::test(fixtures("seeds", "simple"))]
+    async fn fetch_approach(pool: SqlitePool) {
+        let router = setup(pool).await;
+        let approach_id = "81359cd2-ec5f-498f-b9c4-281a1d034e59";
+
+        let response = router
+            .oneshot(
+                Request::builder()
+                    .uri(format!("/api/v1/approaches/{approach_id}"))
+                    .method("GET")
+                    .body(Body::empty())
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+
+        assert_eq!(response.status(), StatusCode::OK);
+        let body = response.to_bytes().await;
+        let response: ApiResponse<approaches::FetchData> = serde_json::from_slice(&body).unwrap();
+        let data: approaches::FetchData = response.data.unwrap();
+        assert_eq!(data.approach.id, approach_id);
     }
 }

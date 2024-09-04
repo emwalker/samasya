@@ -100,7 +100,7 @@ pub struct QueueOutcome {
 pub struct FetchData {
     pub queue: QueueRow,
     pub outcomes: Vec<QueueOutcome>,
-    pub target_problem: Task,
+    pub target_task: Task,
     pub target_approach: Approach,
 }
 
@@ -118,7 +118,7 @@ pub async fn fetch(
         .fetch_one(&ctx.db)
         .await?;
 
-    let target_problem = sqlx::query_as::<_, Task>("select * from tasks where id = ?")
+    let target_task = sqlx::query_as::<_, Task>("select * from tasks where id = ?")
         .bind(&target_approach.task_id)
         .fetch_one(&ctx.db)
         .await?;
@@ -164,7 +164,7 @@ pub async fn fetch(
     Ok(ApiJson(ApiResponse::data(FetchData {
         queue,
         outcomes,
-        target_problem,
+        target_task,
         target_approach,
     })))
 }
@@ -214,8 +214,8 @@ struct PrereqProblem {
 }
 
 #[derive(Debug, Deserialize, Serialize)]
-#[serde(rename_all = "camelCase", tag = "outcome")]
-enum NextProblem {
+#[serde(rename_all = "camelCase", tag = "status")]
+pub enum NextTask {
     EmptyQueue,
 
     #[serde(rename_all = "camelCase")]
@@ -304,11 +304,11 @@ impl TryFrom<OutcomeRow> for Outcome {
 #[derive(Debug, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct NextTaskData {
-    queue: QueueRow,
-    task: Option<Task>,
-    approach: Option<Approach>,
+    pub queue: QueueRow,
+    pub task: Option<Task>,
+    pub approach: Option<Approach>,
     #[serde(flatten)]
-    details: NextProblem,
+    pub details: NextTask,
 }
 
 pub async fn next_task(
@@ -321,7 +321,7 @@ pub async fn next_task(
         .await?;
 
     info!("fetching history for queue {queue_id} ...");
-    // Problems that must be mastered for the skills needed for the target problem
+    // Tasks that must be mastered for the skills needed for the target problem
     let history = sqlx::query_as::<_, OutcomeRow>(
         "select
                 ap.prereq_approach_id approach_id,
@@ -345,6 +345,7 @@ pub async fn next_task(
         .into_iter()
         .map(Outcome::try_from)
         .collect::<Result<Vec<_>>>()?;
+    dbg!(&history);
 
     let cadence = queue.cadence.parse::<Cadence>()?;
     let clock = Clock::now(cadence);
@@ -352,7 +353,7 @@ pub async fn next_task(
     let next = strategy.choose(clock, &history)?;
 
     let (task, approach) = match &next {
-        NextProblem::Ready { approach_id, .. } => {
+        NextTask::Ready { approach_id, .. } => {
             let approach = sqlx::query_as::<_, Approach>("select * from approaches where id = ?")
                 .bind(approach_id)
                 .fetch_one(&ctx.db)

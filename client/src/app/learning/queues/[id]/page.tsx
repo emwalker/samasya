@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useEffect, useState } from 'react'
-import queueService, { OutcomeType, FetchResponse, QueueAnswerType } from '@/services/queues'
+import queueService, { OutcomeType, FetchResponse, QueueOutcomeType } from '@/services/queues'
 import TitleAndButton from '@/components/TitleAndButton'
 import {
   Button, Card, Box, LoadingOverlay, Table, Badge, Center,
@@ -29,14 +29,14 @@ const badgeColors: Record<OutcomeType, string> = {
   tooHard: 'orange',
 }
 
-function AnswerRow({
-  problemSummary,
-  answerId,
-  answerAnsweredAt,
-  answerAvailableAt,
-  answerState,
-  answerConsecutiveCorrect: correct,
-}: QueueAnswerType) {
+function OutcomeRow({
+  taskSummary: problemSummary,
+  outcomeId: answerId,
+  outcomeAddedAt: answerAnsweredAt,
+  taskAvailableAt: answerAvailableAt,
+  outcome: answerState,
+  progress: correct,
+}: QueueOutcomeType) {
   const statusColor = badgeColors[answerState] || 'red'
   const correctColor = colorForConsecutiveCorrect(correct)
   const answeredAt = moment(answerAnsweredAt).fromNow()
@@ -119,7 +119,7 @@ export default function Page(props: Props) {
               </Table.Tr>
             </Table.Thead>
             <Table.Tbody>
-              {data.answers.map(AnswerRow)}
+              {data.outcomes.map(OutcomeRow)}
             </Table.Tbody>
           </Table>
         </>

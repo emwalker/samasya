@@ -1,59 +1,74 @@
-import { ApproachType, WideApproach } from '@/types'
+import {
+  ApiResponse,
+  ApproachType,
+  TaskType,
+} from '@/types'
 
-export type GetResponse = {
-  data: WideApproach | null
+type PrereqType = {
+  taskId: string,
+  taskSummary: string,
+  taskAction: string,
+  approachId: string
+  approachSummary: string,
 }
 
-async function get(id: string): Promise<GetResponse> {
-  const res = await fetch(`http://localhost:8000/api/v1/approaches/${id}`, { cache: 'no-store' })
-
-  if (!res.ok) {
-    return Promise.resolve({ data: null })
-  }
-
-  return res.json()
+export type FetchData = {
+  approach: ApproachType,
+  prereqs: PrereqType[],
 }
 
-export type GetListResponse = {
-  data: ApproachType[]
-}
-
-async function getList(problemId: string): Promise<GetListResponse> {
-  const res = await fetch(
-    `http://localhost:8000/api/v1/problems/${problemId}/approaches`,
+async function fetchApproach(id: string): Promise<ApiResponse<FetchData>> {
+  const response = await fetch(
+    `http://localhost:8000/api/v1/approaches/${id}`,
     { cache: 'no-store' },
   )
-
-  if (!res.ok) {
-    return Promise.resolve({ data: [] })
-  }
-
-  return res.json()
+  return response.json()
 }
 
-export type Update = {
-  name: string,
-  prereqApproachIds: string[],
-  prereqSkillIds: string[],
-  problemId: string,
+export type AddPayload = {
+  summary: string,
+  taskId: string,
 }
 
-async function put(id: string, update: Update) {
-  return fetch(`http://localhost:8000/api/v1/approaches/${id}`, {
-    method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(update),
-  })
-}
-
-async function post(update: Update) {
-  return fetch('http://localhost:8000/api/v1/approaches', {
+async function add(payload: AddPayload) {
+  const response = await fetch(`http://localhost:8000/api/v1/${payload.taskId}/approaches`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(update),
+    body: JSON.stringify(payload),
   })
+  return response.json()
+}
+
+export type UpdatePayload = {
+  name: string,
+}
+
+async function update(id: string, payload: UpdatePayload) {
+  const response = await fetch(`http://localhost:8000/api/v1/approaches/${id}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  })
+  return response.json()
+}
+
+export type AvailableData = TaskType[]
+
+async function availablePrereqs(
+  approachId: string,
+  searchString: string,
+): Promise<ApiResponse<AvailableData>> {
+  const urlBase = `http://localhost:8000/api/v1/approaches/${approachId}/prereqs/available`
+  const url = searchString
+    ? `${urlBase}?q=${encodeURIComponent(searchString)}`
+    : urlBase
+  const response = await fetch(url, {
+    method: 'GET',
+    headers: { 'Content-Type': 'application/json' },
+  })
+  return response.json()
 }
 
 export default {
-  get, getList, put, post,
+  fetch: fetchApproach, update, add, availablePrereqs,
 }

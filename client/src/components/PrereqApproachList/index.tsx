@@ -56,12 +56,13 @@ async function addPrereq({ url, prereqApproaches, setPrereqApproaches }: AddPrer
     throw Error(`do not recognize url: ${url}`)
   }
 
-  const approach = (await approachService.get(id)).data
+  const approach = (await approachService.fetch(id)).data || null
   if (approach == null) {
     throw Error(`approach not found: ${url}`)
   }
 
   const approaches = [...prereqApproaches, approach]
+  // @ts-expect-error
   setPrereqApproaches(approaches)
 }
 

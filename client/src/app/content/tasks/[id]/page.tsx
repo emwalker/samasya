@@ -1,84 +1,79 @@
 'use client'
 
-import React, { useCallback, useEffect, useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import {
-  Box, Button, LoadingOverlay,
+  Box,
+  Button,
+  LoadingOverlay,
+  Select,
 } from '@mantine/core'
-import taskService, { FetchResponse, PrereqTaskType } from '@/services/tasks'
-import ListOr from '@/components/ListOr'
+import taskService, { FetchData } from '@/services/tasks'
 import TitleAndButton from '@/components/TitleAndButton'
 import MarkdownPreview from '@/components/MarkdownPreview'
-import PrereqTaskSelect from '@/components/PrereqTaskSelect'
-import PrereqTask from '@/components/PrereqTask'
 import QuestionUrlPrompt from '@/components/QuestionUrlPrompt/page'
+import ApproachView from '@/components/ApproachView'
+import { TaskType } from '@/types'
 
-type Params = {
+function showApproach({ action }: TaskType): boolean {
+  return action === 'completeProblem'
+}
+
+type Props = {
   params?: { id: string } | null
 }
 
-function makeKey({ taskId, prereqTaskId, prereqApproachId }: PrereqTaskType) {
-  return `${taskId}:${prereqApproachId}:${prereqTaskId}`
-}
-
-export default function Page(params: Params) {
-  const [isLoading, setIsLoading] = useState(true)
-  const [response, setResponse] = useState<FetchResponse | null>(null)
-  const taskId = params?.params?.id
+export default function Page(props: Props) {
+  const [fetchData, setFetchData] = useState<FetchData | null>(null)
+  const [currentApproachId, setCurrentApproachId] = useState<string | null>(null)
+  const taskId = props?.params?.id
 
   useEffect(() => {
-    async function fetchData() {
+    async function loadData() {
       if (taskId == null) return
-      const currResponse = await taskService.fetch(taskId)
-      setResponse(currResponse)
-      setIsLoading(false)
+      const response = await taskService.fetch(taskId)
+      const data = response?.data || null
+      const approachId = (data?.approaches || [])[0]?.id
+      setFetchData(data)
+      setCurrentApproachId(approachId)
     }
-    fetchData()
-  }, [taskId, setResponse, setIsLoading])
+    loadData()
+  }, [taskId, setFetchData])
 
-  const refreshParent = useCallback(async () => {
-    if (taskId == null) return
-    // eslint-disable-next-line no-console
-    console.log('refetching page ...')
-    const currResponse = await taskService.fetch(taskId)
-    setResponse(currResponse)
-  }, [taskId, setResponse])
-
-  const task = response?.data?.task
-  const prereqTasks = response?.data?.prereqTasks || []
+  const task = fetchData?.task
+  const approachOptions = fetchData?.approaches
+    ?.map(({ id, summary }) => ({ value: id, label: summary })) || []
 
   return (
-    <main>
-      <Box pos="relative">
-        <LoadingOverlay
-          visible={isLoading}
-          zIndex={1000}
-          overlayProps={{ radius: 'sm', blur: 2 }}
-        />
+    <Box pos="relative">
+      <LoadingOverlay
+        visible={fetchData == null}
+        zIndex={1000}
+        overlayProps={{ radius: 'sm', blur: 2 }}
+      />
 
-        {taskId && task && prereqTasks && (
-          <>
-            <TitleAndButton title={task.summary}>
-              <Button>Edit</Button>
-            </TitleAndButton>
+      {taskId && task && (
+        <>
+          <TitleAndButton title={task.summary}>
+            <Button>Edit</Button>
+          </TitleAndButton>
 
-            {task.questionUrl && <QuestionUrlPrompt questionUrl={task.questionUrl} />}
+          {task.questionUrl && <QuestionUrlPrompt questionUrl={task.questionUrl} />}
 
-            <MarkdownPreview markdown={task.questionText || ''} />
+          <MarkdownPreview markdown={task.questionText || ''} />
 
-            <PrereqTaskSelect taskId={taskId} refreshParent={refreshParent} />
+          {showApproach(task) && (
+            <Select
+              data={approachOptions}
+              defaultValue={currentApproachId}
+              label="Approach"
+              mb={20}
+              onChange={setCurrentApproachId}
+            />
+          )}
 
-            <ListOr title="Things that must be mastered" fallback="No prerequisites">
-              {prereqTasks.map((currTask) => (
-                <PrereqTask
-                  key={makeKey(currTask)}
-                  prereqTask={currTask}
-                  refreshParent={refreshParent}
-                />
-              ))}
-            </ListOr>
-          </>
-        )}
-      </Box>
-    </main>
+          {currentApproachId && <ApproachView taskId={taskId} approachId={currentApproachId} />}
+        </>
+      )}
+    </Box>
   )
 }

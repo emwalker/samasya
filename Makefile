@@ -25,7 +25,7 @@ lint:
 
 load:
 	rm -f api/development.db
-	sqlite3 api/development.db < data/fixtures.sql
+	sqlite3 api/development.db < api/src/fixtures/seeds.sql
 
 migrate:
 	$(MAKE) -C api migrate
@@ -38,7 +38,7 @@ prod:
 	overmind start -f Procfile.prod
 
 save:
-	sqlite3 api/development.db .dump > data/fixtures.sql
+	sqlite3 api/development.db .dump > api/src/fixtures/seeds.sql
 
 test:
 	$(MAKE) -C api test

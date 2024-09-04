@@ -1,5 +1,5 @@
 use crate::{
-    types::{ApiJson, ApiOk, ApiResponse, Approach, Result, WideApproach},
+    types::{ApiJson, ApiOk, ApiResponse, Result, Task},
     ApiContext,
 };
 use axum::{extract::Path, Extension};
@@ -94,21 +94,125 @@ pub async fn update(
     Ok(ApiJson::ok())
 }
 
-pub async fn fetch(
-    ctx: Extension<ApiContext>,
-    Path(id): Path<String>,
-) -> Result<ApiJson<ApiResponse<WideApproach>>> {
-    let data = crate::sqlx::approaches::fetch_wide(&ctx.db, &id).await?;
-    Ok(ApiJson(ApiResponse::data(data)))
+#[derive(Debug, Deserialize, sqlx::FromRow, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ApproachType {
+    pub id: String,
+    pub summary: String,
+    pub task_id: String,
 }
 
-pub type ListData = Vec<Approach>;
+#[derive(Debug, Deserialize, Serialize, sqlx::FromRow)]
+#[serde(rename_all = "camelCase")]
+pub struct PrereqType {
+    task_id: String,
+    task_summary: String,
+    task_action: String,
+    approach_id: String,
+    approach_summary: String,
+}
 
-pub async fn list(
+#[derive(Debug, Deserialize, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct FetchData {
+    pub task: Task,
+    pub approach: ApproachType,
+    pub prereqs: Vec<PrereqType>,
+}
+
+pub async fn fetch(
     ctx: Extension<ApiContext>,
-    Path(id): Path<String>,
-) -> Result<ApiJson<ApiResponse<ListData>>> {
-    let problem_id = id;
-    let data = crate::sqlx::approaches::fetch_all(&ctx.db, &problem_id, 20).await?;
-    Ok(ApiJson(ApiResponse::data(data)))
+    Path(approach_id): Path<String>,
+) -> Result<ApiJson<ApiResponse<FetchData>>> {
+    let approach = sqlx::query_as::<_, ApproachType>("select * from approaches where id = ?")
+        .bind(&approach_id)
+        .fetch_one(&ctx.db)
+        .await?;
+
+    let task = sqlx::query_as::<_, Task>("select * from tasks where id = ?")
+        .bind(&approach.task_id)
+        .fetch_one(&ctx.db)
+        .await?;
+
+    let prereqs = sqlx::query_as::<_, PrereqType>(
+        "select
+            a.task_id,
+            t.summary task_summary,
+            t.action task_action, a.summary approach_summary,
+            a.id approach_id,
+            a.summary approach_summary
+         from approach_prereqs ap
+         join approaches a on ap.prereq_approach_id = a.id
+         join tasks t on a.task_id = t.id
+         where ap.approach_id = ?
+         order by ap.added_at desc",
+    )
+    .bind(&approach_id)
+    .fetch_all(&ctx.db)
+    .await?;
+
+    Ok(ApiJson(ApiResponse::data(FetchData {
+        task,
+        approach,
+        prereqs,
+    })))
+}
+
+pub mod prereqs {
+    use super::*;
+    use crate::{tasks::Search, types::Task, ApiContext};
+    use axum::{
+        extract::{Path, Query},
+        Extension,
+    };
+    use sqlx::{QueryBuilder, Sqlite};
+
+    pub type ListData = Vec<Task>;
+
+    pub async fn available(
+        ctx: Extension<ApiContext>,
+        Path(approach_id): Path<String>,
+        search: Option<Query<Search>>,
+    ) -> Result<ApiJson<ApiResponse<ListData>>> {
+        let search = search.unwrap_or_default().0;
+        info!(
+            "searching for available prereq tasks for {approach_id}: {:?}",
+            search
+        );
+
+        let mut builder: QueryBuilder<Sqlite> = QueryBuilder::new(
+            "select distinct t.*
+             from tasks t ",
+        );
+        let mut wheres = vec![];
+
+        for (i, substring) in search.substrings().enumerate() {
+            builder.push(format!("join tasks t{i} on t.id = t{i}.id "));
+            wheres.push(substring);
+        }
+
+        builder.push("where ");
+        let mut separated = builder.separated(" and ");
+
+        for (i, substring) in wheres.into_iter().enumerate() {
+            separated.push(format!("lower(t{i}.summary) like '%'||lower("));
+            separated.push_bind_unseparated(substring);
+            separated.push_unseparated(")||'%'");
+        }
+
+        separated.push(
+            "not exists (
+                select a.task_id
+                from approach_prereqs ap
+                join approaches a on ap.prereq_approach_id = a.id
+                where t.id = a.task_id and ap.approach_id = ",
+        );
+        separated.push_bind_unseparated(approach_id);
+        separated.push_unseparated(")");
+
+        builder.push("order by t.summary limit ").push_bind(7);
+        let skills = builder.build_query_as::<Task>().fetch_all(&ctx.db).await?;
+
+        Ok(ApiJson(ApiResponse::data(skills)))
+    }
 }

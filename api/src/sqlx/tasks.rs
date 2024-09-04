@@ -1,7 +1,6 @@
-use super::approaches;
 use crate::{
     tasks::Search,
-    types::{Result, Task, WideProblem},
+    types::{Result, Task},
 };
 use sqlx::{sqlite::SqlitePool, QueryBuilder, Sqlite};
 
@@ -30,7 +29,7 @@ pub async fn list(db: &SqlitePool, limit: i32, search: Search) -> Result<Vec<Tas
         }
 
         builder
-            .push("order by p.added_at desc limit ")
+            .push("order by t.added_at desc limit ")
             .push_bind(limit);
         builder.build_query_as::<Task>().fetch_all(db).await?
     };
@@ -44,28 +43,4 @@ pub async fn fetch_one(db: &SqlitePool, id: &String) -> Result<Task> {
         .fetch_one(db)
         .await?;
     Ok(problem)
-}
-
-pub async fn fetch_wide(db: &SqlitePool, id: &String) -> Result<WideProblem> {
-    let problem = sqlx::query_as::<_, Task>("select * from problems where id = ? limit 1")
-        .bind(id)
-        .fetch_one(db)
-        .await?;
-
-    let approach_ids =
-        sqlx::query_as::<_, (String,)>("select id from approaches where problem_id = ?")
-            .bind(id)
-            .fetch_all(db)
-            .await?;
-
-    let mut wide_approaches = vec![];
-    for (approach_id,) in approach_ids {
-        let approach = approaches::fetch_wide(db, &approach_id).await?;
-        wide_approaches.push(approach);
-    }
-
-    Ok(WideProblem {
-        problem,
-        approaches: wide_approaches,
-    })
 }

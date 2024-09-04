@@ -1,4 +1,4 @@
-use super::{Clock, NextProblem, Outcome};
+use super::{Clock, NextTask, Outcome};
 use crate::{
     queues::OutcomeData,
     types::{QueueStrategy, Result, Timestamp},
@@ -9,11 +9,11 @@ use itertools::Itertools;
 pub(crate) struct SpacedRepetitionV1;
 
 pub(crate) trait Choose {
-    fn choose(&self, clock: Clock, history: &[Outcome]) -> Result<NextProblem>;
+    fn choose(&self, clock: Clock, history: &[Outcome]) -> Result<NextTask>;
 }
 
 impl Choose for QueueStrategy {
-    fn choose(&self, clock: Clock, history: &[Outcome]) -> Result<NextProblem> {
+    fn choose(&self, clock: Clock, history: &[Outcome]) -> Result<NextTask> {
         match self {
             Self::SpacedRepetitionV1 => SpacedRepetitionV1.choose(clock, history),
             _ => unimplemented!(),
@@ -22,21 +22,21 @@ impl Choose for QueueStrategy {
 }
 
 impl Choose for SpacedRepetitionV1 {
-    fn choose(&self, clock: Clock, history: &[Outcome]) -> Result<NextProblem> {
+    fn choose(&self, clock: Clock, history: &[Outcome]) -> Result<NextTask> {
         if history.is_empty() {
-            return Ok(NextProblem::EmptyQueue);
+            return Ok(NextTask::EmptyQueue);
         }
 
         let (approach_id, next_available_at) = self.next_problem(clock, history)?;
 
         if let Some(approach_id) = approach_id {
-            return Ok(NextProblem::Ready {
+            return Ok(NextTask::Ready {
                 approach_id,
                 available_at: next_available_at,
             });
         }
 
-        Ok(NextProblem::NotReady {
+        Ok(NextTask::NotReady {
             available_at: next_available_at,
         })
     }
@@ -133,7 +133,7 @@ mod tests {
         ];
         let next = chooser.choose(clock.ticks(-1).unwrap(), &history).unwrap();
 
-        let NextProblem::Ready {
+        let NextTask::Ready {
             approach_id,
             available_at,
         } = next
@@ -150,7 +150,7 @@ mod tests {
         let history = vec![];
         let next = chooser.choose(clock.ticks(-1).unwrap(), &history).unwrap();
 
-        assert!(matches!(next, NextProblem::EmptyQueue));
+        assert!(matches!(next, NextTask::EmptyQueue));
     }
 
     #[test]
@@ -163,7 +163,7 @@ mod tests {
         ];
 
         let next = chooser.choose(clock.ticks(-2).unwrap(), &history).unwrap();
-        let NextProblem::Ready {
+        let NextTask::Ready {
             approach_id,
             available_at,
         } = next
@@ -184,7 +184,7 @@ mod tests {
         ];
         let next = chooser.choose(clock.ticks(1).unwrap(), &history).unwrap();
 
-        let NextProblem::NotReady { available_at } = next else {
+        let NextTask::NotReady { available_at } = next else {
             panic!()
         };
         assert!(time_eq(available_at, clock.ticks(2)));
@@ -200,7 +200,7 @@ mod tests {
         ];
         let next = chooser.choose(clock.ticks(1).unwrap(), &history).unwrap();
 
-        let NextProblem::NotReady { available_at } = next else {
+        let NextTask::NotReady { available_at } = next else {
             panic!()
         };
         assert!(time_eq(available_at, clock.ticks(2)));
@@ -216,7 +216,7 @@ mod tests {
         ];
         let next = chooser.choose(clock.ticks(0).unwrap(), &history).unwrap();
 
-        let NextProblem::NotReady { available_at } = next else {
+        let NextTask::NotReady { available_at } = next else {
             panic!()
         };
         assert!(time_eq(available_at, clock.ticks(1)));
@@ -228,7 +228,7 @@ mod tests {
         let history = vec![a("0", 2, clock.ticks(0), Completed)];
         let next = chooser.choose(clock.ticks(3).unwrap(), &history).unwrap();
 
-        let NextProblem::NotReady { available_at } = next else {
+        let NextTask::NotReady { available_at } = next else {
             panic!()
         };
         assert!(time_eq(available_at, clock.ticks(4)));
@@ -249,7 +249,7 @@ mod tests {
         ];
         let next = chooser.choose(clock.ticks(0).unwrap(), &history).unwrap();
 
-        let NextProblem::Ready {
+        let NextTask::Ready {
             approach_id,
             available_at,
         } = next
@@ -270,7 +270,7 @@ mod tests {
         ];
         let next = chooser.choose(clock.ticks(0).unwrap(), &history).unwrap();
 
-        let NextProblem::NotReady { available_at } = next else {
+        let NextTask::NotReady { available_at } = next else {
             panic!()
         };
         assert!(time_eq(available_at, clock.ticks(88)));
@@ -288,7 +288,7 @@ mod tests {
         ];
         let next = chooser.choose(clock.ticks(0).unwrap(), &history).unwrap();
 
-        let NextProblem::NotReady { available_at } = next else {
+        let NextTask::NotReady { available_at } = next else {
             panic!()
         };
         assert!(time_eq(available_at, clock.ticks(1)));
