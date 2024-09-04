@@ -2,41 +2,40 @@ import React, { useCallback, useState } from 'react'
 import {
   Box, Button, ComboboxData, Select,
 } from '@mantine/core'
-import problemService from '@/services/problems'
-import skillService from '@/services/skills'
+import taskService from '@/services/tasks'
 import { notifications } from '@mantine/notifications'
-
-type PrereqProblemsProps = {
-  skillId: string,
-  refreshParent: () => void,
-}
 
 type Fn = (options: ComboboxData) => void
 
 async function updatePrereqProblems(
   setPrereqProblemOptions: Fn,
-  skillId: string,
+  taskId: string,
   searchString: string,
 ) {
-  const response = await skillService.availablePrereqProblems(skillId, searchString || '')
-  const options = response.data.map(({ id: value, summary: label }) => ({ value, label }))
+  const response = await taskService.availablePrereqTasks(taskId, searchString || '')
+  const options = response?.data?.map(({ id: value, summary: label }) => ({ value, label })) || []
   setPrereqProblemOptions(options || [])
 }
 
-export default function PrereqProblems({ skillId, refreshParent }: PrereqProblemsProps) {
+type Props = {
+  taskId: string,
+  refreshParent: () => void,
+}
+
+export default function PrereqProblems({ taskId, refreshParent }: Props) {
   const [prereqProblemOptions, setPrereqProblemOptions] = useState<ComboboxData>([])
   const [prereqApproachOptions, setPrereqApproachOptions] = useState<ComboboxData>([])
-  const [prereqProblemId, setPrereqProblemId] = useState<string | null>(null)
+  const [prereqTaskId, setPrereqProblemId] = useState<string | null>(null)
   const [prereqApproachId, setPrereqApproachId] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(true)
 
   const updateSearch = useCallback(async (searchString: string | null) => {
     const search = searchString || ''
     if (isLoading || search !== '') {
-      updatePrereqProblems(setPrereqProblemOptions, skillId, search)
+      updatePrereqProblems(setPrereqProblemOptions, taskId, search)
     }
     setIsLoading(false)
-  }, [setPrereqProblemOptions, skillId, isLoading])
+  }, [setPrereqProblemOptions, taskId, isLoading])
 
   const onProblemSelect = useCallback(async (selectedProblemId: string | null) => {
     setPrereqProblemId(selectedProblemId)
@@ -45,7 +44,7 @@ export default function PrereqProblems({ skillId, refreshParent }: PrereqProblem
     if (selectedProblemId == null) {
       setPrereqApproachOptions([])
     } else {
-      const response = await problemService.fetch(selectedProblemId)
+      const response = await taskService.fetch(selectedProblemId)
       const options = response.data?.approaches
         ?.map(({ name: label, id: value }) => ({ label, value }))
       setPrereqApproachOptions(options || [])
@@ -53,7 +52,7 @@ export default function PrereqProblems({ skillId, refreshParent }: PrereqProblem
   }, [setPrereqApproachId, setPrereqProblemId, setPrereqApproachOptions])
 
   const addPrereqProblem = useCallback(async () => {
-    if (prereqProblemId == null) {
+    if (prereqTaskId == null || prereqApproachId == null) {
       notifications.show({
         title: 'Something happened',
         color: 'red',
@@ -62,7 +61,7 @@ export default function PrereqProblems({ skillId, refreshParent }: PrereqProblem
       })
       return
     }
-    await skillService.addProblem({ skillId, prereqProblemId, prereqApproachId })
+    await taskService.addPrereqTask({ taskId, prereqTaskId, prereqApproachId })
 
     setPrereqProblemId(null)
     setPrereqApproachId(null)
@@ -71,13 +70,13 @@ export default function PrereqProblems({ skillId, refreshParent }: PrereqProblem
     refreshParent()
   }, [
     prereqApproachId,
-    prereqProblemId,
+    prereqTaskId,
     refreshParent,
     setPrereqApproachId,
     setPrereqApproachOptions,
     setPrereqProblemId,
     setPrereqProblemOptions,
-    skillId,
+    taskId,
   ])
 
   return (
@@ -86,7 +85,7 @@ export default function PrereqProblems({ skillId, refreshParent }: PrereqProblem
         allowDeselect
         clearable
         data={prereqProblemOptions}
-        defaultValue={prereqProblemId}
+        defaultValue={prereqTaskId}
         label="Add a problem"
         mb={10}
         onChange={onProblemSelect}
@@ -97,7 +96,7 @@ export default function PrereqProblems({ skillId, refreshParent }: PrereqProblem
       />
 
       {
-        prereqProblemId && (
+        prereqTaskId && (
           <>
             <Select
               data={prereqApproachOptions}

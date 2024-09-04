@@ -1,16 +1,16 @@
 'use client'
 
 import React, {
-  useState, useCallback, ChangeEvent, useEffect,
+  useState, useCallback, ChangeEvent,
 } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import queueService from '@/services/queues'
 import contants from '@/constants'
-import AvailableTasks from '@/components/AvailableTasks'
-import taskService from '@/services/tasks'
-import { Button, ComboboxData, TextInput } from '@mantine/core'
+import TaskApproachSelect from '@/components/TaskApproachSelect'
+import { Box, Button, TextInput } from '@mantine/core'
 import handleResponse from '@/app/handleResponse'
+import TitleAndButton from '@/components/TitleAndButton'
 
 type AddButtonProps = {
   disabled: boolean,
@@ -24,7 +24,9 @@ function AddButton({ disabled, summary, targetProblemId: targetTaskId }: AddButt
   const onClick = useCallback(async () => {
     const response = await queueService.add(
       contants.placeholderUserId,
-      { summary, targetTaskId: targetTaskId, strategy: 'spacedRepetitionV1' },
+      {
+        summary, targetTaskId, strategy: 'spacedRepetitionV1', cadence: 'hours',
+      },
     )
 
     handleResponse(router, response, '/learning/queues', 'Unable to add queue')
@@ -37,67 +39,50 @@ function AddButton({ disabled, summary, targetProblemId: targetTaskId }: AddButt
 
 export default function Page() {
   const [summary, setSummary] = useState('')
-  const [targetTaskId, setTargetProblemId] = useState('')
-  const [initialProblems, setInitialProblems] = useState<ComboboxData>([])
+  const [targetTaskId, setTargetApproachId] = useState('')
 
   const summaryOnChange = useCallback(
     (event: ChangeEvent<HTMLInputElement>) => setSummary(event.target.value),
     [setSummary],
   )
 
-  useEffect(() => {
-    taskService.list()
-      .then(({ data }) => {
-        const options = data.map(({ id: value, summary: label }) => ({ value, label }))
-        setInitialProblems(options)
-      })
-  }, [setInitialProblems])
-
   const taskOnChange = useCallback(
     (problemId: string | null) => {
       if (problemId == null) {
-        setTargetProblemId('')
+        setTargetApproachId('')
       } else {
-        setTargetProblemId(problemId)
+        setTargetApproachId(problemId)
       }
     },
-    [setTargetProblemId],
+    [setTargetApproachId],
   )
 
   const disabled = summary.length === 0 || targetTaskId.length === 0
 
   return (
-    <main>
-      <div>
-        <h1>Start a queue</h1>
-
-        <TextInput
-          onChange={summaryOnChange}
-          placeholder="Name of queue"
-          label="Name"
-          type="text"
-          value={summary}
+    <Box>
+      <TitleAndButton title="Start a queue">
+        <AddButton
+          disabled={disabled}
+          summary={summary}
+          targetProblemId={targetTaskId}
         />
-        <br />
+        {' or '}
+        <Link href="/learning/queues">cancel</Link>
+      </TitleAndButton>
 
-        <div>
-          <AvailableTasks
-            initialProblems={initialProblems}
-            label="Challenge to work towards"
-            setProblem={taskOnChange}
-          />
-        </div>
+      <TextInput
+        onChange={summaryOnChange}
+        placeholder="Name of queue"
+        label="Name"
+        type="text"
+        value={summary}
+      />
 
-        <p>
-          <AddButton
-            disabled={disabled}
-            summary={summary}
-            targetProblemId={targetTaskId}
-          />
-          {' or '}
-          <Link href="/learning/queues">cancel</Link>
-        </p>
-      </div>
-    </main>
+      <TaskApproachSelect
+        label="Challenge to work towards"
+        setApproachId={taskOnChange}
+      />
+    </Box>
   )
 }

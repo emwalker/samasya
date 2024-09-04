@@ -3,7 +3,7 @@
 import React, { useState, useCallback, ChangeEvent } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import problemService from '@/services/problems'
+import taskService from '@/services/tasks'
 import { Button, Textarea, TextInput } from '@mantine/core'
 import classes from './page.module.css'
 
@@ -20,7 +20,7 @@ function AddButton({
   const router = useRouter()
 
   const onClick = useCallback(async () => {
-    const res = await problemService.add({ summary, questionText, questionUrl })
+    const res = await taskService.add({ summary, questionText, questionUrl })
 
     if (res.ok) {
       router.push('/content/problems')

@@ -30,31 +30,18 @@ export interface ApproachType {
 
 export type WideApproach = ApproachType & {
   prereqApproaches: ApproachType[],
-  prereqSkills: SkillType[],
+  prereqTasks: SkillType[],
   problem: TaskType,
 }
 
-export enum AnswerState {
-  Correct,
-  Incorrect,
-  Skipped,
-  Started,
-  Submitted,
-  Unstarted,
-}
+export type OutcomeType = 'completed' | 'needsRetry' | 'tooHard'
 
-export type Answer = {
+export type Cadence = 'minutes' | 'hours' | 'days'
+
+export type Outcome = {
   id: string,
-  state: AnswerState,
+  outcome: OutcomeType,
   summary: string,
-}
-
-export type AnswerEdge = {
-  node: Answer,
-}
-
-export type AnswerConnection = {
-  edges: AnswerEdge[],
 }
 
 export type QueueStrategy = 'deterministic' | 'spacedRepetitionV1'
@@ -63,6 +50,7 @@ export type QueueType = {
   id: string,
   summary: string,
   strategy: QueueStrategy,
+  cadence: Cadence,
 }
 
 export type ApiError = {

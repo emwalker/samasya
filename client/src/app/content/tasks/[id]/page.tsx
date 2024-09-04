@@ -4,47 +4,47 @@ import React, { useCallback, useEffect, useState } from 'react'
 import {
   Box, Button, LoadingOverlay,
 } from '@mantine/core'
-import problemService, { FetchResponse, PrereqSkillType } from '@/services/problems'
+import taskService, { FetchResponse, PrereqTaskType } from '@/services/tasks'
 import ListOr from '@/components/ListOr'
 import TitleAndButton from '@/components/TitleAndButton'
 import MarkdownPreview from '@/components/MarkdownPreview'
-import PrereqSkills from '@/components/PrereqSkills'
-import PrereqSkill from '@/components/PrereqSkill'
+import PrereqTaskSelect from '@/components/PrereqTaskSelect'
+import PrereqTask from '@/components/PrereqTask'
 import QuestionUrlPrompt from '@/components/QuestionUrlPrompt/page'
 
 type Params = {
   params?: { id: string } | null
 }
 
-function makeKey({ problemId, approachId, prereqSkillId }: PrereqSkillType) {
-  return `${problemId}:${approachId}:${prereqSkillId}`
+function makeKey({ taskId, prereqTaskId, prereqApproachId }: PrereqTaskType) {
+  return `${taskId}:${prereqApproachId}:${prereqTaskId}`
 }
 
 export default function Page(params: Params) {
   const [isLoading, setIsLoading] = useState(true)
   const [response, setResponse] = useState<FetchResponse | null>(null)
-  const problemId = params?.params?.id
+  const taskId = params?.params?.id
 
   useEffect(() => {
     async function fetchData() {
-      if (problemId == null) return
-      const currResponse = await problemService.fetch(problemId)
+      if (taskId == null) return
+      const currResponse = await taskService.fetch(taskId)
       setResponse(currResponse)
       setIsLoading(false)
     }
     fetchData()
-  }, [problemId, setResponse, setIsLoading])
+  }, [taskId, setResponse, setIsLoading])
 
   const refreshParent = useCallback(async () => {
-    if (problemId == null) return
+    if (taskId == null) return
     // eslint-disable-next-line no-console
     console.log('refetching page ...')
-    const currResponse = await problemService.fetch(problemId)
+    const currResponse = await taskService.fetch(taskId)
     setResponse(currResponse)
-  }, [problemId, setResponse])
+  }, [taskId, setResponse])
 
-  const problem = response?.data?.problem
-  const prereqSkills = response?.data?.prereqSkills || []
+  const task = response?.data?.task
+  const prereqTasks = response?.data?.prereqTasks || []
 
   return (
     <main>
@@ -55,23 +55,23 @@ export default function Page(params: Params) {
           overlayProps={{ radius: 'sm', blur: 2 }}
         />
 
-        {problemId && problem && prereqSkills && (
+        {taskId && task && prereqTasks && (
           <>
-            <TitleAndButton title={problem.summary}>
+            <TitleAndButton title={task.summary}>
               <Button>Edit</Button>
             </TitleAndButton>
 
-            {problem.questionUrl && <QuestionUrlPrompt questionUrl={problem.questionUrl} />}
+            {task.questionUrl && <QuestionUrlPrompt questionUrl={task.questionUrl} />}
 
-            <MarkdownPreview markdown={problem.questionText || ''} />
+            <MarkdownPreview markdown={task.questionText || ''} />
 
-            <PrereqSkills problemId={problemId} refreshParent={refreshParent} />
+            <PrereqTaskSelect taskId={taskId} refreshParent={refreshParent} />
 
-            <ListOr title="Skills that must be mastered" fallback="No skills">
-              {prereqSkills.map((skill) => (
-                <PrereqSkill
-                  key={makeKey(skill)}
-                  prereqSkill={skill}
+            <ListOr title="Things that must be mastered" fallback="No prerequisites">
+              {prereqTasks.map((currTask) => (
+                <PrereqTask
+                  key={makeKey(currTask)}
+                  prereqTask={currTask}
                   refreshParent={refreshParent}
                 />
               ))}

@@ -1,18 +1,18 @@
 import React, { useCallback } from 'react'
-import skillService, { PrereqProblemType, RemoveProblemPayload } from '@/services/skills'
+import taskService, { PrereqTaskType, RemoveTaskPayload } from '@/services/tasks'
 import { Box, Card } from '@mantine/core'
 import { IconX } from '@tabler/icons-react'
 import { notifications } from '@mantine/notifications'
 import classes from './index.module.css'
 
 type RemoveButtonProps = {
-  payload: RemoveProblemPayload,
+  payload: RemoveTaskPayload,
   refreshParent: () => void,
 }
 
 function RemoveButton({ payload, refreshParent }: RemoveButtonProps) {
   const removeProblem = useCallback(async () => {
-    await skillService.removeProblem(payload)
+    await taskService.removePrereqTask(payload)
     notifications.show({
       title: 'Problem removed',
       color: 'blue',
@@ -42,23 +42,23 @@ function Approach({ prereqApproachName }: ApproachProps) {
 }
 
 type Props = {
-  prereqProblem: PrereqProblemType,
+  prereqTask: PrereqTaskType,
   refreshParent: () => void,
 }
 
-export default function PrereqProblem({ prereqProblem, refreshParent }: Props) {
+export default function PrereqTask({ prereqTask, refreshParent }: Props) {
   const {
-    skillId, prereqProblemId, prereqProblemSummary, prereqApproachName, prereqApproachId,
-  } = prereqProblem
-  const key = `${prereqProblemId}:${prereqApproachId}`
-  const removePayload = { skillId, prereqProblemId, prereqApproachId }
+    taskId, prereqTaskId, prereqTaskSummary, prereqApproachName, prereqApproachId,
+  } = prereqTask
+  const key = `${prereqTaskId}:${prereqApproachId}`
+  const removePayload = { taskId, prereqTaskId, prereqApproachId }
 
   if (prereqApproachName == null) {
     return (
       <Card key={key} mb={10}>
         <Card.Section className={classes.prereqProblem}>
           <Box className={classes.problemContainer}>
-            {prereqProblemSummary}
+            {prereqTaskSummary}
             <Approach prereqApproachName="any" />
           </Box>
           <RemoveButton payload={removePayload} refreshParent={refreshParent} />
@@ -71,7 +71,7 @@ export default function PrereqProblem({ prereqProblem, refreshParent }: Props) {
     <Card key={key} mb={10}>
       <Card.Section className={classes.prereqProblem}>
         <Box className={classes.problemContainer}>
-          {prereqProblemSummary}
+          {prereqTaskSummary}
           <Approach prereqApproachName={prereqApproachName} />
         </Box>
         <RemoveButton payload={removePayload} refreshParent={refreshParent} />

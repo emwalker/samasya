@@ -24,9 +24,9 @@ function colorForConsecutiveCorrect(correct: number) {
 }
 
 const badgeColors: Record<OutcomeType, string> = {
-  correct: 'green',
-  incorrect: 'yellow',
-  unsure: 'orange',
+  completed: 'green',
+  needsRetry: 'yellow',
+  tooHard: 'orange',
 }
 
 function AnswerRow({

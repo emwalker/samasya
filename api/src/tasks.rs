@@ -9,7 +9,7 @@ use axum::{
 use serde::{Deserialize, Serialize};
 use tracing::info;
 
-#[derive(Serialize, sqlx::FromRow)]
+#[derive(Debug, Deserialize, Serialize, sqlx::FromRow)]
 #[serde(rename_all = "camelCase")]
 struct PrereqSkill {
     problem_id: String,
@@ -18,47 +18,28 @@ struct PrereqSkill {
     prereq_skill_summary: String,
 }
 
-#[derive(Serialize)]
+#[derive(Debug, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
-pub struct ProblemData {
-    problem: Task,
+pub struct FetchData {
+    task: Task,
     approaches: Vec<Approach>,
-    prereq_skills: Vec<PrereqSkill>,
 }
 
 pub async fn fetch(
     ctx: Extension<ApiContext>,
-    Path(problem_id): Path<String>,
-) -> Result<ApiJson<ApiResponse<ProblemData>>> {
-    let problem = sqlx::query_as::<_, Task>("select * from problems where id = ?")
-        .bind(&problem_id)
+    Path(task_id): Path<String>,
+) -> Result<ApiJson<ApiResponse<FetchData>>> {
+    let task = sqlx::query_as::<_, Task>("select * from tasks where id = ?")
+        .bind(&task_id)
         .fetch_one(&ctx.db)
         .await?;
 
-    let approaches = sqlx::query_as::<_, Approach>("select * from approaches where problem_id = ?")
-        .bind(&problem_id)
+    let approaches = sqlx::query_as::<_, Approach>("select * from approaches where task_id = ?")
+        .bind(&task_id)
         .fetch_all(&ctx.db)
         .await?;
 
-    let prereq_skills = sqlx::query_as::<_, PrereqSkill>(
-        "select
-            ps.problem_id,
-            ps.approach_id,
-            ps.prereq_skill_id,
-            s.summary prereq_skill_summary
-         from prereq_skills ps
-         join skills s on ps.prereq_skill_id = s.id
-         where ps.problem_id = ?",
-    )
-    .bind(&problem_id)
-    .fetch_all(&ctx.db)
-    .await?;
-
-    Ok(ApiJson(ApiResponse::data(ProblemData {
-        problem,
-        approaches,
-        prereq_skills,
-    })))
+    Ok(ApiJson(ApiResponse::data(FetchData { task, approaches })))
 }
 
 #[derive(Debug, Default, Deserialize)]

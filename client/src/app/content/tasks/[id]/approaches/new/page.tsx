@@ -1,7 +1,7 @@
 'use client'
 
 import React from 'react'
-import problemService from '@/services/problems'
+import taskService from '@/services/tasks'
 
 type Params = {
   params: { id: string } | null
@@ -14,7 +14,7 @@ export default async function Page(params: Params) {
     return <div>Loading ...</div>
   }
 
-  const problem = (await problemService.fetch(problemId)).data
+  const problem = (await taskService.fetch(problemId)).data
   if (problem == null) {
     return (
       <div>

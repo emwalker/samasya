@@ -3,7 +3,7 @@ import Link from 'next/link'
 import { Button, Card } from '@mantine/core'
 import { TaskType } from '@/types'
 import TitleAndButton from '@/components/TitleAndButton'
-import problemService from '@/services/problems'
+import taskService from '@/services/tasks'
 import ListOr from '@/components/ListOr'
 import classes from './page.module.css'
 
@@ -18,7 +18,7 @@ function ProblemCard({ id, summary }: TaskType) {
 }
 
 export default async function Page() {
-  const problems = (await problemService.list()).data
+  const problems = (await taskService.list()).data
 
   return (
     <main>

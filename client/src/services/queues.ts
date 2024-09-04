@@ -2,6 +2,7 @@ import {
   ApiError,
   ApiResponse,
   ApproachType,
+  Cadence,
   QueueStrategy,
   QueueType,
   TaskType,
@@ -58,6 +59,7 @@ export type UpdatePayload = {
   strategy: QueueStrategy,
   summary: string,
   targetTaskId: string,
+  cadence: Cadence,
 }
 
 async function add(userId: string, update: UpdatePayload): Promise<ApiResponse<any>> {

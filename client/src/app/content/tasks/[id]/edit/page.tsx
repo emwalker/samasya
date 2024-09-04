@@ -3,7 +3,7 @@
 import React, {
   ChangeEvent, useCallback, useEffect, useState,
 } from 'react'
-import problemService, { FetchResponse } from '@/services/problems'
+import taskService, { FetchResponse } from '@/services/tasks'
 import { TaskType } from '@/types'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
@@ -14,28 +14,28 @@ import classes from './page.module.css'
 
 type SaveButtonProps = {
   disabled: boolean,
-  problemId: string,
+  taskId: string,
   questionText: string | null,
   questionUrl: string | null,
   summary: string,
 }
 
 function SaveButton({
-  disabled, summary, problemId, questionText, questionUrl,
+  disabled, summary, taskId, questionText, questionUrl,
 }: SaveButtonProps) {
   const router = useRouter()
 
   const onClick = useCallback(
     async () => {
-      const res = await problemService.update(problemId, { summary, questionText, questionUrl })
+      const res = await taskService.update(taskId, { summary, questionText, questionUrl })
 
       if (!res.ok) {
         throw Error(`failed to save problem: ${res}`)
       }
 
-      router.push(`/content/problems/${problemId}`)
+      router.push(`/content/tasks/${taskId}`)
     },
-    [problemId, summary, questionText, questionUrl, router],
+    [taskId, summary, questionText, questionUrl, router],
   )
 
   return (
@@ -43,10 +43,10 @@ function SaveButton({
   )
 }
 
-function EditForm({ problem }: { problem: TaskType }) {
-  const [summary, setSummary] = useState(problem.summary)
-  const [questionText, setQuestionText] = useState(problem.questionText || '')
-  const [questionUrl, setQuestionUrl] = useState(problem.questionUrl || '')
+function EditForm({ task }: { task: TaskType }) {
+  const [summary, setSummary] = useState(task.summary)
+  const [questionText, setQuestionText] = useState(task.questionText || '')
+  const [questionUrl, setQuestionUrl] = useState(task.questionUrl || '')
 
   const summaryOnChange = useCallback(
     (event: ChangeEvent<HTMLInputElement>) => setSummary(event.target.value),
@@ -110,13 +110,13 @@ function EditForm({ problem }: { problem: TaskType }) {
       <div>
         <SaveButton
           disabled={disabled}
-          problemId={problem.id}
+          taskId={task.id}
           questionText={questionText}
           questionUrl={questionUrl}
           summary={summary}
         />
         {' or '}
-        <Link href={`/content/problems/${problem.id}`}>cancel</Link>
+        <Link href={`/content/problems/${task.id}`}>cancel</Link>
       </div>
     </div>
   )
@@ -134,14 +134,14 @@ export default function Page(params: Params) {
   useEffect(() => {
     async function fetchData() {
       if (problemId == null) return
-      const currResponse = await problemService.fetch(problemId)
+      const currResponse = await taskService.fetch(problemId)
       setResponse(currResponse)
       setIsLoading(false)
     }
     fetchData()
   }, [problemId, setIsLoading, setResponse])
 
-  const problem = response?.data?.problem
+  const task = response?.data?.task
 
   return (
     <main>
@@ -152,9 +152,7 @@ export default function Page(params: Params) {
           overlayProps={{ radius: 'sm', blur: 2 }}
         />
 
-        {problem && (
-          <EditForm problem={problem} />
-        )}
+        {task && <EditForm task={task} />}
       </Box>
     </main>
   )

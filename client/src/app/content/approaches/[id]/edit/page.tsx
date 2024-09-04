@@ -6,7 +6,6 @@ import React, {
 } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import SkillMultiSelect from '@/components/SkillMultiSelect'
 import PrereqApproachList from '@/components/PrereqApproachList'
 import { SkillType, WideApproach, ApproachType } from '@/types'
 import approachService from '@/services/approaches'
@@ -51,11 +50,11 @@ function EditForm({ approach }: { approach: WideApproach }) {
   const {
     id,
     name: initialName,
-    prereqSkills: initialSkills,
+    prereqTasks: initialTasks,
     prereqApproaches: initialApproaches,
   } = approach
   const [name, setName] = useState(initialName)
-  const [prereqSkills, setPrerequisiteSkills] = useState(initialSkills)
+  const [prereqSkills] = useState(initialTasks)
   const [prereqApproaches, setPrereqApproaches] = useState(initialApproaches)
 
   const nameOnChange = useCallback(
@@ -80,10 +79,7 @@ function EditForm({ approach }: { approach: WideApproach }) {
       </div>
 
       <div>
-        <SkillMultiSelect
-          initialPrerequisiteSkills={initialSkills}
-          setPrerequisiteSkills={setPrerequisiteSkills}
-        />
+        Select task
       </div>
 
       <div>

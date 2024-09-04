@@ -10,15 +10,7 @@ export default function Home() {
       <p>
         Go to the
         {' '}
-        <Link href="/content/skills">skills</Link>
-        {' '}
-        page.
-      </p>
-
-      <p>
-        Go to the
-        {' '}
-        <Link href="/content/problems">problems</Link>
+        <Link href="/content/tasks">tasks</Link>
         {' '}
         page.
       </p>

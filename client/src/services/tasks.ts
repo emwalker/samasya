@@ -1,11 +1,11 @@
 import {
   TaskType, ApiError, ApproachType,
-  SkillType,
 } from '@/types'
 
 export type PrereqTaskType = {
   taskId: string,
-  approachId: string,
+  prereqApproachId: string,
+  prereqApproachName: string,
   prereqTaskId: string,
   prereqTaskSummary: string,
 }
@@ -32,10 +32,10 @@ export type ListResponse = {
 }
 
 async function list(
-  args?: { searchString: string | null } | undefined,
+  searchString?: string | null,
 ): Promise<ListResponse> {
-  const url = args?.searchString
-    ? `http://localhost:8000/api/v1/tasks?q=${encodeURIComponent(args?.searchString)}`
+  const url = searchString
+    ? `http://localhost:8000/api/v1/tasks?q=${encodeURIComponent(searchString)}`
     : 'http://localhost:8000/api/v1/tasks'
   const response = await fetch(url, { cache: 'no-store' })
   return response.json()
@@ -68,13 +68,13 @@ type PrereqResponse = {
   errors: ApiError[],
 }
 
-type AddTaskPayload = {
+type AddPrereqTaskPayload = {
   taskId: string,
-  approachId: string,
-  prereqSkillId: string,
+  prereqTaskId: string,
+  prereqApproachId: string,
 }
 
-async function addPrereqTask(payload: AddTaskPayload): Promise<PrereqResponse> {
+async function addPrereqTask(payload: AddPrereqTaskPayload): Promise<PrereqResponse> {
   const response = await fetch(
     `http://localhost:8000/api/v1/tasks/${payload.taskId}/prereqs/add-task`,
     {
@@ -88,8 +88,8 @@ async function addPrereqTask(payload: AddTaskPayload): Promise<PrereqResponse> {
 
 export type RemoveTaskPayload = {
   taskId: string,
-  approachId: string,
-  prereqSkillId: string,
+  prereqTaskId: string,
+  prereqApproachId: string,
 }
 
 async function removePrereqTask(payload: RemoveTaskPayload): Promise<PrereqResponse> {
@@ -104,20 +104,16 @@ async function removePrereqTask(payload: RemoveTaskPayload): Promise<PrereqRespo
   return response.json()
 }
 
-type AvailablePrereqSkillsProps = {
-  problemId: string,
-  searchString: string,
-}
-
-type AvailablePrereqSkillsResponse = {
-  data: SkillType[] | null,
+type AvailablePrereqTasksResponse = {
+  data: TaskType[] | null,
   errors: ApiError[],
 }
 
 async function availablePrereqTasks(
-  { problemId, searchString }: AvailablePrereqSkillsProps,
-): Promise<AvailablePrereqSkillsResponse> {
-  const urlBase = `http://localhost:8000/api/v1/tasks/${problemId}/prereqs/available-tasks`
+  taskId: string,
+  searchString: string,
+): Promise<AvailablePrereqTasksResponse> {
+  const urlBase = `http://localhost:8000/api/v1/tasks/${taskId}/prereqs/available-tasks`
   const url = searchString
     ? `${urlBase}?q=${encodeURIComponent(searchString)}`
     : urlBase

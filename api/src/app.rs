@@ -226,7 +226,7 @@ mod tests {
     }
 
     #[sqlx::test(fixtures("seeds"))]
-    async fn fetch(pool: SqlitePool) {
+    async fn fetch_queue(pool: SqlitePool) {
         let router = setup(pool).await;
         let queue_id = "2df309a7-8ece-4a14-a5f5-49699d2cba54";
 
@@ -271,7 +271,7 @@ mod tests {
     }
 
     #[sqlx::test(fixtures("seeds"))]
-    async fn tasks(pool: SqlitePool) {
+    async fn list_tasks(pool: SqlitePool) {
         let router = setup(pool).await;
 
         let response = router
@@ -285,10 +285,31 @@ mod tests {
             .await
             .unwrap();
 
-        // assert_eq!(response.status(), StatusCode::OK);
+        assert_eq!(response.status(), StatusCode::OK);
         let body = response.to_bytes().await;
         let response: ApiResponse<tasks::ListData> = serde_json::from_slice(&body).unwrap();
-        dbg!(&response);
+        assert!(response.data.is_some());
+    }
+
+    #[sqlx::test(fixtures("seeds"))]
+    async fn fetch_task(pool: SqlitePool) {
+        let router = setup(pool).await;
+        let task_id = "5bfdf4f7-c0bf-48eb-aa89-5643314738ec";
+
+        let response = router
+            .oneshot(
+                Request::builder()
+                    .uri(format!("/api/v1/tasks/{task_id}"))
+                    .method("GET")
+                    .body(Body::empty())
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+
+        assert_eq!(response.status(), StatusCode::OK);
+        let body = response.to_bytes().await;
+        let response: ApiResponse<tasks::FetchData> = serde_json::from_slice(&body).unwrap();
         assert!(response.data.is_some());
     }
 }

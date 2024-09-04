@@ -68,9 +68,9 @@ export default function Page(props: Props) {
     }
   }, [queueId, problemId, approachId])
 
-  const submitCorrect = useButtonHandler(updateAnswer, 'correct')
-  const submitIncorrect = useButtonHandler(updateAnswer, 'incorrect')
-  const submitTooHard = useButtonHandler(updateAnswer, 'unsure')
+  const submitCorrect = useButtonHandler(updateAnswer, 'completed')
+  const submitIncorrect = useButtonHandler(updateAnswer, 'needsRetry')
+  const submitTooHard = useButtonHandler(updateAnswer, 'tooHard')
 
   const status = response?.data?.status
 
