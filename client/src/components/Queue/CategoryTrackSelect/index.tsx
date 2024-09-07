@@ -13,8 +13,7 @@ type Props = {
 
 export default function CategoryTrackSelect({ queueId, refreshParent }: Props) {
   const [response, setResponse] = useState<ApiResponse<AvailableTrackData[]> | null>(null)
-  const [categoryId, setCategoryId] = useState<string | null>(null)
-  const [trackId, setTrackId] = useState<string | null>(null)
+  const [compoundKey, setCompoundKey] = useState<string | null>(null)
 
   const trackOnSearchChange = useCallback(async (searchString: string) => {
     const currResponse = await queueService.availableTracks(queueId, searchString)
@@ -23,23 +22,13 @@ export default function CategoryTrackSelect({ queueId, refreshParent }: Props) {
   }, [setResponse, queueId])
 
   const addTrack = useCallback(async () => {
-    if (trackId == null || categoryId == null) return
+    if (compoundKey == null) return
+    const [categoryId, trackId] = compoundKey.split(':')
     const currResponse = await queueService.addTrack(queueId, { queueId, trackId, categoryId })
     handleError(currResponse, 'Failed to add track')
+    setCompoundKey(null)
     refreshParent()
-  }, [trackId, refreshParent, categoryId, queueId])
-
-  const selectTrack = useCallback(async (compoundKey: string | null) => {
-    if (compoundKey == null) {
-      setCategoryId(null)
-      setTrackId(null)
-      return
-    }
-
-    const [currCategoryId, currTrackId] = compoundKey.split(':')
-    setCategoryId(currCategoryId)
-    setTrackId(currTrackId)
-  }, [setTrackId, setCategoryId])
+  }, [refreshParent, compoundKey, queueId])
 
   const options = response?.data?.map(({
     categoryId: currCategoryId,
@@ -51,19 +40,19 @@ export default function CategoryTrackSelect({ queueId, refreshParent }: Props) {
   )) || []
 
   return (
-    <Box mb={20}>
+    <Box mb={20} key={compoundKey}>
       <Select
         clearable
         data={options}
-        defaultValue={trackId}
+        defaultValue={compoundKey}
         label="Track"
         mb={10}
-        onChange={selectTrack}
+        onChange={setCompoundKey}
         onSearchChange={trackOnSearchChange}
         searchable
       />
 
-      <Button onClick={addTrack} disabled={trackId == null}>Add track</Button>
+      <Button onClick={addTrack} disabled={compoundKey == null}>Add track</Button>
     </Box>
   )
 }

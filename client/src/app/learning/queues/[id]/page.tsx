@@ -24,6 +24,8 @@ import { actionText, outcomeText } from '@/helpers'
 import { ApiResponse } from '@/types'
 import Queue from '@/components/Queue'
 import { IconX } from '@tabler/icons-react'
+import { handleError } from '@/app/handleResponse'
+import classes from './page.module.css'
 
 function progressColor(correct: number) {
   if (correct < 2) return 'orange'
@@ -45,12 +47,30 @@ const badgeColors: Record<OutcomeType, string> = {
   tooHard: 'orange',
 }
 
-function TrackRow({ trackId, trackName, categoryName }: TrackRowType) {
+type TrackRowProps = {
+  track: TrackRowType,
+  removeTrack: (trackId: string) => Promise<void>
+}
+
+function TrackRow({ track, removeTrack }: TrackRowProps) {
+  const {
+    queueId,
+    categoryName,
+    trackName,
+    trackId,
+  } = track
+
   return (
-    <Table.Tr key={trackId}>
+    <Table.Tr key={`${queueId}:${trackId}`}>
       <Table.Td>{categoryName}</Table.Td>
       <Table.Td><Badge color="blue.3">{trackName}</Badge></Table.Td>
-      <Table.Td align="right"><IconX /></Table.Td>
+      <Table.Td align="right">
+        <IconX
+          color="var(--mantine-color-dark-1)"
+          className={classes.removeButton}
+          onClick={() => removeTrack(trackId)}
+        />
+      </Table.Td>
     </Table.Tr>
   )
 }
@@ -101,10 +121,17 @@ export default function Page(props: Props) {
     queueService.fetch(queueId).then(setResponse)
   }, [queueId])
 
+  const removeTrack = useCallback(async (trackId: string) => {
+    if (queueId == null) return
+    const currResponse = await queueService.removeTrack(queueId, { queueId, trackId })
+    handleError(currResponse, 'Failed to remove track')
+    refreshParent()
+  }, [queueId, refreshParent])
+
   const data = response?.data
 
   return (
-    <Box pos="relative">
+    <Box pos="relative" key={queueId}>
       <LoadingOverlay
         visible={isLoading}
         zIndex={1000}
@@ -159,7 +186,13 @@ export default function Page(props: Props) {
                 </Table.Tr>
               </Table.Thead>
               <Table.Tbody>
-                {data.tracks.map(TrackRow)}
+                {data.tracks.map((track) => (
+                  <TrackRow
+                    key={track.trackId}
+                    track={track}
+                    removeTrack={removeTrack}
+                  />
+                ))}
               </Table.Tbody>
             </Table>
           </Box>

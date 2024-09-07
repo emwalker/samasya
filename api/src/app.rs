@@ -71,6 +71,10 @@ pub async fn router(config: Config, db: SqlitePool) -> Result<Router> {
         )
         .route("/api/v1/queues/:id/add-track", post(queues::add_track))
         .route("/api/v1/queues/:id/next-task", get(queues::next_task))
+        .route(
+            "/api/v1/queues/:id/remove-track",
+            post(queues::remove_track),
+        )
         .route("/api/v1/tasks", get(tasks::list))
         .route("/api/v1/tasks", post(tasks::add))
         .route("/api/v1/tasks/:id", get(tasks::fetch))
@@ -106,6 +110,7 @@ mod tests {
     use sqlx::SqlitePool;
     use tempfile::tempdir;
     use tower::ServiceExt;
+    use uuid::Uuid;
 
     trait Bytes {
         async fn to_bytes(self) -> Vec<u8>;
@@ -392,6 +397,49 @@ mod tests {
             .oneshot(
                 Request::builder()
                     .uri(format!("/api/v1/queues/{queue_id}/add-track"))
+                    .method("POST")
+                    .header("Content-Type", "application/json")
+                    .body(Body::from(payload))
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+
+        assert_eq!(response.status(), StatusCode::OK);
+        let body = response.to_bytes().await;
+        let response: ApiResponse<String> = serde_json::from_slice(&body).unwrap();
+        assert_eq!(response.data.unwrap(), "ok");
+    }
+
+    #[sqlx::test(fixtures("seeds", "simple"))]
+    async fn remove_track(pool: SqlitePool) {
+        let router = setup(&pool).await;
+        let new_id: String = Uuid::new_v4().into();
+        let queue_id = "2df309a7-8ece-4a14-a5f5-49699d2cba54";
+
+        sqlx::query(
+            "insert into queue_tracks
+                (id, queue_id, organization_category_id, organization_track_id)
+                values (?, ?, ?, ?)",
+        )
+        .bind(&new_id)
+        .bind(queue_id)
+        .bind(PLACEHOLDER_ORGANIZATION_CATEGORY_ID)
+        .bind(PLACEHOLDER_ORGANIZATION_TRACK_ID)
+        .execute(&pool)
+        .await
+        .unwrap();
+
+        let payload = queues::RemoveTrackPayload {
+            queue_id: String::from(queue_id),
+            track_id: String::from(PLACEHOLDER_ORGANIZATION_TRACK_ID),
+        };
+        let payload = serde_json::to_string(&payload).unwrap();
+
+        let response = router
+            .oneshot(
+                Request::builder()
+                    .uri(format!("/api/v1/queues/{queue_id}/remove-track"))
                     .method("POST")
                     .header("Content-Type", "application/json")
                     .body(Body::from(payload))

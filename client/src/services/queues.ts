@@ -24,6 +24,7 @@ export type QueueOutcomeType = {
 }
 
 export type TrackRowType = {
+  queueId: string,
   categoryId: string,
   categoryName: string,
   trackId: string,
@@ -208,6 +209,26 @@ async function addTrack(
   return response.json()
 }
 
+export type RemoveTrackPayload = {
+  queueId: string,
+  trackId: string,
+}
+
+async function removeTrack(
+  queueId: string,
+  payload: RemoveTrackPayload,
+): Promise<ApiResponse<string>> {
+  const response = await fetch(
+    `http://localhost:8000/api/v1/queues/${queueId}/remove-track`,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    },
+  )
+  return response.json()
+}
+
 export default {
   add,
   addOutcome,
@@ -216,5 +237,6 @@ export default {
   fetch: fetchQueue,
   list,
   nextTask,
+  removeTrack,
   update,
 }

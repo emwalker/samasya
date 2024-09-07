@@ -154,6 +154,7 @@ pub struct Track {
 #[derive(Debug, Deserialize, Serialize, sqlx::FromRow)]
 #[serde(rename_all = "camelCase")]
 pub struct TrackRow {
+    queue_id: String,
     category_id: String,
     category_name: String,
     track_id: String,
@@ -232,6 +233,7 @@ pub async fn fetch(
 
     let tracks = sqlx::query_as::<_, TrackRow>(
         "select
+            qt.queue_id,
             ot.id track_id,
             ot.name track_name,
             oc.id category_id,
@@ -593,22 +595,7 @@ pub async fn available_tracks(
         .fetch_all(&ctx.db)
         .await?
     } else {
-        sqlx::query_as::<_, AvailableTrack>(
-            "select
-                ot.name track_name,
-                ot.id track_id,
-                oc.name category_name,
-                oc.id category_id
-             from organization_tracks ot
-             join organization_categories oc on ot.organization_category_id = oc.id
-             left join queue_tracks qt on qt.queue_id = ? and qt.organization_track_id = ot.id
-             where ot.organization_id = ?
-             limit 10",
-        )
-        .bind(&queue_id)
-        .bind(PLACEHOLDER_ORGANIZATION_ID)
-        .fetch_all(&ctx.db)
-        .await?
+        vec![]
     };
 
     Ok(ApiJson(ApiResponse::data(tracks)))
@@ -644,6 +631,36 @@ pub async fn add_track(
     .bind(&queue_track_id)
     .bind(&queue_id)
     .bind(&payload.category_id)
+    .bind(&payload.track_id)
+    .execute(&ctx.db)
+    .await?;
+
+    Ok(ApiJson::ok())
+}
+
+#[derive(Debug, Deserialize, Serialize, sqlx::FromRow)]
+#[serde(rename_all = "camelCase")]
+pub struct RemoveTrackPayload {
+    pub queue_id: String,
+    pub track_id: String,
+}
+
+pub async fn remove_track(
+    ctx: Extension<ApiContext>,
+    Path(queue_id): Path<String>,
+    ApiJson(payload): ApiJson<RemoveTrackPayload>,
+) -> Result<ApiOk> {
+    if queue_id != payload.queue_id {
+        return Err(ApiError::UnprocessableEntity(
+            "queue id in request must match queue id in payload".into(),
+        ));
+    }
+
+    sqlx::query(
+        "delete from queue_tracks
+         where queue_id = ? and organization_track_id = ?",
+    )
+    .bind(&queue_id)
     .bind(&payload.track_id)
     .execute(&ctx.db)
     .await?;
