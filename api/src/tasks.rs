@@ -1,5 +1,5 @@
 use crate::{
-    types::{ApiError, ApiJson, ApiOk, ApiResponse, Approach, Result, Task, TaskAction},
+    types::{ApiError, ApiJson, ApiOk, ApiResponse, Approach, Result, Search, Task, TaskAction},
     ApiContext,
 };
 use axum::{
@@ -60,21 +60,6 @@ pub async fn fetch(
         .await?;
 
     Ok(ApiJson(ApiResponse::data(FetchData { task, approaches })))
-}
-
-#[derive(Debug, Default, Deserialize)]
-pub struct Search {
-    q: String,
-}
-
-impl Search {
-    pub(crate) fn is_empty(&self) -> bool {
-        self.q.is_empty()
-    }
-
-    pub(crate) fn substrings(&self) -> impl Iterator<Item = &str> + '_ {
-        self.q.split_whitespace()
-    }
 }
 
 pub type ListData = Vec<Task>;

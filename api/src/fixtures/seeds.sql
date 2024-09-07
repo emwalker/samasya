@@ -40,12 +40,12 @@ INSERT INTO organization_categories VALUES('f56be999-86d8-4394-a69c-4882e3bfad70
 CREATE TABLE organization_tracks (
   id text primary key not null,
   organization_id text not null default '407a4662-8f72-4883-a87c-f6e3649b2b89',
-  category_id text not null,
+  organization_category_id text not null,
   name text check( trim(name) != '' ) not null,
   added_at datetime not null default current_timestamp,
   foreign key(organization_id) references organizations(id),
-  foreign key(category_id) references organization_categories(id),
-  unique(organization_id, category_id, name)
+  foreign key(organization_category_id) references organization_categories(id),
+  unique(organization_id, organization_category_id, name)
 );
 INSERT INTO organization_tracks VALUES('e10fa49d-57a2-41a8-af68-7ea1b0b470ca','407a4662-8f72-4883-a87c-f6e3649b2b89','9f31bf67-29b6-43c9-8b4c-3bdb77e959a7','Unspecified','2024-09-02 23:27:36');
 INSERT INTO organization_tracks VALUES('af3f8556-654a-45a7-9c16-cf745a0e0f50','407a4662-8f72-4883-a87c-f6e3649b2b89','f56be999-86d8-4394-a69c-4882e3bfad70','Rust','2024-09-02 23:27:36');
@@ -270,6 +270,7 @@ INSERT INTO approach_prereqs VALUES('01536e74-83be-4b23-b36c-bc6f6565fc39','8135
 CREATE TABLE queues (
   id text primary key not null,
   user_id text not null default '04e229c9-795e-4f3a-a79e-ec18b5c28b99',
+  -- repo_id text not null default 'bfeea3c3-1160-488f-aac7-16919b6da713',
   strategy text check( strategy in ('spacedRepetitionV1', 'deterministic') ) not null default 'spacedRepetitionV1',
   cadence text check( cadence in ('minutes', 'hours', 'days') ) not null default 'days',
   summary text not null,
@@ -280,9 +281,19 @@ CREATE TABLE queues (
 );
 INSERT INTO queues VALUES('34b1de9d-ac94-433c-8369-0e121e97af43','04e229c9-795e-4f3a-a79e-ec18b5c28b99','spacedRepetitionV1','hours','David Tolnay''s Rust quiz','81359cd2-ec5f-498f-b9c4-281a1d034e59','2024-09-05 00:14:05');
 CREATE TABLE queue_tracks (
+  id primary key not null,
   queue_id text not null,
+  organization_category_id text not null,
   organization_track_id text not null,
-  primary key(queue_id, organization_track_id)
+  added_at timestamp not null default current_timestamp,
+  foreign key(queue_id) references queues(id),
+  foreign key(organization_category_id) references organization_categories(id),
+  foreign key(organization_track_id) references organization_tracks(id),
+  -- If we allow more than one track per category, we'd need to cover a cross product of
+  -- tasks x (category, selected tracks). E.g., we might need to show the same problem for
+  -- both Rust and C++, or allow gaps in coverage.  Let's keep things simple by limiting ourselves
+  -- to one track per category.
+  unique(queue_id, organization_category_id)
 );
 CREATE TABLE outcomes (
   id text primary key not null,

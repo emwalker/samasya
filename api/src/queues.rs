@@ -4,11 +4,15 @@ use crate::{
     tasks::TaskRow,
     types::{
         ApiError, ApiJson, ApiOk, ApiResponse, Approach, Cadence, Clock, OutcomeType, Queue,
-        QueueStrategy, Result, Task, Timestamp,
+        QueueStrategy, Result, Search, Task, Timestamp,
     },
-    ApiContext, PLACEHOLDER_USER_ID,
+    ApiContext, PLACEHOLDER_ORGANIZATION_ID, PLACEHOLDER_USER_ID,
 };
-use axum::{extract::Path, response::IntoResponse, Extension};
+use axum::{
+    extract::{Path, Query},
+    response::IntoResponse,
+    Extension,
+};
 use chooser::Choose;
 use chrono::Utc;
 use hyper::StatusCode;
@@ -123,6 +127,7 @@ pub struct QueueOutcomeRow {
     progress: u32,
     outcome: String,
     task_summary: String,
+    track_name: String,
 }
 
 #[derive(Debug, Deserialize, Serialize)]
@@ -134,11 +139,35 @@ pub struct QueueOutcome {
 
 #[derive(Debug, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
+pub struct Category {
+    id: String,
+    name: String,
+}
+
+#[derive(Debug, Deserialize, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct Track {
+    id: String,
+    name: String,
+}
+
+#[derive(Debug, Deserialize, Serialize, sqlx::FromRow)]
+#[serde(rename_all = "camelCase")]
+pub struct TrackRow {
+    category_id: String,
+    category_name: String,
+    track_id: String,
+    track_name: String,
+}
+
+#[derive(Debug, Deserialize, Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct FetchData {
     pub queue: QueueRow,
     pub outcomes: Vec<QueueOutcome>,
     pub target_task: Task,
     pub target_approach: Approach,
+    pub tracks: Vec<TrackRow>,
 }
 
 pub async fn fetch(
@@ -171,10 +200,12 @@ pub async fn fetch(
             o.id,
             o.added_at,
             o.outcome,
-            o.progress
+            o.progress,
+            ot.name track_name
          from outcomes o
          join approaches ap on o.approach_id = ap.id
          join tasks t on ap.task_id = t.id
+         join organization_tracks ot on o.organization_track_id = ot.id
          where o.user_id = ? and o.queue_id = ?
          order by o.added_at desc
          limit 15",
@@ -199,11 +230,27 @@ pub async fn fetch(
         })
         .collect::<Result<Vec<_>>>()?;
 
+    let tracks = sqlx::query_as::<_, TrackRow>(
+        "select
+            ot.id track_id,
+            ot.name track_name,
+            oc.id category_id,
+            oc.name category_name
+         from organization_tracks ot
+         join organization_categories oc on ot.organization_category_id = oc.id
+         join queue_tracks qt on qt.organization_track_id = ot.id
+         where qt.queue_id = ?",
+    )
+    .bind(&queue_id)
+    .fetch_all(&ctx.db)
+    .await?;
+
     Ok(ApiJson(ApiResponse::data(FetchData {
         queue,
         outcomes,
         target_task,
         target_approach,
+        tracks,
     })))
 }
 
@@ -504,4 +551,102 @@ pub async fn add_outcome(
         outcome_id,
         message: String::from("ok"),
     })))
+}
+
+#[derive(Debug, Deserialize, Serialize, sqlx::FromRow)]
+#[serde(rename_all = "camelCase")]
+pub struct AvailableTrack {
+    pub category_id: String,
+    pub category_name: String,
+    pub track_id: String,
+    pub track_name: String,
+}
+
+pub type AvailableTracksData = Vec<AvailableTrack>;
+
+pub async fn available_tracks(
+    ctx: Extension<ApiContext>,
+    Path(queue_id): Path<String>,
+    search: Option<Query<Search>>,
+) -> Result<ApiJson<ApiResponse<AvailableTracksData>>> {
+    let tracks = if let Some(Query(search)) = search {
+        sqlx::query_as::<_, AvailableTrack>(
+            "select
+                ot.name track_name,
+                ot.id track_id,
+                oc.name category_name,
+                oc.id category_id
+             from organization_tracks ot
+             join organization_categories oc on ot.organization_category_id = oc.id
+             left join queue_tracks qt on qt.queue_id = $1 and qt.organization_track_id = ot.id
+             where ot.organization_id = $2
+                and (
+                    lower(ot.name) like '%'||lower($3)||'%'
+                    or lower(oc.name) like '%'||lower($3)||'%'
+                )
+                and qt.id is null
+             limit 10",
+        )
+        .bind(&queue_id)
+        .bind(PLACEHOLDER_ORGANIZATION_ID)
+        .bind(&search.q)
+        .fetch_all(&ctx.db)
+        .await?
+    } else {
+        sqlx::query_as::<_, AvailableTrack>(
+            "select
+                ot.name track_name,
+                ot.id track_id,
+                oc.name category_name,
+                oc.id category_id
+             from organization_tracks ot
+             join organization_categories oc on ot.organization_category_id = oc.id
+             left join queue_tracks qt on qt.queue_id = ? and qt.organization_track_id = ot.id
+             where ot.organization_id = ?
+             limit 10",
+        )
+        .bind(&queue_id)
+        .bind(PLACEHOLDER_ORGANIZATION_ID)
+        .fetch_all(&ctx.db)
+        .await?
+    };
+
+    Ok(ApiJson(ApiResponse::data(tracks)))
+}
+
+#[derive(Debug, Deserialize, Serialize, sqlx::FromRow)]
+#[serde(rename_all = "camelCase")]
+pub struct AddTrackPayload {
+    pub category_id: String,
+    pub queue_id: String,
+    pub track_id: String,
+}
+
+pub async fn add_track(
+    ctx: Extension<ApiContext>,
+    Path(queue_id): Path<String>,
+    ApiJson(payload): ApiJson<AddTrackPayload>,
+) -> Result<ApiOk> {
+    if queue_id != payload.queue_id {
+        return Err(ApiError::UnprocessableEntity(
+            "queue id in request must match queue id in payload".into(),
+        ));
+    }
+
+    let queue_track_id: String = Uuid::new_v4().into();
+
+    sqlx::query(
+        "insert into queue_tracks
+            (id, queue_id, organization_category_id, organization_track_id)
+            values (?, ?, ?, ?)
+            on conflict do nothing",
+    )
+    .bind(&queue_track_id)
+    .bind(&queue_id)
+    .bind(&payload.category_id)
+    .bind(&payload.track_id)
+    .execute(&ctx.db)
+    .await?;
+
+    Ok(ApiJson::ok())
 }

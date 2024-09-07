@@ -64,8 +64,13 @@ pub async fn router(config: Config, db: SqlitePool) -> Result<Router> {
         )
         .route("/api/v1/queues/:id", get(queues::fetch))
         .route("/api/v1/queues/:id", put(queues::update))
-        .route("/api/v1/queues/:id/next-task", get(queues::next_task))
         .route("/api/v1/queues/:id/add-outcome", post(queues::add_outcome))
+        .route(
+            "/api/v1/queues/:id/available-tracks",
+            get(queues::available_tracks),
+        )
+        .route("/api/v1/queues/:id/add-track", post(queues::add_track))
+        .route("/api/v1/queues/:id/next-task", get(queues::next_task))
         .route("/api/v1/tasks", get(tasks::list))
         .route("/api/v1/tasks", post(tasks::add))
         .route("/api/v1/tasks/:id", get(tasks::fetch))
@@ -88,7 +93,8 @@ pub async fn router(config: Config, db: SqlitePool) -> Result<Router> {
 mod tests {
     use crate::{
         types::{Cadence, OutcomeType, QueueStrategy},
-        PLACEHOLDER_ORGANIZATION_TRACK_ID, PLACEHOLDER_USER_ID,
+        PLACEHOLDER_ORGANIZATION_CATEGORY_ID, PLACEHOLDER_ORGANIZATION_TRACK_ID,
+        PLACEHOLDER_USER_ID,
     };
 
     use super::*;
@@ -253,6 +259,7 @@ mod tests {
         );
         assert_eq!(data.target_approach.summary, "Unspecified");
         assert!(!data.outcomes.is_empty());
+        assert!(data.tracks.is_empty());
     }
 
     #[sqlx::test(fixtures("seeds", "simple"))]
@@ -339,10 +346,64 @@ mod tests {
             )
             .await
             .unwrap();
-        // assert_eq!(response.status(), StatusCode::OK);
+
+        assert_eq!(response.status(), StatusCode::OK);
         let body = response.to_bytes().await;
         let response: ApiResponse<queues::AddOutcomeData> = serde_json::from_slice(&body).unwrap();
         assert!(response.data.is_some());
+    }
+
+    #[sqlx::test(fixtures("seeds"))]
+    async fn available_tracks(pool: SqlitePool) {
+        let router = setup(&pool).await;
+        let queue_id = "2df309a7-8ece-4a14-a5f5-49699d2cba54";
+
+        let response = router
+            .oneshot(
+                Request::builder()
+                    .uri(format!("/api/v1/queues/{queue_id}/available-tracks?q=R"))
+                    .method("GET")
+                    .body(Body::empty())
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+
+        // assert_eq!(response.status(), StatusCode::OK);
+        let body = response.to_bytes().await;
+        let response: ApiResponse<queues::AvailableTracksData> =
+            serde_json::from_slice(&body).unwrap();
+        let data = response.data.unwrap();
+        assert_eq!(data.first().unwrap().track_name, "Rust");
+    }
+
+    #[sqlx::test(fixtures("seeds", "simple"))]
+    async fn add_track(pool: SqlitePool) {
+        let router = setup(&pool).await;
+        let queue_id = "2df309a7-8ece-4a14-a5f5-49699d2cba54";
+        let payload = queues::AddTrackPayload {
+            queue_id: String::from(queue_id),
+            category_id: String::from(PLACEHOLDER_ORGANIZATION_CATEGORY_ID),
+            track_id: String::from(PLACEHOLDER_ORGANIZATION_TRACK_ID),
+        };
+        let payload = serde_json::to_string(&payload).unwrap();
+
+        let response = router
+            .oneshot(
+                Request::builder()
+                    .uri(format!("/api/v1/queues/{queue_id}/add-track"))
+                    .method("POST")
+                    .header("Content-Type", "application/json")
+                    .body(Body::from(payload))
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+
+        assert_eq!(response.status(), StatusCode::OK);
+        let body = response.to_bytes().await;
+        let response: ApiResponse<String> = serde_json::from_slice(&body).unwrap();
+        assert_eq!(response.data.unwrap(), "ok");
     }
 
     #[sqlx::test(fixtures("seeds"))]

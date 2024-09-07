@@ -2,10 +2,11 @@ check:
 	$(MAKE) -C api check
 	$(MAKE) -C client check
 
-check-pre-push: lint git-no-changes
+check-pre-push: lint
 	$(MAKE) -C api check
 	$(MAKE) -C client check-pre-push
 	$(MAKE) prod-build
+	$(MAKE) git-no-changes
 
 dev:
 	overmind start -f Procfile.dev

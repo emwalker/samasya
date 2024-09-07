@@ -478,3 +478,18 @@ mod tests {
         assert_eq!(Cadence::Days, "days".parse::<Cadence>().unwrap());
     }
 }
+
+#[derive(Debug, Default, Deserialize)]
+pub struct Search {
+    pub q: String,
+}
+
+impl Search {
+    pub(crate) fn is_empty(&self) -> bool {
+        self.q.is_empty()
+    }
+
+    pub(crate) fn substrings(&self) -> impl Iterator<Item = &str> + '_ {
+        self.q.split_whitespace()
+    }
+}

@@ -15,6 +15,7 @@ export type OutcomeRow = {
   outcome: OutcomeType,
   progress: number,
   taskSummary: string,
+  trackName: string,
 }
 
 export type QueueOutcomeType = {
@@ -22,11 +23,19 @@ export type QueueOutcomeType = {
   taskAvailableAt: string,
 }
 
+export type TrackRowType = {
+  categoryId: string,
+  categoryName: string,
+  trackId: string,
+  trackName: string,
+}
+
 export type FetchData = {
   queue: QueueType,
   outcomes: QueueOutcomeType[],
   targetTask: TaskType,
   targetApproach: ApproachType,
+  tracks: TrackRowType[],
 }
 
 async function fetchQueue(id: string): Promise<ApiResponse<FetchData>> {
@@ -140,15 +149,12 @@ export type AddOutcomePayload = {
   outcome: OutcomeType,
 }
 
-type AddOutcomeResponse = {
-  data: {
-    outcomeId: string,
-    message: string,
-  } | null,
-  errors: ApiError[],
+type AddOutcomeData = {
+  outcomeId: string,
+  message: string,
 }
 
-async function addOutcome(payload: AddOutcomePayload): Promise<AddOutcomeResponse> {
+async function addOutcome(payload: AddOutcomePayload): Promise<ApiResponse<AddOutcomeData>> {
   const response = await fetch(
     `http://localhost:8000/api/v1/queues/${payload.queueId}/add-outcome`,
     {
@@ -160,11 +166,55 @@ async function addOutcome(payload: AddOutcomePayload): Promise<AddOutcomeRespons
   return response.json()
 }
 
+export type AvailableTrackData = {
+  categoryId: string,
+  categoryName: string,
+  trackId: string,
+  trackName: string,
+}
+
+async function availableTracks(
+  queueId: string,
+  searchString: string,
+): Promise<ApiResponse<AvailableTrackData[]>> {
+  const encoded = encodeURIComponent(searchString)
+  const response = await fetch(
+    `http://localhost:8000/api/v1/queues/${queueId}/available-tracks?q=${encoded}`,
+    {
+      method: 'GET',
+    },
+  )
+  return response.json()
+}
+
+export type AddTrackPayload = {
+  queueId: string,
+  categoryId: string,
+  trackId: string,
+}
+
+async function addTrack(
+  queueId: string,
+  payload: AddTrackPayload,
+): Promise<ApiResponse<AvailableTrackData[]>> {
+  const response = await fetch(
+    `http://localhost:8000/api/v1/queues/${queueId}/add-track`,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    },
+  )
+  return response.json()
+}
+
 export default {
+  add,
+  addOutcome,
+  addTrack,
+  availableTracks,
   fetch: fetchQueue,
   list,
-  add,
-  update,
   nextTask,
-  addOutcome,
+  update,
 }

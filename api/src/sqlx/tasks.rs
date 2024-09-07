@@ -1,6 +1,6 @@
 use crate::{
-    tasks::{Search, TaskRow},
-    types::{Result, Task},
+    tasks::TaskRow,
+    types::{Result, Search, Task},
 };
 use sqlx::{sqlite::SqlitePool, QueryBuilder, Sqlite};
 

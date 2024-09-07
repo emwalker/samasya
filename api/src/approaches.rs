@@ -163,8 +163,8 @@ pub async fn fetch(
 pub mod prereqs {
     use super::*;
     use crate::{
-        tasks::{Search, TaskRow},
-        types::Task,
+        tasks::TaskRow,
+        types::{Search, Task},
         ApiContext,
     };
     use axum::{

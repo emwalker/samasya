@@ -1,7 +1,12 @@
 'use client'
 
-import React, { useEffect, useState } from 'react'
-import queueService, { OutcomeType, FetchData, QueueOutcomeType } from '@/services/queues'
+import React, { useCallback, useEffect, useState } from 'react'
+import queueService, {
+  FetchData,
+  OutcomeType,
+  QueueOutcomeType,
+  TrackRowType,
+} from '@/services/queues'
 import TitleAndButton from '@/components/TitleAndButton'
 import {
   Badge,
@@ -12,10 +17,13 @@ import {
   Group,
   LoadingOverlay,
   Table,
+  Title,
 } from '@mantine/core'
 import moment from 'moment'
-import { outcomeText } from '@/helpers'
+import { actionText, outcomeText } from '@/helpers'
 import { ApiResponse } from '@/types'
+import Queue from '@/components/Queue'
+import { IconX } from '@tabler/icons-react'
 
 function progressColor(correct: number) {
   if (correct < 2) return 'orange'
@@ -37,6 +45,16 @@ const badgeColors: Record<OutcomeType, string> = {
   tooHard: 'orange',
 }
 
+function TrackRow({ trackId, trackName, categoryName }: TrackRowType) {
+  return (
+    <Table.Tr key={trackId}>
+      <Table.Td>{categoryName}</Table.Td>
+      <Table.Td><Badge color="blue.3">{trackName}</Badge></Table.Td>
+      <Table.Td align="right"><IconX /></Table.Td>
+    </Table.Tr>
+  )
+}
+
 function OutcomeRow({
   taskAvailableAt,
   outcome,
@@ -50,6 +68,7 @@ function OutcomeRow({
   return (
     <Table.Tr key={outcome.id}>
       <Table.Td>{outcome.taskSummary}</Table.Td>
+      <Table.Td align="center"><Badge color="blue.3">{outcome.trackName}</Badge></Table.Td>
       <Table.Td>{addedAt}</Table.Td>
       <Table.Td>{availableAt}</Table.Td>
       <Table.Td align="center"><Badge color={statusColor}>{outcomeLabel}</Badge></Table.Td>
@@ -77,6 +96,11 @@ export default function Page(props: Props) {
     fetchData()
   }, [queueId])
 
+  const refreshParent = useCallback(() => {
+    if (queueId == null) return
+    queueService.fetch(queueId).then(setResponse)
+  }, [queueId])
+
   const data = response?.data
 
   return (
@@ -87,7 +111,7 @@ export default function Page(props: Props) {
         overlayProps={{ radius: 'sm', blur: 2 }}
       />
 
-      {data && (
+      {data && queueId && (
         <>
           <TitleAndButton title={data.queue.summary}>
             <Group>
@@ -109,31 +133,55 @@ export default function Page(props: Props) {
 
           <Box mb={30}>
             <Group>
-              <Badge color="blue.3">{data.queue.cadence}</Badge>
+              <Badge color="blue.3">{actionText(data.targetTask.action)}</Badge>
+              <Badge color="blue.2">{data.queue.cadence}</Badge>
               <Badge color="blue.5">{data.queue.strategy}</Badge>
             </Group>
           </Box>
 
-          <Box mb={10}>This queue will help to work towards mastery of this problem:</Box>
+          <Box mb={10}>This queue will help to work towards mastery of this ability:</Box>
 
           <Card shadow="lg" mb={20}>
             {data.targetTask.summary}
           </Card>
 
-          <Table>
-            <Table.Thead>
-              <Table.Tr>
-                <Table.Th>Problem</Table.Th>
-                <Table.Th>Answered</Table.Th>
-                <Table.Th>Will be seen again</Table.Th>
-                <Table.Th><Center>Result</Center></Table.Th>
-                <Table.Th><Center>Progress</Center></Table.Th>
-              </Table.Tr>
-            </Table.Thead>
-            <Table.Tbody>
-              {data.outcomes.map(OutcomeRow)}
-            </Table.Tbody>
-          </Table>
+          <Box mb={40}>
+            <Title mb={10} order={3}>Selected tracks</Title>
+
+            <Queue.CategoryTrackSelect queueId={queueId} refreshParent={refreshParent} />
+
+            <Table>
+              <Table.Thead>
+                <Table.Tr>
+                  <Table.Th>Category</Table.Th>
+                  <Table.Th>Track</Table.Th>
+                  <Table.Th />
+                </Table.Tr>
+              </Table.Thead>
+              <Table.Tbody>
+                {data.tracks.map(TrackRow)}
+              </Table.Tbody>
+            </Table>
+          </Box>
+
+          <Box mb={40}>
+            <Title mb={10} order={3}>Progress through queue</Title>
+            <Table>
+              <Table.Thead>
+                <Table.Tr>
+                  <Table.Th>Task</Table.Th>
+                  <Table.Th><Center>Track</Center></Table.Th>
+                  <Table.Th>Answered</Table.Th>
+                  <Table.Th>Will be seen again</Table.Th>
+                  <Table.Th><Center>Result</Center></Table.Th>
+                  <Table.Th><Center>Progress</Center></Table.Th>
+                </Table.Tr>
+              </Table.Thead>
+              <Table.Tbody>
+                {data.outcomes.map(OutcomeRow)}
+              </Table.Tbody>
+            </Table>
+          </Box>
         </>
       )}
     </Box>
