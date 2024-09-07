@@ -1,11 +1,12 @@
 mod chooser;
 
 use crate::{
+    tasks::TaskRow,
     types::{
         ApiError, ApiJson, ApiResponse, Approach, Cadence, Clock, OutcomeType, Queue,
         QueueStrategy, Result, Task, Timestamp,
     },
-    ApiContext, PLACHOLDER_USER_ID,
+    ApiContext, PLACEHOLDER_USER_ID,
 };
 use axum::{extract::Path, response::IntoResponse, Extension};
 use chooser::Choose;
@@ -49,7 +50,7 @@ pub async fn add(
     info!("user {}: adding queue: {:?}", user_id, payload);
     let id = uuid::Uuid::new_v4().to_string();
 
-    if user_id != PLACHOLDER_USER_ID {
+    if user_id != PLACEHOLDER_USER_ID {
         return Err(ApiError::UnprocessableEntity(format!(
             "unknown user: {user_id}"
         )));
@@ -79,8 +80,8 @@ pub async fn add(
 #[derive(Debug, Deserialize, Serialize, sqlx::FromRow)]
 #[serde(rename_all = "camelCase")]
 pub struct QueueOutcomeRow {
-    task_name: String,
-    approach_name: String,
+    task_summary: String,
+    approach_summary: String,
     outcome_id: String,
     added_at: String,
     outcome: String,
@@ -118,10 +119,11 @@ pub async fn fetch(
         .fetch_one(&ctx.db)
         .await?;
 
-    let target_task = sqlx::query_as::<_, Task>("select * from tasks where id = ?")
+    let target_task: Task = sqlx::query_as::<_, TaskRow>("select * from tasks where id = ?")
         .bind(&target_approach.task_id)
         .fetch_one(&ctx.db)
-        .await?;
+        .await?
+        .try_into()?;
 
     let cadence = queue.cadence.parse::<Cadence>()?;
     let clock = Clock::now(cadence);
@@ -135,13 +137,13 @@ pub async fn fetch(
             o.outcome,
             o.progress
          from outcomes o
-         join tasks t on ap.task_id = t.id
          join approaches ap on o.approach_id = ap.id
+         join tasks t on ap.task_id = t.id
          where o.user_id = ? and o.queue_id = ?
          order by o.added_at desc
          limit 15",
     )
-    .bind(PLACHOLDER_USER_ID)
+    .bind(PLACEHOLDER_USER_ID)
     .bind(&queue_id)
     .fetch_all(&ctx.db)
     .await?;
@@ -226,6 +228,7 @@ pub enum NextTask {
     #[serde(rename_all = "camelCase")]
     Ready {
         available_at: Timestamp,
+        task_id: String,
         approach_id: String,
     },
 }
@@ -241,6 +244,7 @@ struct OutcomeData {
 #[allow(dead_code)]
 #[derive(Debug)]
 struct Outcome {
+    task_id: String,
     approach_id: String,
     data: Option<OutcomeData>,
 }
@@ -260,6 +264,7 @@ impl TryFrom<OutcomeRow> for Outcome {
 
     fn try_from(
         OutcomeRow {
+            task_id,
             approach_id,
             added_at,
             progress,
@@ -269,6 +274,7 @@ impl TryFrom<OutcomeRow> for Outcome {
     ) -> std::result::Result<Self, Self::Error> {
         let Some(answered_at) = added_at else {
             return Ok(Outcome {
+                task_id: task_id.clone(),
                 approach_id: approach_id.clone(),
                 data: None,
             });
@@ -277,6 +283,7 @@ impl TryFrom<OutcomeRow> for Outcome {
 
         let Some(progress) = progress else {
             return Ok(Outcome {
+                task_id: task_id.clone(),
                 approach_id: approach_id.clone(),
                 data: None,
             });
@@ -284,6 +291,7 @@ impl TryFrom<OutcomeRow> for Outcome {
 
         let Some(outcome) = outcome else {
             return Ok(Outcome {
+                task_id: task_id.clone(),
                 approach_id: approach_id.clone(),
                 data: None,
             });
@@ -291,6 +299,7 @@ impl TryFrom<OutcomeRow> for Outcome {
         let state = outcome.parse::<OutcomeType>()?;
 
         Ok(Outcome {
+            task_id: task_id.clone(),
             approach_id: approach_id.clone(),
             data: Some(OutcomeData {
                 added_at: answered_at,
@@ -325,17 +334,19 @@ pub async fn next_task(
     let history = sqlx::query_as::<_, OutcomeRow>(
         "select
                 ap.prereq_approach_id approach_id,
+                a.task_id,
                 o.added_at,
                 o.outcome,
                 o.progress
              from approach_prereqs ap
+             join approaches a on ap.approach_id = a.id
              left join outcomes o
                 on o.user_id = ?
                 and o.queue_id = ?
                 and ap.prereq_approach_id = o.approach_id
              where ap.approach_id = ?",
     )
-    .bind(PLACHOLDER_USER_ID)
+    .bind(PLACEHOLDER_USER_ID)
     .bind(&queue_id)
     .bind(&queue.target_approach_id)
     .fetch_all(&ctx.db)
@@ -345,7 +356,6 @@ pub async fn next_task(
         .into_iter()
         .map(Outcome::try_from)
         .collect::<Result<Vec<_>>>()?;
-    dbg!(&history);
 
     let cadence = queue.cadence.parse::<Cadence>()?;
     let clock = Clock::now(cadence);
@@ -359,10 +369,11 @@ pub async fn next_task(
                 .fetch_one(&ctx.db)
                 .await?;
 
-            let task = sqlx::query_as::<_, Task>("select * from tasks where id = ?")
+            let task = sqlx::query_as::<_, TaskRow>("select * from tasks where id = ?")
                 .bind(&approach.task_id)
                 .fetch_one(&ctx.db)
-                .await?;
+                .await?
+                .try_into()?;
 
             (Some(task), Some(approach))
         }
@@ -378,19 +389,20 @@ pub async fn next_task(
     })))
 }
 
-#[derive(Serialize)]
+#[derive(Debug, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct AddOutcomeData {
-    answer_id: String,
+    outcome_id: String,
     message: String,
 }
 
-#[derive(Deserialize)]
+#[derive(Debug, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct AddOutcomePayload {
-    queue_id: String,
-    approach_id: String,
-    outcome: OutcomeType,
+    pub queue_id: String,
+    pub approach_id: String,
+    pub organization_track_id: String,
+    pub outcome: OutcomeType,
 }
 
 pub async fn add_outcome(
@@ -399,6 +411,7 @@ pub async fn add_outcome(
     ApiJson(AddOutcomePayload {
         queue_id,
         approach_id,
+        organization_track_id,
         outcome,
     }): ApiJson<AddOutcomePayload>,
 ) -> Result<ApiJson<ApiResponse<AddOutcomeData>>> {
@@ -415,7 +428,7 @@ pub async fn add_outcome(
          order by added_at desc
          limit 1",
     )
-    .bind(PLACHOLDER_USER_ID)
+    .bind(PLACEHOLDER_USER_ID)
     .bind(&queue_id)
     .bind(&approach_id)
     .fetch_optional(&ctx.db)
@@ -429,30 +442,30 @@ pub async fn add_outcome(
     };
 
     let new_id: String = Uuid::new_v4().into();
-    let answer_state: String = outcome.to_string();
+    let outcome: String = outcome.to_string();
     let added_at = Utc::now();
 
-    let (answer_id,) = sqlx::query_as::<_, (String,)>(
+    let (outcome_id,) = sqlx::query_as::<_, (String,)>(
         "insert into outcomes (
-            user_id, id, added_at, answered_at, approach_id, queue_id, outcome,
-            progress
+            user_id, id, added_at, approach_id, queue_id, organization_track_id,
+            outcome, progress
          )
-         values (?, ?, ?, ?, ?, ?, ?, ?, ?)
+         values (?, ?, ?, ?, ?, ?, ?, ?)
          returning id",
     )
-    .bind(PLACHOLDER_USER_ID)
+    .bind(PLACEHOLDER_USER_ID)
     .bind(&new_id)
-    .bind(added_at)
     .bind(added_at)
     .bind(&approach_id)
     .bind(&queue_id)
-    .bind(&answer_state)
+    .bind(&organization_track_id)
+    .bind(&outcome)
     .bind(progress)
     .fetch_one(&ctx.db)
     .await?;
 
     Ok(ApiJson(ApiResponse::data(AddOutcomeData {
-        answer_id,
+        outcome_id,
         message: String::from("ok"),
     })))
 }

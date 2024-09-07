@@ -27,12 +27,13 @@ impl Choose for SpacedRepetitionV1 {
             return Ok(NextTask::EmptyQueue);
         }
 
-        let (approach_id, next_available_at) = self.next_problem(clock, history)?;
+        let (task_id, approach_id, next_available_at) = self.next_problem(clock, history)?;
 
-        if let Some(approach_id) = approach_id {
+        if let (Some(task_id), Some(approach_id)) = (task_id, approach_id) {
             return Ok(NextTask::Ready {
                 approach_id,
                 available_at: next_available_at,
+                task_id,
             });
         }
 
@@ -48,11 +49,11 @@ impl SpacedRepetitionV1 {
         &self,
         clock: Clock,
         history: &[Outcome],
-    ) -> Result<(Option<String>, Timestamp)> {
+    ) -> Result<(Option<String>, Option<String>, Timestamp)> {
         let sorted = self.sort_history(history);
         let mut next_available_at: Timestamp = DateTime::<Utc>::MAX_UTC.into();
 
-        for (approach_id, data) in sorted {
+        for (task_id, approach_id, data) in sorted {
             let OutcomeData {
                 progress,
                 state,
@@ -63,31 +64,43 @@ impl SpacedRepetitionV1 {
             let available_at = state.next_available_at(&clock, added_at, *progress)?;
 
             if available_at <= clock.now {
-                return Ok((Some(approach_id.clone()), available_at));
+                return Ok((
+                    Some(task_id.clone()),
+                    Some(approach_id.clone()),
+                    available_at,
+                ));
             }
             next_available_at = next_available_at.min(available_at);
         }
 
         if let Some(row) = history.iter().find(|row| row.data.is_none()) {
-            return Ok((Some(row.approach_id.clone()), clock.now));
+            return Ok((
+                Some(row.task_id.clone()),
+                Some(row.approach_id.clone()),
+                clock.now,
+            ));
         }
 
-        Ok((None, next_available_at))
+        Ok((None, None, next_available_at))
     }
 
     fn sort_history<'h>(
         &'h self,
         history: &'h [Outcome],
-    ) -> impl Iterator<Item = (&String, &OutcomeData)> + '_ {
+    ) -> impl Iterator<Item = (&String, &String, &OutcomeData)> + '_ {
         // Select the most recent answers for each problem in the available history, then sort
         // by oldest to newest.
         history
             .iter()
-            .filter_map(|row| row.data.as_ref().map(|data| (&row.approach_id, data)))
-            .sorted_by_key(|(_, data)| &data.added_at)
+            .filter_map(|row| {
+                row.data
+                    .as_ref()
+                    .map(|data| (&row.task_id, &row.approach_id, data))
+            })
+            .sorted_by_key(|(_, _, data)| &data.added_at)
             .rev()
-            .unique_by(|&(approach_id, _)| approach_id)
-            .sorted_by_key(|(_, data)| &data.added_at)
+            .unique_by(|&(task_id, approach_id, _)| (task_id, approach_id))
+            .sorted_by_key(|(_, _, data)| &data.added_at)
     }
 }
 
@@ -106,6 +119,7 @@ mod tests {
         state: OutcomeType,
     ) -> Outcome {
         Outcome {
+            task_id: String::from(approach_id),
             approach_id: approach_id.to_string(),
             data: Some(OutcomeData {
                 progress: consecutive_correct,
@@ -136,6 +150,7 @@ mod tests {
         let NextTask::Ready {
             approach_id,
             available_at,
+            ..
         } = next
         else {
             panic!()
@@ -166,6 +181,7 @@ mod tests {
         let NextTask::Ready {
             approach_id,
             available_at,
+            ..
         } = next
         else {
             panic!()
@@ -239,10 +255,12 @@ mod tests {
         let (chooser, clock) = spaced_repetition();
         let history = vec![
             Outcome {
+                task_id: String::from("1"),
                 approach_id: String::from("0"),
                 data: None,
             },
             Outcome {
+                task_id: String::from("1"),
                 approach_id: String::from("1"),
                 data: None,
             },
@@ -252,6 +270,7 @@ mod tests {
         let NextTask::Ready {
             approach_id,
             available_at,
+            ..
         } = next
         else {
             panic!()

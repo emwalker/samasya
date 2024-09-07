@@ -1,4 +1,5 @@
 use crate::{
+    tasks::TaskRow,
     types::{ApiJson, ApiOk, ApiResponse, Result, Task},
     ApiContext,
 };
@@ -129,10 +130,11 @@ pub async fn fetch(
         .fetch_one(&ctx.db)
         .await?;
 
-    let task = sqlx::query_as::<_, Task>("select * from tasks where id = ?")
+    let task: Task = sqlx::query_as::<_, TaskRow>("select * from tasks where id = ?")
         .bind(&approach.task_id)
         .fetch_one(&ctx.db)
-        .await?;
+        .await?
+        .try_into()?;
 
     let prereqs = sqlx::query_as::<_, PrereqType>(
         "select
@@ -160,7 +162,11 @@ pub async fn fetch(
 
 pub mod prereqs {
     use super::*;
-    use crate::{tasks::Search, types::Task, ApiContext};
+    use crate::{
+        tasks::{Search, TaskRow},
+        types::Task,
+        ApiContext,
+    };
     use axum::{
         extract::{Path, Query},
         Extension,
@@ -211,8 +217,14 @@ pub mod prereqs {
         separated.push_unseparated(")");
 
         builder.push("order by t.summary limit ").push_bind(7);
-        let skills = builder.build_query_as::<Task>().fetch_all(&ctx.db).await?;
+        let tasks = builder
+            .build_query_as::<TaskRow>()
+            .fetch_all(&ctx.db)
+            .await?
+            .into_iter()
+            .map(Task::try_from)
+            .collect::<Result<Vec<_>>>()?;
 
-        Ok(ApiJson(ApiResponse::data(skills)))
+        Ok(ApiJson(ApiResponse::data(tasks)))
     }
 }

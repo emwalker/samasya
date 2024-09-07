@@ -257,11 +257,37 @@ pub struct Skill {
     pub description: Option<String>,
 }
 
+#[derive(Clone, Debug, Deserialize, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub enum TaskAction {
+    AcquireSkill,
+    CompleteProblem,
+    CompleteQuestion,
+    CompleteSet,
+}
+
+impl FromStr for TaskAction {
+    type Err = ApiError;
+
+    fn from_str(s: &str) -> std::result::Result<Self, Self::Err> {
+        match s {
+            "acquireSkill" => Ok(Self::AcquireSkill),
+            "completeProblem" => Ok(Self::CompleteProblem),
+            "completeQuestion" => Ok(Self::CompleteQuestion),
+            "completeSet" => Ok(Self::CompleteSet),
+            _ => Err(ApiError::UnprocessableEntity(format!(
+                "unknown action: {s}"
+            ))),
+        }
+    }
+}
+
 #[derive(Clone, Debug, Deserialize, Serialize, sqlx::FromRow)]
 #[serde(rename_all = "camelCase")]
 pub struct Task {
     pub id: String,
     pub summary: String,
+    pub action: TaskAction,
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize, sqlx::FromRow)]

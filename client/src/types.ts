@@ -4,12 +4,12 @@ export type SkillType = {
   description: string | null,
 }
 
-type ActionType = 'acquireSkill' | 'completeProblem'
+export type TaskAction = 'acquireSkill' | 'completeProblem'
 
 export interface TaskType {
   id: string,
   summary: string,
-  action: ActionType,
+  action: TaskAction,
   questionText: string | null,
   questionUrl: string | null,
 }

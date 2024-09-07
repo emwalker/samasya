@@ -1,5 +1,5 @@
 use crate::{
-    types::{ApiError, ApiJson, ApiOk, ApiResponse, Approach, Result, Task},
+    types::{ApiError, ApiJson, ApiOk, ApiResponse, Approach, Result, Task, TaskAction},
     ApiContext,
 };
 use axum::{
@@ -18,6 +18,25 @@ struct PrereqSkill {
     prereq_skill_summary: String,
 }
 
+#[derive(sqlx::FromRow)]
+pub(crate) struct TaskRow {
+    id: String,
+    summary: String,
+    action: String,
+}
+
+impl TryFrom<TaskRow> for Task {
+    type Error = ApiError;
+
+    fn try_from(row: TaskRow) -> std::result::Result<Self, Self::Error> {
+        Ok(Self {
+            id: row.id,
+            summary: row.summary,
+            action: row.action.parse::<TaskAction>()?,
+        })
+    }
+}
+
 #[derive(Debug, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct FetchData {
@@ -29,10 +48,11 @@ pub async fn fetch(
     ctx: Extension<ApiContext>,
     Path(task_id): Path<String>,
 ) -> Result<ApiJson<ApiResponse<FetchData>>> {
-    let task = sqlx::query_as::<_, Task>("select * from tasks where id = ?")
+    let task: Task = sqlx::query_as::<_, TaskRow>("select * from tasks where id = ?")
         .bind(&task_id)
         .fetch_one(&ctx.db)
-        .await?;
+        .await?
+        .try_into()?;
 
     let approaches = sqlx::query_as::<_, Approach>("select * from approaches where task_id = ?")
         .bind(&task_id)

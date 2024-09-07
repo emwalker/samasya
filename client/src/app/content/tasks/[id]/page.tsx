@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from 'react'
 import {
+  Badge,
   Box,
   Button,
   LoadingOverlay,
@@ -13,6 +14,7 @@ import MarkdownPreview from '@/components/MarkdownPreview'
 import QuestionUrlPrompt from '@/components/QuestionUrlPrompt/page'
 import ApproachView from '@/components/ApproachView'
 import { TaskType } from '@/types'
+import { actionText, actionColor } from '@/helpers'
 
 function showApproach({ action }: TaskType): boolean {
   return action === 'completeProblem'
@@ -56,6 +58,8 @@ export default function Page(props: Props) {
           <TitleAndButton title={task.summary}>
             <Button>Edit</Button>
           </TitleAndButton>
+
+          <Badge color={actionColor(task.action)}>{actionText(task.action)}</Badge>
 
           {task.questionUrl && <QuestionUrlPrompt questionUrl={task.questionUrl} />}
 

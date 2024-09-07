@@ -9,6 +9,7 @@ import {
   Box, Button, Card, Group, LoadingOverlay, Title,
 } from '@mantine/core'
 import queueService, { OutcomeType, NextTaskResponse } from '@/services/queues'
+import { placeholderOrganizationTrackId } from '@/constants'
 import { handleError } from '@/app/handleResponse'
 import { notifications } from '@mantine/notifications'
 import TitleAndButton from '@/components/TitleAndButton'
@@ -16,13 +17,10 @@ import QuestionUrlPrompt from '@/components/QuestionUrlPrompt/page'
 import classes from './page.module.css'
 
 function useButtonHandler(
-  updateAnswer: (arg0: OutcomeType) => Promise<void>,
-  answerState: OutcomeType,
+  addOutcome: (arg0: OutcomeType) => Promise<void>,
+  outcome: OutcomeType,
 ) {
-  const callback = useCallback(async () => {
-    updateAnswer(answerState)
-  }, [updateAnswer, answerState])
-  return callback
+  return useCallback(async () => addOutcome(outcome), [addOutcome, outcome])
 }
 
 type Props = {
@@ -47,12 +45,14 @@ export default function Page(props: Props) {
     fetchData()
   }, [queueId, setResponse])
 
-  const updateAnswer = useCallback(async (outcome: OutcomeType) => {
+  const addOutcome = useCallback(async (outcome: OutcomeType) => {
     if (queueId == null || taskId == null || approachId == null) return
 
-    const answerResponse = await queueService.addOutcome({ queueId, approachId, outcome })
+    const outcomeResponse = await queueService.addOutcome({
+      queueId, approachId, organizationTrackId: placeholderOrganizationTrackId, outcome,
+    })
 
-    if (answerResponse.data?.message === 'ok') {
+    if (outcomeResponse.data?.message === 'ok') {
       notifications.show({
         title: 'Answer submitted',
         color: 'blue',
@@ -62,13 +62,13 @@ export default function Page(props: Props) {
       // Refresh page
       queueService.nextTask(queueId).then(setResponse)
     } else {
-      handleError(answerResponse, 'Problem submitting answer')
+      handleError(outcomeResponse, 'Problem submitting answer')
     }
   }, [queueId, taskId, approachId])
 
-  const submitCorrect = useButtonHandler(updateAnswer, 'completed')
-  const submitIncorrect = useButtonHandler(updateAnswer, 'needsRetry')
-  const submitTooHard = useButtonHandler(updateAnswer, 'tooHard')
+  const submitCorrect = useButtonHandler(addOutcome, 'completed')
+  const submitIncorrect = useButtonHandler(addOutcome, 'needsRetry')
+  const submitTooHard = useButtonHandler(addOutcome, 'tooHard')
   const status = response?.data?.status
 
   useEffect(() => {
@@ -109,7 +109,7 @@ export default function Page(props: Props) {
   }
 
   return (
-    <Box pos="relative">
+    <Box pos="relative" key={`${taskId}:${approachId}`}>
       <LoadingOverlay
         visible={response == null}
         zIndex={1000}

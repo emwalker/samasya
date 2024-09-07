@@ -1,12 +1,12 @@
 use crate::{
-    tasks::Search,
+    tasks::{Search, TaskRow},
     types::{Result, Task},
 };
 use sqlx::{sqlite::SqlitePool, QueryBuilder, Sqlite};
 
 pub async fn list(db: &SqlitePool, limit: i32, search: Search) -> Result<Vec<Task>> {
-    let problems = if search.is_empty() {
-        sqlx::query_as::<_, Task>("select * from tasks order by added_at desc limit ?")
+    let tasks = if search.is_empty() {
+        sqlx::query_as::<_, TaskRow>("select * from tasks order by added_at desc limit ?")
             .bind(limit)
             .fetch_all(db)
             .await?
@@ -31,16 +31,20 @@ pub async fn list(db: &SqlitePool, limit: i32, search: Search) -> Result<Vec<Tas
         builder
             .push("order by t.added_at desc limit ")
             .push_bind(limit);
-        builder.build_query_as::<Task>().fetch_all(db).await?
+        builder.build_query_as::<TaskRow>().fetch_all(db).await?
     };
 
-    Ok(problems)
+    tasks
+        .into_iter()
+        .map(Task::try_from)
+        .collect::<Result<Vec<_>>>()
 }
 
 pub async fn fetch_one(db: &SqlitePool, id: &String) -> Result<Task> {
-    let problem = sqlx::query_as::<_, Task>("select * from problems where id = ? limit 1")
+    let task: Task = sqlx::query_as::<_, TaskRow>("select * from problems where id = ? limit 1")
         .bind(id)
         .fetch_one(db)
-        .await?;
-    Ok(problem)
+        .await?
+        .try_into()?;
+    Ok(task)
 }

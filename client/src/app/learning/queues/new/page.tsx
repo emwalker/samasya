@@ -6,7 +6,7 @@ import React, {
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import queueService, { UpdatePayload } from '@/services/queues'
-import contants from '@/constants'
+import { placeholderUserId } from '@/constants'
 import TaskApproachSelect from '@/components/TaskApproachSelect'
 import { Box, Button, TextInput } from '@mantine/core'
 import handleResponse from '@/app/handleResponse'
@@ -27,7 +27,7 @@ function AddButton({ disabled, summary, targetApproachId }: AddButtonProps) {
     const payload: UpdatePayload = {
       summary, targetApproachId, strategy: 'spacedRepetitionV1', cadence: 'hours',
     }
-    const response = await queueService.add(contants.placeholderUserId, payload)
+    const response = await queueService.add(placeholderUserId, payload)
     handleResponse(router, response, '/learning/queues', 'Unable to add queue')
   }, [summary, targetApproachId, router])
 

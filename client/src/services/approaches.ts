@@ -1,13 +1,14 @@
 import {
   ApiResponse,
   ApproachType,
+  TaskAction,
   TaskType,
 } from '@/types'
 
 type PrereqType = {
   taskId: string,
   taskSummary: string,
-  taskAction: string,
+  taskAction: TaskAction,
   approachId: string
   approachSummary: string,
 }

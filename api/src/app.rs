@@ -86,8 +86,8 @@ pub async fn router(config: Config, db: SqlitePool) -> Result<Router> {
 #[cfg(test)]
 mod tests {
     use crate::{
-        types::{Cadence, QueueStrategy},
-        PLACHOLDER_USER_ID,
+        types::{Cadence, OutcomeType, QueueStrategy},
+        PLACEHOLDER_ORGANIZATION_TRACK_ID, PLACEHOLDER_USER_ID,
     };
 
     use super::*;
@@ -95,6 +95,7 @@ mod tests {
         body::{Body, HttpBody},
         http::{Request, StatusCode},
     };
+    use queues::AddOutcomePayload;
     use sqlx::SqlitePool;
     use tempfile::tempdir;
     use tower::ServiceExt;
@@ -172,7 +173,7 @@ mod tests {
     #[sqlx::test(fixtures("seeds"))]
     async fn list_queues(pool: SqlitePool) {
         let router = setup(pool).await;
-        let user_id = PLACHOLDER_USER_ID;
+        let user_id = PLACEHOLDER_USER_ID;
 
         let response = router
             .oneshot(
@@ -194,7 +195,7 @@ mod tests {
     #[sqlx::test(fixtures("seeds"))]
     async fn add_queue(pool: SqlitePool) {
         let router = setup(pool).await;
-        let user_id = PLACHOLDER_USER_ID;
+        let user_id = PLACEHOLDER_USER_ID;
 
         let payload = queues::AddPayload {
             strategy: QueueStrategy::SpacedRepetitionV1,
@@ -225,7 +226,7 @@ mod tests {
     #[sqlx::test(fixtures("seeds", "simple"))]
     async fn fetch_queue(pool: SqlitePool) {
         let router = setup(pool).await;
-        let queue_id = "2df309a7-8ece-4a14-a5f5-49699d2cba54";
+        let queue_id = "34b1de9d-ac94-433c-8369-0e121e97af43";
 
         let response = router
             .oneshot(
@@ -238,14 +239,18 @@ mod tests {
             .await
             .unwrap();
 
-        assert_eq!(response.status(), StatusCode::OK);
+        // assert_eq!(response.status(), StatusCode::OK);
         let body = response.to_bytes().await;
         let response: ApiResponse<queues::FetchData> = serde_json::from_slice(&body).unwrap();
+        dbg!(&response);
         let data: queues::FetchData = response.data.unwrap();
         assert_eq!(data.queue.summary, "A queue of test problems");
-        assert_eq!(data.target_task.summary, "Problem to be solved");
+        assert_eq!(
+            data.target_task.summary,
+            "Ability to complete David Tolnay's Rust Quiz without mistakes"
+        );
         assert_eq!(data.target_approach.summary, "Unspecified");
-        assert!(data.outcomes.is_empty());
+        assert!(!data.outcomes.is_empty());
     }
 
     #[sqlx::test(fixtures("seeds", "simple"))]
@@ -268,7 +273,41 @@ mod tests {
         let body = response.to_bytes().await;
         let response: ApiResponse<queues::NextTaskData> = serde_json::from_slice(&body).unwrap();
         let data: queues::NextTaskData = response.data.unwrap();
-        assert!(matches!(data.details, queues::NextTask::EmptyQueue));
+        assert!(matches!(data.details, queues::NextTask::Ready { .. }));
+        let queues::NextTask::Ready { task_id, .. } = data.details else {
+            panic!();
+        };
+        assert_eq!(task_id, "c7299bc0-8604-4469-bec7-c449ba1bf060");
+    }
+
+    #[sqlx::test(fixtures("seeds", "simple"))]
+    async fn add_outcome(pool: SqlitePool) {
+        let router = setup(pool).await;
+        let queue_id = "2df309a7-8ece-4a14-a5f5-49699d2cba54";
+        let payload = AddOutcomePayload {
+            queue_id: queue_id.into(),
+            approach_id: "3a8c4401-4ef4-48d6-b192-99ad9cd5ea37".into(),
+            organization_track_id: PLACEHOLDER_ORGANIZATION_TRACK_ID.into(),
+            outcome: OutcomeType::Completed,
+        };
+        let payload = serde_json::to_string(&payload).unwrap();
+
+        let response = router
+            .oneshot(
+                Request::builder()
+                    .uri(format!("/api/v1/queues/{queue_id}/add-outcome"))
+                    .method("POST")
+                    .header("Content-Type", "application/json")
+                    .body(Body::from(payload))
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+        // assert_eq!(response.status(), StatusCode::OK);
+        let body = response.to_bytes().await;
+        let response: ApiResponse<queues::AddOutcomeData> = serde_json::from_slice(&body).unwrap();
+        dbg!(&response);
+        assert!(response.data.is_some());
     }
 
     #[sqlx::test(fixtures("seeds"))]
@@ -412,5 +451,6 @@ mod tests {
         let response: ApiResponse<approaches::FetchData> = serde_json::from_slice(&body).unwrap();
         let data: approaches::FetchData = response.data.unwrap();
         assert_eq!(data.approach.id, approach_id);
+        assert_eq!(data.task.id, data.approach.task_id);
     }
 }

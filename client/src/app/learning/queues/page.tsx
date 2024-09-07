@@ -1,7 +1,7 @@
 import React from 'react'
 import Link from 'next/link'
 import queueService from '@/services/queues'
-import constants from '@/constants'
+import { placeholderUserId } from '@/constants'
 import { Button, Card } from '@mantine/core'
 import TitleAndButton from '@/components/TitleAndButton'
 import { QueueType } from '@/types'
@@ -16,7 +16,7 @@ function Queue({ id, summary }: QueueType) {
 }
 
 export default async function Page() {
-  const queues = (await queueService.list(constants.placeholderUserId)).data
+  const queues = (await queueService.list(placeholderUserId)).data
 
   return (
     <main>

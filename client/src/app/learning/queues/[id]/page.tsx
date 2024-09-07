@@ -4,12 +4,19 @@ import React, { useEffect, useState } from 'react'
 import queueService, { OutcomeType, FetchResponse, QueueOutcomeType } from '@/services/queues'
 import TitleAndButton from '@/components/TitleAndButton'
 import {
-  Button, Card, Box, LoadingOverlay, Table, Badge, Center,
+  Badge,
+  Box,
+  Button,
+  Card,
+  Center,
   Group,
+  LoadingOverlay,
+  Table,
 } from '@mantine/core'
 import moment from 'moment'
+import { outcomeText } from '@/helpers'
 
-function colorForConsecutiveCorrect(correct: number) {
+function progressColor(correct: number) {
   if (correct < 2) return 'orange'
   if (correct < 6) return 'yellow'
   if (correct < 7) return 'green'
@@ -34,21 +41,22 @@ function OutcomeRow({
   outcomeId: answerId,
   outcomeAddedAt: answerAnsweredAt,
   taskAvailableAt: answerAvailableAt,
-  outcome: answerState,
-  progress: correct,
+  outcome,
+  progress,
 }: QueueOutcomeType) {
-  const statusColor = badgeColors[answerState] || 'red'
-  const correctColor = colorForConsecutiveCorrect(correct)
+  const statusColor = badgeColors[outcome] || 'red'
+  const correctColor = progressColor(progress)
   const answeredAt = moment(answerAnsweredAt).fromNow()
   const availableAt = moment(answerAvailableAt).fromNow()
+  const outcomeLabel = outcomeText(outcome)
 
   return (
     <Table.Tr key={answerId}>
       <Table.Td>{problemSummary}</Table.Td>
       <Table.Td>{answeredAt}</Table.Td>
       <Table.Td>{availableAt}</Table.Td>
-      <Table.Td align="center"><Badge color={statusColor}>{answerState}</Badge></Table.Td>
-      <Table.Td align="center"><Badge color={correctColor}>{correct}</Badge></Table.Td>
+      <Table.Td align="center"><Badge color={statusColor}>{outcomeLabel}</Badge></Table.Td>
+      <Table.Td align="center"><Badge color={correctColor}>{progress}</Badge></Table.Td>
     </Table.Tr>
   )
 }

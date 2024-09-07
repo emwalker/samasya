@@ -8,19 +8,16 @@ import {
 } from '@mantine/core'
 import approachService, { FetchData } from '@/services/approaches'
 import { handleError } from '@/app/handleResponse'
+import { actionText, actionColor } from '@/helpers'
+import { TaskAction } from '@/types'
 import AddPrereqTask from '../AddPrereqTask'
 
 type PrereqProps = {
   taskId: string,
   taskSummary: string,
-  taskAction: string,
+  taskAction: TaskAction,
   approachId: string,
   approachSummary: string,
-}
-
-function labelForAction(action: string) {
-  if (action === 'completeProblem') return 'Complete problem'
-  return ''
 }
 
 function Prereq({
@@ -34,7 +31,9 @@ function Prereq({
     <Table.Tr key={`${taskId}:${approachId}`}>
       <Table.Td>{taskSummary}</Table.Td>
       <Table.Td>{approachSummary}</Table.Td>
-      <Table.Td align="center"><Badge>{labelForAction(taskAction)}</Badge></Table.Td>
+      <Table.Td align="center">
+        <Badge color={actionColor(taskAction)}>{actionText(taskAction)}</Badge>
+      </Table.Td>
     </Table.Tr>
   )
 }
