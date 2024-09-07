@@ -278,7 +278,7 @@ CREATE TABLE queues (
   foreign key(target_approach_id) references approaches(id),
   foreign key(user_id) references users(id)
 );
-INSERT INTO queues VALUES('34b1de9d-ac94-433c-8369-0e121e97af43','04e229c9-795e-4f3a-a79e-ec18b5c28b99','spacedRepetitionV1','hours','A queue of test problems','81359cd2-ec5f-498f-b9c4-281a1d034e59','2024-09-05 00:14:05');
+INSERT INTO queues VALUES('34b1de9d-ac94-433c-8369-0e121e97af43','04e229c9-795e-4f3a-a79e-ec18b5c28b99','spacedRepetitionV1','hours','David Tolnay''s Rust quiz','81359cd2-ec5f-498f-b9c4-281a1d034e59','2024-09-05 00:14:05');
 CREATE TABLE queue_tracks (
   queue_id text not null,
   organization_track_id text not null,
@@ -301,6 +301,7 @@ CREATE TABLE outcomes (
 INSERT INTO outcomes VALUES('8df2f104-bc9f-4bce-bafa-db8dd9eeaa28','34b1de9d-ac94-433c-8369-0e121e97af43','04e229c9-795e-4f3a-a79e-ec18b5c28b99','0175e72c-7fe6-463d-ba23-27aafd5c4404','af3f8556-654a-45a7-9c16-cf745a0e0f50','completed',1,'2024-09-07T17:14:52.555233203+00:00');
 INSERT INTO outcomes VALUES('5bc4f07e-1760-4fa4-81b5-bf85a953e437','34b1de9d-ac94-433c-8369-0e121e97af43','04e229c9-795e-4f3a-a79e-ec18b5c28b99','063db326-e121-4dbd-8228-addac32f512c','af3f8556-654a-45a7-9c16-cf745a0e0f50','needsRetry',0,'2024-09-07T17:14:54.527179550+00:00');
 INSERT INTO outcomes VALUES('29930ac2-ad79-4aa5-b3ae-80fb2f7116cc','34b1de9d-ac94-433c-8369-0e121e97af43','04e229c9-795e-4f3a-a79e-ec18b5c28b99','2068cd5c-c8ec-4d8b-acc1-fa3837954bbe','af3f8556-654a-45a7-9c16-cf745a0e0f50','completed',1,'2024-09-07T17:14:56.393128075+00:00');
+INSERT INTO outcomes VALUES('227481ac-ecd6-4577-8a1f-5cc6d47864bb','34b1de9d-ac94-433c-8369-0e121e97af43','04e229c9-795e-4f3a-a79e-ec18b5c28b99','287dec24-33f8-418a-a91d-aa28609d2596','af3f8556-654a-45a7-9c16-cf745a0e0f50','tooHard',0,'2024-09-07T17:21:09.618726846+00:00');
 CREATE UNIQUE INDEX task_versions_uniq_idx on task_versions
   (task_id, ifnull(parent_version_id, 0));
 COMMIT;

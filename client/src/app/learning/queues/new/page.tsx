@@ -5,7 +5,7 @@ import React, {
 } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import queueService, { UpdatePayload } from '@/services/queues'
+import queueService, { AddPayload } from '@/services/queues'
 import { placeholderUserId } from '@/constants'
 import TaskApproachSelect from '@/components/TaskApproachSelect'
 import { Box, Button, TextInput } from '@mantine/core'
@@ -24,7 +24,7 @@ function AddButton({ disabled, summary, targetApproachId }: AddButtonProps) {
 
   const onClick = useCallback(async () => {
     if (targetApproachId == null) return
-    const payload: UpdatePayload = {
+    const payload: AddPayload = {
       summary, targetApproachId, strategy: 'spacedRepetitionV1', cadence: 'hours',
     }
     const response = await queueService.add(placeholderUserId, payload)

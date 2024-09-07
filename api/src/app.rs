@@ -63,6 +63,7 @@ pub async fn router(config: Config, db: SqlitePool) -> Result<Router> {
             get(approaches::prereqs::available),
         )
         .route("/api/v1/queues/:id", get(queues::fetch))
+        .route("/api/v1/queues/:id", put(queues::update))
         .route("/api/v1/queues/:id/next-task", get(queues::next_task))
         .route("/api/v1/queues/:id/add-outcome", post(queues::add_outcome))
         .route("/api/v1/tasks", get(tasks::list))
@@ -95,7 +96,7 @@ mod tests {
         body::{Body, HttpBody},
         http::{Request, StatusCode},
     };
-    use queues::AddOutcomePayload;
+    use queues::{AddOutcomePayload, QueueRow};
     use sqlx::SqlitePool;
     use tempfile::tempdir;
     use tower::ServiceExt;
@@ -120,7 +121,7 @@ mod tests {
         }
     }
 
-    async fn setup(db: SqlitePool) -> Router {
+    async fn setup(db: &SqlitePool) -> Router {
         let path = tempdir()
             .unwrap()
             .path()
@@ -129,12 +130,14 @@ mod tests {
             .into_string()
             .unwrap();
 
-        router(Config::with_database(path), db).await.unwrap()
+        router(Config::with_database(path), db.clone())
+            .await
+            .unwrap()
     }
 
     #[sqlx::test]
     async fn root(pool: SqlitePool) {
-        let router = setup(pool).await;
+        let router = setup(&pool).await;
 
         let response = router
             .oneshot(Request::builder().uri("/").body(Body::empty()).unwrap())
@@ -151,7 +154,7 @@ mod tests {
 
     #[sqlx::test]
     async fn unknown_endpoint(pool: SqlitePool) {
-        let router = setup(pool).await;
+        let router = setup(&pool).await;
 
         let response = router
             .oneshot(
@@ -172,7 +175,7 @@ mod tests {
 
     #[sqlx::test(fixtures("seeds"))]
     async fn list_queues(pool: SqlitePool) {
-        let router = setup(pool).await;
+        let router = setup(&pool).await;
         let user_id = PLACEHOLDER_USER_ID;
 
         let response = router
@@ -194,7 +197,7 @@ mod tests {
 
     #[sqlx::test(fixtures("seeds"))]
     async fn add_queue(pool: SqlitePool) {
-        let router = setup(pool).await;
+        let router = setup(&pool).await;
         let user_id = PLACEHOLDER_USER_ID;
 
         let payload = queues::AddPayload {
@@ -225,7 +228,7 @@ mod tests {
 
     #[sqlx::test(fixtures("seeds", "simple"))]
     async fn fetch_queue(pool: SqlitePool) {
-        let router = setup(pool).await;
+        let router = setup(&pool).await;
         let queue_id = "34b1de9d-ac94-433c-8369-0e121e97af43";
 
         let response = router
@@ -239,12 +242,11 @@ mod tests {
             .await
             .unwrap();
 
-        // assert_eq!(response.status(), StatusCode::OK);
+        assert_eq!(response.status(), StatusCode::OK);
         let body = response.to_bytes().await;
         let response: ApiResponse<queues::FetchData> = serde_json::from_slice(&body).unwrap();
-        dbg!(&response);
         let data: queues::FetchData = response.data.unwrap();
-        assert_eq!(data.queue.summary, "A queue of test problems");
+        assert_eq!(data.queue.summary, "David Tolnay's Rust quiz");
         assert_eq!(
             data.target_task.summary,
             "Ability to complete David Tolnay's Rust Quiz without mistakes"
@@ -254,8 +256,42 @@ mod tests {
     }
 
     #[sqlx::test(fixtures("seeds", "simple"))]
+    async fn update_queue(pool: SqlitePool) {
+        let router = setup(&pool).await;
+        let queue_id = "34b1de9d-ac94-433c-8369-0e121e97af43";
+        let payload = queues::UpdatePayload {
+            queue_id: String::from(queue_id),
+            summary: String::from("Updated queue summary"),
+            cadence: Cadence::Days,
+            strategy: QueueStrategy::SpacedRepetitionV1,
+        };
+        let payload = serde_json::to_string(&payload).unwrap();
+
+        let response = router
+            .oneshot(
+                Request::builder()
+                    .uri(format!("/api/v1/queues/{queue_id}"))
+                    .method("PUT")
+                    .header("Content-Type", "application/json")
+                    .body(Body::from(payload))
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+
+        assert_eq!(response.status(), StatusCode::OK);
+
+        let queue = sqlx::query_as::<_, QueueRow>("select * from queues where id = ?")
+            .bind(queue_id)
+            .fetch_one(&pool)
+            .await
+            .unwrap();
+        assert_eq!(queue.summary, "Updated queue summary");
+    }
+
+    #[sqlx::test(fixtures("seeds", "simple"))]
     async fn next_task(pool: SqlitePool) {
-        let router = setup(pool).await;
+        let router = setup(&pool).await;
         let queue_id = "2df309a7-8ece-4a14-a5f5-49699d2cba54";
 
         let response = router
@@ -282,7 +318,7 @@ mod tests {
 
     #[sqlx::test(fixtures("seeds", "simple"))]
     async fn add_outcome(pool: SqlitePool) {
-        let router = setup(pool).await;
+        let router = setup(&pool).await;
         let queue_id = "2df309a7-8ece-4a14-a5f5-49699d2cba54";
         let payload = AddOutcomePayload {
             queue_id: queue_id.into(),
@@ -306,13 +342,12 @@ mod tests {
         // assert_eq!(response.status(), StatusCode::OK);
         let body = response.to_bytes().await;
         let response: ApiResponse<queues::AddOutcomeData> = serde_json::from_slice(&body).unwrap();
-        dbg!(&response);
         assert!(response.data.is_some());
     }
 
     #[sqlx::test(fixtures("seeds"))]
     async fn list_tasks(pool: SqlitePool) {
-        let router = setup(pool).await;
+        let router = setup(&pool).await;
 
         let response = router
             .oneshot(
@@ -333,7 +368,7 @@ mod tests {
 
     #[sqlx::test(fixtures("seeds"))]
     async fn search_tasks(pool: SqlitePool) {
-        let router = setup(pool).await;
+        let router = setup(&pool).await;
 
         let response = router
             .oneshot(
@@ -354,7 +389,7 @@ mod tests {
 
     #[sqlx::test(fixtures("seeds"))]
     async fn fetch_task(pool: SqlitePool) {
-        let router = setup(pool).await;
+        let router = setup(&pool).await;
         let task_id = "5bfdf4f7-c0bf-48eb-aa89-5643314738ec";
 
         let response = router
@@ -376,7 +411,7 @@ mod tests {
 
     #[sqlx::test(fixtures("seeds"))]
     async fn add_task(pool: SqlitePool) {
-        let router = setup(pool).await;
+        let router = setup(&pool).await;
         let task_id = "c7299bc0-8604-4469-bec7-c449ba1bf060";
         let data = tasks::prereqs::AddPayload {
             task_id: task_id.to_string(),
@@ -406,7 +441,7 @@ mod tests {
 
     #[sqlx::test(fixtures("seeds"))]
     async fn available_prereqs(pool: SqlitePool) {
-        let router = setup(pool).await;
+        let router = setup(&pool).await;
         let approach_id = "c7299bc0-8604-4469-bec7-c449ba1bf060";
 
         let response = router
@@ -426,13 +461,12 @@ mod tests {
         let body = response.to_bytes().await;
         let response: ApiResponse<approaches::prereqs::ListData> =
             serde_json::from_slice(&body).unwrap();
-        dbg!(&response);
         assert!(!response.data.unwrap().is_empty());
     }
 
     #[sqlx::test(fixtures("seeds", "simple"))]
     async fn fetch_approach(pool: SqlitePool) {
-        let router = setup(pool).await;
+        let router = setup(&pool).await;
         let approach_id = "81359cd2-ec5f-498f-b9c4-281a1d034e59";
 
         let response = router

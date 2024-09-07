@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useEffect, useState } from 'react'
-import queueService, { OutcomeType, FetchResponse, QueueOutcomeType } from '@/services/queues'
+import queueService, { OutcomeType, FetchData, QueueOutcomeType } from '@/services/queues'
 import TitleAndButton from '@/components/TitleAndButton'
 import {
   Badge,
@@ -15,6 +15,7 @@ import {
 } from '@mantine/core'
 import moment from 'moment'
 import { outcomeText } from '@/helpers'
+import { ApiResponse } from '@/types'
 
 function progressColor(correct: number) {
   if (correct < 2) return 'orange'
@@ -37,26 +38,22 @@ const badgeColors: Record<OutcomeType, string> = {
 }
 
 function OutcomeRow({
-  taskSummary: problemSummary,
-  outcomeId: answerId,
-  outcomeAddedAt: answerAnsweredAt,
-  taskAvailableAt: answerAvailableAt,
+  taskAvailableAt,
   outcome,
-  progress,
 }: QueueOutcomeType) {
-  const statusColor = badgeColors[outcome] || 'red'
-  const correctColor = progressColor(progress)
-  const answeredAt = moment(answerAnsweredAt).fromNow()
-  const availableAt = moment(answerAvailableAt).fromNow()
-  const outcomeLabel = outcomeText(outcome)
+  const statusColor = badgeColors[outcome.outcome] || 'red'
+  const correctColor = progressColor(outcome.progress)
+  const addedAt = moment(outcome.addedAt).fromNow()
+  const availableAt = moment(taskAvailableAt).fromNow()
+  const outcomeLabel = outcomeText(outcome.outcome)
 
   return (
-    <Table.Tr key={answerId}>
-      <Table.Td>{problemSummary}</Table.Td>
-      <Table.Td>{answeredAt}</Table.Td>
+    <Table.Tr key={outcome.id}>
+      <Table.Td>{outcome.taskSummary}</Table.Td>
+      <Table.Td>{addedAt}</Table.Td>
       <Table.Td>{availableAt}</Table.Td>
       <Table.Td align="center"><Badge color={statusColor}>{outcomeLabel}</Badge></Table.Td>
-      <Table.Td align="center"><Badge color={correctColor}>{progress}</Badge></Table.Td>
+      <Table.Td align="center"><Badge color={correctColor}>{outcome.progress}</Badge></Table.Td>
     </Table.Tr>
   )
 }
@@ -66,7 +63,7 @@ type Props = {
 }
 
 export default function Page(props: Props) {
-  const [response, setResponse] = useState<FetchResponse | null>(null)
+  const [response, setResponse] = useState<ApiResponse<FetchData> | null>(null)
   const [isLoading, setIsLoading] = useState<boolean>(true)
   const queueId = props?.params?.id
 
@@ -110,9 +107,16 @@ export default function Page(props: Props) {
             </Group>
           </TitleAndButton>
 
+          <Box mb={30}>
+            <Group>
+              <Badge color="blue.3">{data.queue.cadence}</Badge>
+              <Badge color="blue.5">{data.queue.strategy}</Badge>
+            </Group>
+          </Box>
+
           <Box mb={10}>This queue will help to work towards mastery of this problem:</Box>
 
-          <Card shadow="lg" mb={30}>
+          <Card shadow="lg" mb={20}>
             {data.targetTask.summary}
           </Card>
 

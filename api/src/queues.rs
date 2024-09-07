@@ -3,7 +3,7 @@ mod chooser;
 use crate::{
     tasks::TaskRow,
     types::{
-        ApiError, ApiJson, ApiResponse, Approach, Cadence, Clock, OutcomeType, Queue,
+        ApiError, ApiJson, ApiOk, ApiResponse, Approach, Cadence, Clock, OutcomeType, Queue,
         QueueStrategy, Result, Task, Timestamp,
     },
     ApiContext, PLACEHOLDER_USER_ID,
@@ -77,21 +77,57 @@ pub async fn add(
     ))
 }
 
+#[derive(Debug, Deserialize, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct UpdatePayload {
+    pub queue_id: String,
+    pub summary: String,
+    pub cadence: Cadence,
+    pub strategy: QueueStrategy,
+}
+
+pub async fn update(
+    ctx: Extension<ApiContext>,
+    Path(queue_id): Path<String>,
+    ApiJson(payload): ApiJson<UpdatePayload>,
+) -> Result<ApiOk> {
+    info!("updating queue: {:?}", payload);
+
+    if queue_id != payload.queue_id {
+        return Err(ApiError::UnprocessableEntity(
+            "queue id must match payload".into(),
+        ));
+    }
+
+    sqlx::query(
+        "update queues
+            set summary = ?, cadence = ?, strategy = ?
+         where id = ?",
+    )
+    .bind(&payload.summary)
+    .bind(payload.cadence.to_string())
+    .bind(payload.strategy.to_string())
+    .bind(&queue_id)
+    .execute(&ctx.db)
+    .await?;
+
+    Ok(ApiJson::ok())
+}
+
 #[derive(Debug, Deserialize, Serialize, sqlx::FromRow)]
 #[serde(rename_all = "camelCase")]
 pub struct QueueOutcomeRow {
-    task_summary: String,
     approach_summary: String,
-    outcome_id: String,
     added_at: String,
-    outcome: String,
+    id: String,
     progress: u32,
+    outcome: String,
+    task_summary: String,
 }
 
 #[derive(Debug, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct QueueOutcome {
-    #[serde(flatten)]
     outcome: QueueOutcomeRow,
     task_available_at: String,
 }
@@ -132,7 +168,7 @@ pub async fn fetch(
         "select
             t.summary task_summary,
             ap.summary approach_summary,
-            o.id outcome_id,
+            o.id,
             o.added_at,
             o.outcome,
             o.progress

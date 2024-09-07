@@ -360,11 +360,12 @@ pub struct WideQueue {
     pub answer_connection: AnswerConnection,
 }
 
-#[derive(Clone, Copy, Debug, Deserialize, Serialize)]
+#[derive(Clone, Copy, Debug, Deserialize, Eq, PartialEq, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub enum Cadence {
     Minutes,
     Hours,
+    Days,
 }
 
 impl Display for Cadence {
@@ -372,6 +373,7 @@ impl Display for Cadence {
         let value = match self {
             Self::Minutes => "minutes",
             Self::Hours => "hours",
+            Self::Days => "days",
         };
         f.write_str(value)
     }
@@ -384,6 +386,7 @@ impl FromStr for Cadence {
         match s {
             "minutes" => Ok(Self::Minutes),
             "hours" => Ok(Self::Hours),
+            "days" => Ok(Self::Days),
             _ => Err(ApiError::UnprocessableEntity(format!(
                 "unknown cadence: {s}"
             ))),
@@ -429,6 +432,7 @@ impl Clock {
         match self.cadence {
             Cadence::Minutes => TimeDelta::minutes(1),
             Cadence::Hours => TimeDelta::hours(1),
+            Cadence::Days => TimeDelta::days(1),
         }
     }
 }
@@ -462,5 +466,15 @@ impl OutcomeType {
         answered_at
             .checked_add_signed(delta)
             .ok_or_else(|| ApiError::General(String::from("date shift failed")))
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn cadence_from_str() {
+        assert_eq!(Cadence::Days, "days".parse::<Cadence>().unwrap());
     }
 }

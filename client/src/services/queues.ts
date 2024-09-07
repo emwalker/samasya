@@ -8,36 +8,33 @@ import {
   TaskType,
 } from '@/types'
 
-export type QueueOutcomeType = {
+export type OutcomeRow = {
+  addedAt: string,
   approachSummary: string,
+  id: string,
   outcome: OutcomeType,
-  outcomeAddedAt: string,
-  outcomeId: string,
   progress: number,
-  taskAvailableAt: string,
   taskSummary: string,
 }
 
-export type FetchResponse = {
-  data: {
-    queue: QueueType,
-    outcomes: QueueOutcomeType[],
-    targetTask: TaskType,
-    targetApproach: ApproachType,
-  } | null
+export type QueueOutcomeType = {
+  outcome: OutcomeRow,
+  taskAvailableAt: string,
 }
 
-async function fetchQueue(id: string): Promise<FetchResponse> {
-  const res = await fetch(
+export type FetchData = {
+  queue: QueueType,
+  outcomes: QueueOutcomeType[],
+  targetTask: TaskType,
+  targetApproach: ApproachType,
+}
+
+async function fetchQueue(id: string): Promise<ApiResponse<FetchData>> {
+  const response = await fetch(
     `http://localhost:8000/api/v1/queues/${id}`,
     { cache: 'no-store' },
   )
-
-  if (!res.ok) {
-    return Promise.resolve({ data: null })
-  }
-
-  return res.json()
+  return response.json()
 }
 
 export type ListResponse = {
@@ -57,18 +54,33 @@ async function list(userId: string): Promise<ListResponse> {
   return res.json()
 }
 
-export type UpdatePayload = {
+export type AddPayload = {
   strategy: QueueStrategy,
   summary: string,
   targetApproachId: string,
   cadence: Cadence,
 }
 
-async function add(userId: string, update: UpdatePayload): Promise<ApiResponse<any>> {
+async function add(userId: string, payload: AddPayload): Promise<ApiResponse<string>> {
   const response = await fetch(`http://localhost:8000/api/v1/users/${userId}/queues`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(update),
+    body: JSON.stringify(payload),
+  })
+  return response.json()
+}
+
+export type UpdatePayload = {
+  strategy: QueueStrategy,
+  summary: string,
+  cadence: Cadence,
+}
+
+async function update(queueId: string, payload: UpdatePayload): Promise<ApiResponse<string>> {
+  const response = await fetch(`http://localhost:8000/api/v1/queues/${queueId}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
   })
   return response.json()
 }
@@ -149,5 +161,10 @@ async function addOutcome(payload: AddOutcomePayload): Promise<AddOutcomeRespons
 }
 
 export default {
-  fetch: fetchQueue, list, add, nextTask, addOutcome,
+  fetch: fetchQueue,
+  list,
+  add,
+  update,
+  nextTask,
+  addOutcome,
 }
