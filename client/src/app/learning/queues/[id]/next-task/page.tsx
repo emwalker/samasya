@@ -132,7 +132,7 @@ export default function Page(props: Props) {
       />
 
       {queue && task && approach && (
-        <Card padding="xl" className={classes.card} key={taskId}>
+        <Box className={classes.card} key={taskId}>
           <TitleAndButton title={task?.summary || 'Loading page ...'}>
             <Button component="a" href={`/learning/queues/${queueId}`}>Leave</Button>
           </TitleAndButton>
@@ -143,10 +143,10 @@ export default function Page(props: Props) {
               : `Use the following approach: ${approach.summary}`}
           </Box>
 
-          <Box mb={20}>
+          <Card mb={20} shadow="xl">
             {task.questionText}
             {task.questionUrl && <QuestionUrlPrompt questionUrl={task.questionUrl} />}
-          </Box>
+          </Card>
 
           <Select
             data={availableTracks}
@@ -185,7 +185,7 @@ export default function Page(props: Props) {
               Too hard
             </Button>
           </Group>
-        </Card>
+        </Box>
       )}
     </Box>
   )
