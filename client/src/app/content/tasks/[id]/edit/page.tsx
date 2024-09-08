@@ -8,44 +8,56 @@ import { TaskType } from '@/types'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import {
-  Box, Button, LoadingOverlay, Textarea, TextInput,
+  Box, Button, Group, LoadingOverlay, Textarea, TextInput,
 } from '@mantine/core'
+import TitleAndButton from '@/components/TitleAndButton'
+import { handleError } from '@/app/handleResponse'
+import { notifications } from '@mantine/notifications'
 import classes from './page.module.css'
 
 type SaveButtonProps = {
   disabled: boolean,
   taskId: string,
-  questionText: string | null,
+  questionPrompt: string | null,
   questionUrl: string | null,
   summary: string,
 }
 
 function SaveButton({
-  disabled, summary, taskId, questionText, questionUrl,
+  disabled, summary, taskId, questionPrompt, questionUrl,
 }: SaveButtonProps) {
   const router = useRouter()
 
-  const onClick = useCallback(
-    async () => {
-      const res = await taskService.update(taskId, { summary, questionText, questionUrl })
+  const onClick = useCallback(async () => {
+    const response = await taskService.update(taskId, {
+      taskId, summary, questionPrompt, questionUrl,
+    })
 
-      if (!res.ok) {
-        throw Error(`failed to save problem: ${res}`)
-      }
-
+    if (response?.data === 'ok') {
+      notifications.show({
+        title: 'Task saved',
+        message: 'This task has been saved',
+        color: 'blue',
+        position: 'top-center',
+      })
       router.push(`/content/tasks/${taskId}`)
-    },
-    [taskId, summary, questionText, questionUrl, router],
-  )
+    } else {
+      handleError(response, 'Failed to update task')
+    }
+  }, [taskId, summary, questionPrompt, questionUrl, router])
 
   return (
     <Button type="submit" onClick={onClick} disabled={disabled}>Save</Button>
   )
 }
 
-function EditForm({ task }: { task: TaskType }) {
+type EditFormProps = {
+  task: TaskType,
+}
+
+function EditForm({ task }: EditFormProps) {
   const [summary, setSummary] = useState(task.summary)
-  const [questionText, setQuestionText] = useState(task.questionText || '')
+  const [questionPrompt, setQuestionPrompt] = useState(task.questionText || '')
   const [questionUrl, setQuestionUrl] = useState(task.questionUrl || '')
 
   const summaryOnChange = useCallback(
@@ -53,9 +65,9 @@ function EditForm({ task }: { task: TaskType }) {
     [setSummary],
   )
 
-  const questionTextOnChange = useCallback(
-    (event: ChangeEvent<HTMLTextAreaElement>) => setQuestionText(event.target.value),
-    [setQuestionText],
+  const questionPromptOnChange = useCallback(
+    (event: ChangeEvent<HTMLTextAreaElement>) => setQuestionPrompt(event.target.value),
+    [setQuestionPrompt],
   )
 
   const questionUrlOnChange = useCallback(
@@ -63,13 +75,27 @@ function EditForm({ task }: { task: TaskType }) {
     [setQuestionUrl],
   )
 
-  const questionTextExists = questionText.length > 0
+  const questionPromptExists = questionPrompt.length > 0
   const questionUrlExists = questionUrl.length > 0
-  const disabled = summary.length === 0 || (questionTextExists && questionUrlExists)
-    || (!questionTextExists && !questionUrlExists)
+  const disabled = summary.length === 0 || (questionPromptExists && questionUrlExists)
+    || (!questionPromptExists && !questionUrlExists)
 
   return (
-    <div>
+    <Box>
+      <TitleAndButton title={summary || ''}>
+        <Group>
+          <SaveButton
+            disabled={disabled}
+            taskId={task.id}
+            questionPrompt={questionPrompt}
+            questionUrl={questionUrl}
+            summary={summary}
+          />
+          {' or '}
+          <Link href={`/content/tasks/${task.id}`}>cancel</Link>
+        </Group>
+      </TitleAndButton>
+
       <TextInput
         className={classes.input}
         id="summary"
@@ -86,15 +112,15 @@ function EditForm({ task }: { task: TaskType }) {
         disabled={questionUrlExists}
         id="question-text"
         label="Question prompt"
-        onChange={questionTextOnChange}
+        onChange={questionPromptOnChange}
         placeholder="Question prompt to be shown"
         rows={6}
-        value={questionText || ''}
+        value={questionPrompt || ''}
       />
 
       <TextInput
         className={classes.input}
-        disabled={questionTextExists}
+        disabled={questionPromptExists}
         id="question-url"
         label="Question url"
         onChange={questionUrlOnChange}
@@ -106,19 +132,7 @@ function EditForm({ task }: { task: TaskType }) {
       <p>
         <small>Either a question prompt or a question url should be provided, but not both.</small>
       </p>
-
-      <div>
-        <SaveButton
-          disabled={disabled}
-          taskId={task.id}
-          questionText={questionText}
-          questionUrl={questionUrl}
-          summary={summary}
-        />
-        {' or '}
-        <Link href={`/content/problems/${task.id}`}>cancel</Link>
-      </div>
-    </div>
+    </Box>
   )
 }
 

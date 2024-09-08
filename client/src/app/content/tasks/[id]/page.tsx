@@ -56,14 +56,21 @@ export default function Page(props: Props) {
       {taskId && task && (
         <>
           <TitleAndButton title={task.summary}>
-            <Button>Edit</Button>
+            <Button
+              variant="outline"
+              component="a"
+              href={`/content/tasks/${taskId}/edit`}
+            >
+              Edit
+            </Button>
           </TitleAndButton>
 
-          <Badge color={actionColor(task.action)}>{actionText(task.action)}</Badge>
+          <Badge mb={20} color={actionColor(task.action)}>{actionText(task.action)}</Badge>
 
-          {task.questionUrl && <QuestionUrlPrompt questionUrl={task.questionUrl} />}
-
-          <MarkdownPreview markdown={task.questionText || ''} />
+          <Box mb={30}>
+            {task.questionUrl && <QuestionUrlPrompt questionUrl={task.questionUrl} />}
+            {task.questionText && <MarkdownPreview markdown={task.questionText} />}
+          </Box>
 
           {showApproach(task) && (
             <Select

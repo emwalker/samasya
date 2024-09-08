@@ -1,6 +1,7 @@
 import {
   ApiResponse,
   ApproachType,
+  TaskAction,
   TaskType,
 } from '@/types'
 
@@ -30,25 +31,40 @@ async function list(
 }
 
 export type UpdatePayload = {
-  questionText: string | null,
+  questionPrompt: string | null,
   questionUrl: string | null,
   summary: string,
+  taskId: string,
 }
 
-async function update(id: string, payload: UpdatePayload) {
-  return fetch(`http://localhost:8000/api/v1/tasks/${id}`, {
+async function update(taskId: string, payload: UpdatePayload): Promise<ApiResponse<string>> {
+  const response = await fetch(`http://localhost:8000/api/v1/tasks/${taskId}`, {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload),
   })
+  return response.json()
 }
 
-async function add(payload: UpdatePayload) {
-  return fetch('http://localhost:8000/api/v1/tasks', {
+export type AddPayload = {
+  action: TaskAction,
+  questionPrompt: string | null,
+  questionUrl: string | null,
+  repoId: string,
+  summary: string,
+}
+
+type AddData = {
+  addedTaskId: string,
+}
+
+async function add(repoId: string, payload: AddPayload): Promise<ApiResponse<AddData>> {
+  const response = await fetch(`http://localhost:8000/api/v1/repos/${repoId}/tasks`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload),
   })
+  return response.json()
 }
 
 export type AddPrereqPayload = {

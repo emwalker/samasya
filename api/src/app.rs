@@ -75,6 +75,7 @@ pub async fn router(config: Config, db: SqlitePool) -> Result<Router> {
             "/api/v1/queues/:id/remove-track",
             post(queues::remove_track),
         )
+        .route("/api/v1/repos/:id/tasks", post(tasks::add))
         .route("/api/v1/tasks", get(tasks::list))
         .route("/api/v1/tasks", post(tasks::add))
         .route("/api/v1/tasks/:id", get(tasks::fetch))
@@ -96,8 +97,9 @@ pub async fn router(config: Config, db: SqlitePool) -> Result<Router> {
 #[cfg(test)]
 mod tests {
     use crate::{
-        types::{Cadence, OutcomeType, QueueStrategy},
-        PLACEHOLDER_REPO_CATEGORY_ID, PLACEHOLDER_REPO_TRACK_ID, PLACEHOLDER_USER_ID,
+        types::{Cadence, OutcomeType, QueueStrategy, TaskAction},
+        PLACEHOLDER_REPO_CATEGORY_ID, PLACEHOLDER_REPO_ID, PLACEHOLDER_REPO_TRACK_ID,
+        PLACEHOLDER_USER_ID,
     };
 
     use super::*;
@@ -326,6 +328,7 @@ mod tests {
             panic!();
         };
         assert_eq!(task_id, "c7299bc0-8604-4469-bec7-c449ba1bf060");
+        assert!(data.task.unwrap().question_prompt.is_none());
     }
 
     #[sqlx::test(fixtures("seeds", "simple"))]
@@ -520,6 +523,73 @@ mod tests {
 
     #[sqlx::test(fixtures("seeds"))]
     async fn add_task(pool: SqlitePool) {
+        let router = setup(&pool).await;
+        let repo_id = PLACEHOLDER_REPO_ID;
+
+        let data = tasks::AddPayload {
+            repo_id: String::from(repo_id),
+            action: TaskAction::CompleteProblem,
+            summary: String::from("A new task"),
+            question_prompt: Some(String::from(
+                "What is the radius of a circle of 2m diameter?",
+            )),
+            question_url: None,
+        };
+        let payload: String = serde_json::to_string(&data).unwrap();
+
+        let response = router
+            .oneshot(
+                Request::builder()
+                    .uri(format!("/api/v1/repos/{repo_id}/tasks"))
+                    .header("Content-Type", "application/json")
+                    .method("POST")
+                    .body(Body::from(payload))
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+
+        assert_eq!(response.status(), StatusCode::OK);
+        let body = response.to_bytes().await;
+        let response: ApiResponse<tasks::AddData> = serde_json::from_slice(&body).unwrap();
+        assert!(!response.data.unwrap().added_task_id.is_empty());
+    }
+
+    #[sqlx::test(fixtures("seeds"))]
+    async fn update_task(pool: SqlitePool) {
+        let router = setup(&pool).await;
+        let task_id = "c7299bc0-8604-4469-bec7-c449ba1bf060";
+
+        let data = tasks::UpdatePayload {
+            task_id: String::from(task_id),
+            summary: String::from("A new task"),
+            question_prompt: Some(String::from(
+                "What is the radius of a circle of 2m diameter?",
+            )),
+            question_url: None,
+        };
+        let payload: String = serde_json::to_string(&data).unwrap();
+
+        let response = router
+            .oneshot(
+                Request::builder()
+                    .uri(format!("/api/v1/tasks/{task_id}"))
+                    .header("Content-Type", "application/json")
+                    .method("PUT")
+                    .body(Body::from(payload))
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+
+        assert_eq!(response.status(), StatusCode::OK);
+        let body = response.to_bytes().await;
+        let response: ApiResponse<String> = serde_json::from_slice(&body).unwrap();
+        assert_eq!(response.data, Some("ok".into()));
+    }
+
+    #[sqlx::test(fixtures("seeds"))]
+    async fn add_prereq_task(pool: SqlitePool) {
         let router = setup(&pool).await;
         let task_id = "c7299bc0-8604-4469-bec7-c449ba1bf060";
         let data = tasks::prereqs::AddPayload {

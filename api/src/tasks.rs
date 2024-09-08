@@ -1,6 +1,6 @@
 use crate::{
     types::{ApiError, ApiJson, ApiOk, ApiResponse, Approach, Result, Search, Task, TaskAction},
-    ApiContext,
+    ApiContext, PLACEHOLDER_USER_ID,
 };
 use axum::{
     extract::{Path, Query},
@@ -23,6 +23,8 @@ pub(crate) struct TaskRow {
     id: String,
     summary: String,
     action: String,
+    question_prompt: Option<String>,
+    question_url: Option<String>,
 }
 
 impl TryFrom<TaskRow> for Task {
@@ -33,6 +35,8 @@ impl TryFrom<TaskRow> for Task {
             id: row.id,
             summary: row.summary,
             action: row.action.parse::<TaskAction>()?,
+            question_prompt: row.question_prompt,
+            question_url: row.question_url,
         })
     }
 }
@@ -75,13 +79,14 @@ pub async fn list(
 }
 
 fn ensure_valid_problem_update(
-    update: UpdatePayload,
+    payload: &AddPayload,
 ) -> Result<(String, Option<String>, Option<String>)> {
-    let UpdatePayload {
-        mut question_text,
+    let AddPayload {
+        question_prompt: mut question_text,
         mut question_url,
         summary,
-    } = update;
+        ..
+    } = payload.clone();
 
     if summary.is_empty() {
         return Err(ApiError::UnprocessableEntity(
@@ -113,55 +118,91 @@ fn ensure_valid_problem_update(
         ));
     }
 
-    Ok((summary, question_text, question_url))
+    Ok((summary.to_string(), question_text, question_url))
 }
 
-#[derive(Deserialize, Serialize, Debug)]
+#[derive(Clone, Deserialize, Serialize, Debug)]
 #[serde(rename_all = "camelCase")]
-pub struct UpdatePayload {
-    question_text: Option<String>,
-    question_url: Option<String>,
-    summary: String,
+pub struct AddPayload {
+    pub question_prompt: Option<String>,
+    pub question_url: Option<String>,
+    pub repo_id: String,
+    pub action: TaskAction,
+    pub summary: String,
+}
+
+#[derive(Clone, Deserialize, Serialize, Debug)]
+#[serde(rename_all = "camelCase")]
+pub struct AddData {
+    pub added_task_id: String,
 }
 
 pub async fn add(
     ctx: Extension<ApiContext>,
-    ApiJson(update): ApiJson<UpdatePayload>,
-) -> Result<ApiJson<ApiResponse<String>>> {
-    info!("adding problem: {:?}", update);
-    let id = uuid::Uuid::new_v4().to_string();
-
-    let (summary, question_text, question_url) = ensure_valid_problem_update(update)?;
+    Path(repo_id): Path<String>,
+    ApiJson(payload): ApiJson<AddPayload>,
+) -> Result<ApiJson<ApiResponse<AddData>>> {
+    info!("adding problem: {:?}", payload);
+    let added_task_id = uuid::Uuid::new_v4().to_string();
+    let (summary, question_prompt, question_url) = ensure_valid_problem_update(&payload)?;
 
     sqlx::query(
-        "insert into problems (id, summary, question_text, question_url) values ($1, $2, $3, $4)",
+        "insert into tasks
+            (id, author_id, repo_id, action, summary, question_prompt, question_url)
+            values ($1, $2, $3, $4, $5, $6, $7)",
     )
-    .bind(&id)
+    .bind(&added_task_id)
+    .bind(PLACEHOLDER_USER_ID)
+    .bind(&repo_id)
+    .bind(payload.action.to_string())
     .bind(&summary)
-    .bind(&question_text)
+    .bind(&question_prompt)
     .bind(&question_url)
     .execute(&ctx.db)
     .await?;
 
-    Ok(ApiJson::ok())
+    Ok(ApiJson(ApiResponse::data(AddData { added_task_id })))
+}
+
+#[derive(Debug, Deserialize, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct UpdatePayload {
+    // The action is immutible
+    pub question_prompt: Option<String>,
+    pub question_url: Option<String>,
+    pub summary: String,
+    pub task_id: String,
 }
 
 pub async fn update(
     ctx: Extension<ApiContext>,
-    Path(problem_id): Path<String>,
-    ApiJson(update): ApiJson<UpdatePayload>,
+    Path(task_id): Path<String>,
+    ApiJson(payload): ApiJson<UpdatePayload>,
 ) -> Result<ApiOk> {
-    info!("updating problem: {:?}", update);
+    info!("updating problem: {:?}", payload);
 
-    let (summary, question_text, question_url) = ensure_valid_problem_update(update)?;
+    fn maybe_none(value: Option<String>) -> Option<String> {
+        value.filter(|value| !value.trim().is_empty())
+    }
+
+    if task_id != payload.task_id {
+        return Err(ApiError::UnprocessableEntity(String::from(
+            "task id in request must match the task id in the payload",
+        )));
+    }
+
+    let question_prompt = maybe_none(payload.question_prompt);
+    let question_url = maybe_none(payload.question_url);
 
     sqlx::query(
-        "update problems set summary = $1, question_text = $2, question_url = $3 where id = $4",
+        "update tasks
+            set summary = $1, question_prompt = $2, question_url = $3
+         where id = $4",
     )
-    .bind(&summary)
-    .bind(&question_text)
+    .bind(&payload.summary)
+    .bind(&question_prompt)
     .bind(&question_url)
-    .bind(&problem_id)
+    .bind(&task_id)
     .execute(&ctx.db)
     .await?;
 

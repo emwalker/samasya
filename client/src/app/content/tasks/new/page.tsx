@@ -3,29 +3,45 @@
 import React, { useState, useCallback, ChangeEvent } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import taskService from '@/services/tasks'
+import taskService, { AddPayload } from '@/services/tasks'
 import { Button, Textarea, TextInput } from '@mantine/core'
+import { placeholderRepoId } from '@/constants'
+import { handleError } from '@/app/handleResponse'
+import { notifications } from '@mantine/notifications'
 import classes from './page.module.css'
 
 type AddButtonProps = {
   disabled: boolean,
   summary: string,
-  questionText: string | null,
+  questionPrompt: string | null,
   questionUrl: string | null,
 }
 
 function AddButton({
-  disabled, summary, questionText, questionUrl,
+  disabled, summary, questionPrompt, questionUrl,
 }: AddButtonProps) {
   const router = useRouter()
+  const repoId = placeholderRepoId
 
   const onClick = useCallback(async () => {
-    const res = await taskService.add({ summary, questionText, questionUrl })
-
-    if (res.ok) {
-      router.push('/content/problems')
+    const payload: AddPayload = {
+      repoId, summary, action: 'completeProblem', questionPrompt, questionUrl,
     }
-  }, [summary, questionText, questionUrl, router])
+    const response = await taskService.add(repoId, payload)
+    const addedTaskId = response?.data?.addedTaskId || null
+
+    if (addedTaskId != null) {
+      notifications.show({
+        title: 'Task added',
+        message: 'A new task has been added',
+        position: 'top-center',
+        color: 'blue',
+      })
+      router.push(`/api/v1/tasks/${addedTaskId}`)
+    } else {
+      handleError(response, 'Failed to add task')
+    }
+  }, [repoId, summary, questionPrompt, questionUrl, router])
 
   return (
     <Button disabled={disabled} onClick={onClick} type="submit">Add</Button>
@@ -34,7 +50,7 @@ function AddButton({
 
 export default function Page() {
   const [summary, setSummary] = useState('')
-  const [questionText, setQuestionText] = useState('')
+  const [questionText, setQuestionPrompt] = useState('')
   const [questionUrl, setQuestionUrl] = useState('')
 
   const summaryOnChange = useCallback(
@@ -43,8 +59,8 @@ export default function Page() {
   )
 
   const questionTextOnChange = useCallback(
-    (event: React.ChangeEvent<HTMLTextAreaElement>) => setQuestionText(event.target.value),
-    [setQuestionText],
+    (event: React.ChangeEvent<HTMLTextAreaElement>) => setQuestionPrompt(event.target.value),
+    [setQuestionPrompt],
   )
 
   const questionUrlOnChange = useCallback(
@@ -96,7 +112,7 @@ export default function Page() {
             disabled={disabled}
             summary={summary}
             questionUrl={questionUrl}
-            questionText={questionText}
+            questionPrompt={questionText}
           />
           {' or '}
           <Link href="/content/problems">cancel</Link>

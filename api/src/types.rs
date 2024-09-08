@@ -282,12 +282,27 @@ impl FromStr for TaskAction {
     }
 }
 
+impl Display for TaskAction {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let value = match self {
+            Self::AcquireSkill => "acquireSkill",
+            Self::CompleteProblem => "completeProblem",
+            Self::CompleteQuestion => "completeQuestion",
+            Self::CompleteSet => "completeSet",
+        };
+        write!(f, "{}", value)
+    }
+}
+
 #[derive(Clone, Debug, Deserialize, Serialize, sqlx::FromRow)]
 #[serde(rename_all = "camelCase")]
 pub struct Task {
     pub id: String,
     pub summary: String,
     pub action: TaskAction,
+    // Will go away
+    pub question_prompt: Option<String>,
+    pub question_url: Option<String>,
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize, sqlx::FromRow)]

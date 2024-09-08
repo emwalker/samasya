@@ -419,18 +419,18 @@ pub async fn next_task(
     // Tasks that must be mastered for the skills needed for the target problem
     let history = sqlx::query_as::<_, OutcomeRow>(
         "select
-                ap.prereq_approach_id approach_id,
-                a.task_id,
-                o.added_at,
-                o.outcome,
-                o.progress
-             from approach_prereqs ap
-             join approaches a on ap.approach_id = a.id
-             left join outcomes o
-                on o.user_id = ?
-                and o.queue_id = ?
-                and ap.prereq_approach_id = o.approach_id
-             where ap.approach_id = ?",
+            ap.prereq_approach_id approach_id,
+            a.task_id,
+            o.added_at,
+            o.outcome,
+            o.progress
+         from approach_prereqs ap
+         join approaches a on ap.approach_id = a.id
+         left join outcomes o
+            on o.user_id = ?
+            and o.queue_id = ?
+            and ap.prereq_approach_id = o.approach_id
+         where ap.approach_id = ?",
     )
     .bind(PLACEHOLDER_USER_ID)
     .bind(&queue_id)
