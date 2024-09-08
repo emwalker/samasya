@@ -159,7 +159,7 @@ export default function Page(props: Props) {
             </Group>
           </TitleAndButton>
 
-          <Box mb={30}>
+          <Box mt={20}>
             <Group>
               <Badge color="blue.3">{actionText(data.targetTask.action)}</Badge>
               <Badge color="blue.2">{data.queue.cadence}</Badge>
@@ -167,13 +167,11 @@ export default function Page(props: Props) {
             </Group>
           </Box>
 
-          <Box mb={10}>This queue will help to work towards mastery of this ability:</Box>
-
-          <Card shadow="lg" mb={20}>
+          <Card shadow="lg" mt={20}>
             {data.targetTask.summary}
           </Card>
 
-          <Box mb={40}>
+          <Box mt={50}>
             <Title mb={10} order={3}>Selected tracks</Title>
 
             <Queue.CategoryTrackSelect queueId={queueId} refreshParent={refreshParent} />
@@ -198,17 +196,17 @@ export default function Page(props: Props) {
             </Table>
           </Box>
 
-          <Box mb={40}>
-            <Title mb={10} order={3}>Progress through queue</Title>
-            <Table>
+          <Box mt={50}>
+            <Title order={3}>Progress through queue</Title>
+            <Table mt={10}>
               <Table.Thead>
                 <Table.Tr>
                   <Table.Th>Task</Table.Th>
                   <Table.Th><Center>Track</Center></Table.Th>
                   <Table.Th>Approach</Table.Th>
-                  <Table.Th>Answered</Table.Th>
+                  <Table.Th>Completed</Table.Th>
                   <Table.Th>Will be seen again</Table.Th>
-                  <Table.Th><Center>Result</Center></Table.Th>
+                  <Table.Th><Center>Outcome</Center></Table.Th>
                   <Table.Th><Center>Progress</Center></Table.Th>
                 </Table.Tr>
               </Table.Thead>

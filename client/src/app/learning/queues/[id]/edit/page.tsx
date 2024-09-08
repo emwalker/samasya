@@ -10,6 +10,7 @@ import TitleAndButton from '@/components/TitleAndButton'
 import {
   Box,
   Button,
+  Group,
   Select,
   TextInput,
 } from '@mantine/core'
@@ -99,9 +100,11 @@ export default function Page(props: Props) {
       {queue && (
         <>
           <TitleAndButton title={queue.summary}>
-            <Button onClick={updateQueue}>Save</Button>
-            {' or '}
-            <Link href={`/learning/queues/${queueId}`}>cancel</Link>
+            <Group>
+              <Button onClick={updateQueue}>Save</Button>
+              {' or '}
+              <Link href={`/learning/queues/${queueId}`}>cancel</Link>
+            </Group>
           </TitleAndButton>
 
           <TextInput
