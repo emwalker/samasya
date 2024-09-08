@@ -296,6 +296,7 @@ CREATE TABLE queue_tracks (
   unique(queue_id, repo_category_id)
 );
 INSERT INTO queue_tracks VALUES('302c69da-2154-466a-ab39-a8a81d5ca7f8','34b1de9d-ac94-433c-8369-0e121e97af43','f56be999-86d8-4394-a69c-4882e3bfad70','af3f8556-654a-45a7-9c16-cf745a0e0f50','2024-09-08 00:16:33');
+INSERT INTO queue_tracks VALUES('6a4511cf-4002-4f27-9054-253bc85c0e8c','34b1de9d-ac94-433c-8369-0e121e97af43','9f31bf67-29b6-43c9-8b4c-3bdb77e959a7','e10fa49d-57a2-41a8-af68-7ea1b0b470ca','2024-09-08 00:58:02');
 CREATE TABLE outcomes (
   id text primary key not null,
   queue_id text not null,
@@ -310,10 +311,7 @@ CREATE TABLE outcomes (
   foreign key(approach_id) references approaches(id),
   foreign key(user_id) references users(id)
 );
-INSERT INTO outcomes VALUES('8df2f104-bc9f-4bce-bafa-db8dd9eeaa28','34b1de9d-ac94-433c-8369-0e121e97af43','04e229c9-795e-4f3a-a79e-ec18b5c28b99','0175e72c-7fe6-463d-ba23-27aafd5c4404','af3f8556-654a-45a7-9c16-cf745a0e0f50','completed',1,'2024-09-07T17:14:52.555233203+00:00');
-INSERT INTO outcomes VALUES('5bc4f07e-1760-4fa4-81b5-bf85a953e437','34b1de9d-ac94-433c-8369-0e121e97af43','04e229c9-795e-4f3a-a79e-ec18b5c28b99','063db326-e121-4dbd-8228-addac32f512c','af3f8556-654a-45a7-9c16-cf745a0e0f50','needsRetry',0,'2024-09-07T17:14:54.527179550+00:00');
-INSERT INTO outcomes VALUES('29930ac2-ad79-4aa5-b3ae-80fb2f7116cc','34b1de9d-ac94-433c-8369-0e121e97af43','04e229c9-795e-4f3a-a79e-ec18b5c28b99','2068cd5c-c8ec-4d8b-acc1-fa3837954bbe','af3f8556-654a-45a7-9c16-cf745a0e0f50','completed',1,'2024-09-07T17:14:56.393128075+00:00');
-INSERT INTO outcomes VALUES('227481ac-ecd6-4577-8a1f-5cc6d47864bb','34b1de9d-ac94-433c-8369-0e121e97af43','04e229c9-795e-4f3a-a79e-ec18b5c28b99','287dec24-33f8-418a-a91d-aa28609d2596','af3f8556-654a-45a7-9c16-cf745a0e0f50','tooHard',0,'2024-09-07T17:21:09.618726846+00:00');
+INSERT INTO outcomes VALUES('5f3bc9c6-49fb-40fb-abbc-da0898f5ae4b','34b1de9d-ac94-433c-8369-0e121e97af43','04e229c9-795e-4f3a-a79e-ec18b5c28b99','0175e72c-7fe6-463d-ba23-27aafd5c4404','af3f8556-654a-45a7-9c16-cf745a0e0f50','completed',1,'2024-09-08T01:03:45.299487685+00:00');
 CREATE UNIQUE INDEX task_versions_uniq_idx on task_versions
   (task_id, ifnull(parent_version_id, 0));
 COMMIT;

@@ -3,8 +3,8 @@ mod chooser;
 use crate::{
     tasks::TaskRow,
     types::{
-        ApiError, ApiJson, ApiOk, ApiResponse, Approach, Cadence, Clock, OutcomeType, Queue,
-        QueueStrategy, Result, Search, Task, Timestamp,
+        ApiError, ApiJson, ApiOk, ApiResponse, Approach, AvailableTrack, Cadence, Clock,
+        OutcomeType, Queue, QueueStrategy, Result, Search, Task, Timestamp,
     },
     ApiContext, PLACEHOLDER_REPO_ID, PLACEHOLDER_USER_ID,
 };
@@ -144,7 +144,7 @@ pub struct Category {
     name: String,
 }
 
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Debug, Deserialize, Serialize, sqlx::FromRow)]
 #[serde(rename_all = "camelCase")]
 pub struct Track {
     id: String,
@@ -234,13 +234,13 @@ pub async fn fetch(
     let tracks = sqlx::query_as::<_, TrackRow>(
         "select
             qt.queue_id,
-            ot.id track_id,
-            ot.name track_name,
-            oc.id category_id,
-            oc.name category_name
-         from repo_tracks ot
-         join repo_categories oc on ot.repo_category_id = oc.id
-         join queue_tracks qt on qt.repo_track_id = ot.id
+            rt.id track_id,
+            rt.name track_name,
+            rc.id category_id,
+            rc.name category_name
+         from repo_tracks rt
+         join repo_categories rc on rt.repo_category_id = rc.id
+         join queue_tracks qt on qt.repo_track_id = rt.id
          where qt.queue_id = ?",
     )
     .bind(&queue_id)
@@ -401,6 +401,7 @@ pub struct NextTaskData {
     pub queue: QueueRow,
     pub task: Option<Task>,
     pub approach: Option<Approach>,
+    pub available_tracks: Vec<AvailableTrack>,
     #[serde(flatten)]
     pub details: NextTask,
 }
@@ -466,10 +467,27 @@ pub async fn next_task(
         _ => (None, None),
     };
 
+    let available_tracks = sqlx::query_as::<_, AvailableTrack>(
+        "select
+            rt.id track_id,
+            rt.name track_name,
+            rc.id category_id,
+            rc.name category_name
+         from queue_tracks qt
+         join repo_tracks rt on qt.repo_track_id = rt.id
+         join repo_categories rc on qt.repo_category_id = rc.id
+         where qt.queue_id = ?
+         order by rt.name",
+    )
+    .bind(&queue_id)
+    .fetch_all(&ctx.db)
+    .await?;
+
     Ok(ApiJson(ApiResponse::data(NextTaskData {
         queue,
         task,
         approach,
+        available_tracks,
         details: next,
     })))
 }
@@ -553,15 +571,6 @@ pub async fn add_outcome(
         outcome_id,
         message: String::from("ok"),
     })))
-}
-
-#[derive(Debug, Deserialize, Serialize, sqlx::FromRow)]
-#[serde(rename_all = "camelCase")]
-pub struct AvailableTrack {
-    pub category_id: String,
-    pub category_name: String,
-    pub track_id: String,
-    pub track_name: String,
 }
 
 pub type AvailableTracksData = Vec<AvailableTrack>;

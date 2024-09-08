@@ -493,3 +493,12 @@ impl Search {
         self.q.split_whitespace()
     }
 }
+
+#[derive(Debug, Deserialize, Serialize, sqlx::FromRow)]
+#[serde(rename_all = "camelCase")]
+pub struct AvailableTrack {
+    pub category_id: String,
+    pub category_name: String,
+    pub track_id: String,
+    pub track_name: String,
+}

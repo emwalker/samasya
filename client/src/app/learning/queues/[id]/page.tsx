@@ -151,7 +151,7 @@ export default function Page(props: Props) {
               </Button>
               <Button
                 component="a"
-                href={`/learning/queues/${queueId}/next-problem`}
+                href={`/learning/queues/${queueId}/next-task`}
               >
                 Continue
               </Button>

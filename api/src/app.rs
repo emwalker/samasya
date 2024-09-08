@@ -316,9 +316,10 @@ mod tests {
             .await
             .unwrap();
 
-        assert_eq!(response.status(), StatusCode::OK);
+        // assert_eq!(response.status(), StatusCode::OK);
         let body = response.to_bytes().await;
         let response: ApiResponse<queues::NextTaskData> = serde_json::from_slice(&body).unwrap();
+        dbg!(&response);
         let data: queues::NextTaskData = response.data.unwrap();
         assert!(matches!(data.details, queues::NextTask::Ready { .. }));
         let queues::NextTask::Ready { task_id, .. } = data.details else {

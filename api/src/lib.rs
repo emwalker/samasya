@@ -13,8 +13,8 @@ pub mod types;
 pub const PLACEHOLDER_USER_ID: &str = "04e229c9-795e-4f3a-a79e-ec18b5c28b99";
 pub const PLACEHOLDER_ORGANIZATION_ID: &str = "407a4662-8f72-4883-a87c-f6e3649b2b89";
 pub const PLACEHOLDER_REPO_ID: &str = "bfeea3c3-1160-488f-aac7-16919b6da713";
-pub const PLACEHOLDER_REPO_CATEGORY_ID: &str = "f56be999-86d8-4394-a69c-4882e3bfad70";
-pub const PLACEHOLDER_REPO_TRACK_ID: &str = "af3f8556-654a-45a7-9c16-cf745a0e0f50";
+pub const PLACEHOLDER_REPO_CATEGORY_ID: &str = "9f31bf67-29b6-43c9-8b4c-3bdb77e959a7";
+pub const PLACEHOLDER_REPO_TRACK_ID: &str = "e10fa49d-57a2-41a8-af68-7ea1b0b470ca";
 
 #[derive(Deserialize, Serialize)]
 pub struct Config {

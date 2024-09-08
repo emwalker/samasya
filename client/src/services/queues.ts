@@ -95,6 +95,13 @@ async function update(queueId: string, payload: UpdatePayload): Promise<ApiRespo
   return response.json()
 }
 
+type AvailableTrackType = {
+  trackId: string,
+  trackName: string,
+  categoryId: string,
+  categoryName: string,
+}
+
 type Ready = {
   queue: QueueType,
   task: TaskType,
@@ -103,6 +110,7 @@ type Ready = {
   approachId: string | null,
   availableAt: Date,
   status: 'ready',
+  availableTracks: AvailableTrackType[],
 }
 
 type NotReady = {
@@ -113,6 +121,7 @@ type NotReady = {
   approachId?: undefined,
   availableAt: Date,
   status: 'notReady',
+  availableTracks: AvailableTrackType[],
 }
 
 type EmptyQueue = {
@@ -123,6 +132,7 @@ type EmptyQueue = {
   approachId?: undefined,
   availableAt: null,
   status: 'emptyQueue',
+  availableTracks: AvailableTrackType[],
 }
 
 type NextTaskData = Ready | NotReady | EmptyQueue
