@@ -1,11 +1,10 @@
 'use client'
 
-import React, { useCallback, useEffect, useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import queueService, {
   FetchData,
   OutcomeType,
   QueueOutcomeType,
-  TrackRowType,
 } from '@/services/queues'
 import TitleAndButton from '@/components/TitleAndButton'
 import {
@@ -22,10 +21,6 @@ import {
 import moment from 'moment'
 import { actionText, outcomeText } from '@/helpers'
 import { ApiResponse } from '@/types'
-import Queue from '@/components/Queue'
-import { IconX } from '@tabler/icons-react'
-import { handleError } from '@/app/handleResponse'
-import classes from './page.module.css'
 
 function progressColor(correct: number) {
   if (correct < 2) return 'orange'
@@ -47,34 +42,6 @@ const badgeColors: Record<OutcomeType, string> = {
   tooHard: 'orange',
 }
 
-type TrackRowProps = {
-  track: TrackRowType,
-  removeTrack: (trackId: string) => Promise<void>
-}
-
-function TrackRow({ track, removeTrack }: TrackRowProps) {
-  const {
-    queueId,
-    categoryName,
-    trackName,
-    trackId,
-  } = track
-
-  return (
-    <Table.Tr key={`${queueId}:${trackId}`}>
-      <Table.Td>{categoryName}</Table.Td>
-      <Table.Td><Badge color="blue.3">{trackName}</Badge></Table.Td>
-      <Table.Td align="right">
-        <IconX
-          color="var(--mantine-color-dark-1)"
-          className={classes.removeButton}
-          onClick={() => removeTrack(trackId)}
-        />
-      </Table.Td>
-    </Table.Tr>
-  )
-}
-
 function OutcomeRow({
   taskAvailableAt,
   outcome,
@@ -82,8 +49,13 @@ function OutcomeRow({
   const statusColor = badgeColors[outcome.outcome] || 'red'
   const correctColor = progressColor(outcome.progress)
   const addedAt = moment(outcome.addedAt).fromNow()
-  const availableAt = moment(taskAvailableAt).fromNow()
   const outcomeLabel = outcomeText(outcome.outcome)
+  const availableAt = moment(taskAvailableAt)
+  let availableAtText = 'Soon'
+
+  if (availableAt.isAfter(new Date())) {
+    availableAtText = availableAt.fromNow()
+  }
 
   return (
     <Table.Tr key={outcome.id}>
@@ -91,7 +63,7 @@ function OutcomeRow({
       <Table.Td align="center"><Badge color="blue.3">{outcome.trackName}</Badge></Table.Td>
       <Table.Td>{outcome.approachSummary}</Table.Td>
       <Table.Td>{addedAt}</Table.Td>
-      <Table.Td>{availableAt}</Table.Td>
+      <Table.Td>{availableAtText}</Table.Td>
       <Table.Td align="center"><Badge color={statusColor}>{outcomeLabel}</Badge></Table.Td>
       <Table.Td align="center"><Badge color={correctColor}>{outcome.progress}</Badge></Table.Td>
     </Table.Tr>
@@ -116,18 +88,6 @@ export default function Page(props: Props) {
     }
     fetchData()
   }, [queueId])
-
-  const refreshParent = useCallback(() => {
-    if (queueId == null) return
-    queueService.fetch(queueId).then(setResponse)
-  }, [queueId])
-
-  const removeTrack = useCallback(async (trackId: string) => {
-    if (queueId == null) return
-    const currResponse = await queueService.removeTrack(queueId, { queueId, trackId })
-    handleError(currResponse, 'Failed to remove track')
-    refreshParent()
-  }, [queueId, refreshParent])
 
   const data = response?.data
 
@@ -170,31 +130,6 @@ export default function Page(props: Props) {
           <Card shadow="lg" mt={20}>
             {data.targetTask.summary}
           </Card>
-
-          <Box mt={50}>
-            <Title mb={10} order={3}>Selected tracks</Title>
-
-            <Queue.CategoryTrackSelect queueId={queueId} refreshParent={refreshParent} />
-
-            <Table>
-              <Table.Thead>
-                <Table.Tr>
-                  <Table.Th>Category</Table.Th>
-                  <Table.Th>Track</Table.Th>
-                  <Table.Th />
-                </Table.Tr>
-              </Table.Thead>
-              <Table.Tbody>
-                {data.tracks.map((track) => (
-                  <TrackRow
-                    key={track.trackId}
-                    track={track}
-                    removeTrack={removeTrack}
-                  />
-                ))}
-              </Table.Tbody>
-            </Table>
-          </Box>
 
           <Box mt={50}>
             <Title order={3}>Progress through queue</Title>

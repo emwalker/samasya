@@ -8,18 +8,24 @@ import React, {
 } from 'react'
 import TitleAndButton from '@/components/TitleAndButton'
 import {
+  Badge,
   Box,
   Button,
   Group,
   Select,
+  Table,
   TextInput,
+  Title,
 } from '@mantine/core'
 import Link from 'next/link'
-import queueService, { FetchData } from '@/services/queues'
+import queueService, { FetchData, TrackRowType } from '@/services/queues'
 import { handleError } from '@/app/handleResponse'
-import { Cadence, QueueStrategy } from '@/types'
+import { ApiResponse, Cadence, QueueStrategy } from '@/types'
 import { useRouter } from 'next/navigation'
 import { notifications } from '@mantine/notifications'
+import Queue from '@/components/Queue'
+import { IconX } from '@tabler/icons-react'
+import classes from './page.module.css'
 
 const cadenceOptions = [
   { label: 'Minutes', value: 'minutes' },
@@ -31,6 +37,34 @@ const strategyOptions = [
   { label: 'Deterministic', value: 'deterministic' },
   { label: 'Spaced repetition', value: 'spacedRepetitionV1' },
 ]
+
+type TrackRowProps = {
+  track: TrackRowType,
+  removeTrack: (trackId: string) => Promise<void>
+}
+
+function TrackRow({ track, removeTrack }: TrackRowProps) {
+  const {
+    queueId,
+    categoryName,
+    trackName,
+    trackId,
+  } = track
+
+  return (
+    <Table.Tr key={`${queueId}:${trackId}`}>
+      <Table.Td>{categoryName}</Table.Td>
+      <Table.Td><Badge color="blue.3">{trackName}</Badge></Table.Td>
+      <Table.Td align="right">
+        <IconX
+          color="var(--mantine-color-dark-1)"
+          className={classes.removeButton}
+          onClick={() => removeTrack(trackId)}
+        />
+      </Table.Td>
+    </Table.Tr>
+  )
+}
 
 type Props = {
   params: { id: string } | null
@@ -45,19 +79,23 @@ export default function Page(props: Props) {
   const queueId = props?.params?.id || null
   const queue = fetchData?.queue || null
 
+  const setResponse = useCallback(async (response: ApiResponse<FetchData>) => {
+    handleError(response, 'Failed to fetch queue information')
+    const currFetchData = response?.data || null
+    setFetchData(currFetchData)
+    setSummary(currFetchData?.queue?.summary || null)
+    setCadence(currFetchData?.queue?.cadence || null)
+    setStrategy(currFetchData?.queue?.strategy || null)
+  }, [setFetchData, setSummary, setCadence, setStrategy])
+
   useEffect(() => {
     async function loadData() {
       if (queueId == null) return
       const response = await queueService.fetch(queueId)
-      handleError(response, 'Failed to fetch queue information')
-      const currFetchData = response?.data || null
-      setFetchData(currFetchData)
-      setSummary(currFetchData?.queue?.summary || null)
-      setCadence(currFetchData?.queue?.cadence || null)
-      setStrategy(currFetchData?.queue?.strategy || null)
+      setResponse(response)
     }
     loadData()
-  }, [queueId, setFetchData, setSummary, setCadence, setStrategy])
+  }, [queueId, setResponse])
 
   const summaryOnChange = useCallback((event: ChangeEvent<HTMLInputElement>) => {
     setSummary(event.target.value)
@@ -95,9 +133,21 @@ export default function Page(props: Props) {
     }
   }, [queueId, summary, strategy, cadence, router])
 
+  const refreshParent = useCallback(() => {
+    if (queueId == null) return
+    queueService.fetch(queueId).then(setResponse)
+  }, [queueId, setResponse])
+
+  const removeTrack = useCallback(async (trackId: string) => {
+    if (queueId == null) return
+    const currResponse = await queueService.removeTrack(queueId, { queueId, trackId })
+    handleError(currResponse, 'Failed to remove track')
+    refreshParent()
+  }, [queueId, refreshParent])
+
   return (
     <Box key={queueId}>
-      {queue && (
+      {fetchData && queueId && queue && (
         <>
           <TitleAndButton title={queue.summary}>
             <Group>
@@ -129,6 +179,31 @@ export default function Page(props: Props) {
             onChange={strategyOnChange}
             mt={20}
           />
+
+          <Box mt={50}>
+            <Title mb={10} order={3}>Selected tracks</Title>
+
+            <Queue.CategoryTrackSelect queueId={queueId} refreshParent={refreshParent} />
+
+            <Table>
+              <Table.Thead>
+                <Table.Tr>
+                  <Table.Th>Category</Table.Th>
+                  <Table.Th>Track</Table.Th>
+                  <Table.Th />
+                </Table.Tr>
+              </Table.Thead>
+              <Table.Tbody>
+                {fetchData.tracks.map((track) => (
+                  <TrackRow
+                    key={track.trackId}
+                    track={track}
+                    removeTrack={removeTrack}
+                  />
+                ))}
+              </Table.Tbody>
+            </Table>
+          </Box>
         </>
       )}
     </Box>
