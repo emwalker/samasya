@@ -113,7 +113,7 @@ export default function Page(props: Props) {
         </TitleAndButton>
 
         <Box>
-          No problems are ready to answer at this time.  The next problem will be
+          No tasks are ready to complete at this time.  The next task will be
           available {fromNow}.  Follow <Link href={queueUrl}>this link</Link> to
           return to the queue page.
         </Box>

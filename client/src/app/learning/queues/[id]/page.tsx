@@ -89,6 +89,7 @@ function OutcomeRow({
     <Table.Tr key={outcome.id}>
       <Table.Td>{outcome.taskSummary}</Table.Td>
       <Table.Td align="center"><Badge color="blue.3">{outcome.trackName}</Badge></Table.Td>
+      <Table.Td>{outcome.approachSummary}</Table.Td>
       <Table.Td>{addedAt}</Table.Td>
       <Table.Td>{availableAt}</Table.Td>
       <Table.Td align="center"><Badge color={statusColor}>{outcomeLabel}</Badge></Table.Td>
@@ -204,6 +205,7 @@ export default function Page(props: Props) {
                 <Table.Tr>
                   <Table.Th>Task</Table.Th>
                   <Table.Th><Center>Track</Center></Table.Th>
+                  <Table.Th>Approach</Table.Th>
                   <Table.Th>Answered</Table.Th>
                   <Table.Th>Will be seen again</Table.Th>
                   <Table.Th><Center>Result</Center></Table.Th>
