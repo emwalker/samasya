@@ -12,7 +12,6 @@ import {
   Group,
   LoadingOverlay,
   Select,
-  Title,
 } from '@mantine/core'
 import queueService, { OutcomeType, NextTaskResponse } from '@/services/queues'
 import { handleError } from '@/app/handleResponse'
@@ -132,21 +131,21 @@ export default function Page(props: Props) {
         overlayProps={{ radius: 'sm', blur: 2 }}
       />
 
-      {queue && task && (
+      {queue && task && approach && (
         <Card padding="xl" className={classes.card} key={taskId}>
-          <TitleAndButton title={queue?.summary || 'Loading page ...'}>
+          <TitleAndButton title={task?.summary || 'Loading page ...'}>
             <Button component="a" href={`/learning/queues/${queueId}`}>Leave</Button>
           </TitleAndButton>
 
-          <Box my={20}>
-            <Title order={5}>{task.summary}</Title>
+          <Box mb={20}>
+            {approach.unspecified
+              ? 'Any approach'
+              : `Use the following approach: ${approach.summary}`}
+          </Box>
+
+          <Box mb={20}>
             {task.questionText}
             {task.questionUrl && <QuestionUrlPrompt questionUrl={task.questionUrl} />}
-            {approach && (
-              approach.unspecified
-                ? 'Any approach'
-                : <Box>Use the following approach: {approach.summary}</Box>
-            )}
           </Box>
 
           <Select
