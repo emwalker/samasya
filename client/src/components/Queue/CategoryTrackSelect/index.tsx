@@ -49,6 +49,7 @@ export default function CategoryTrackSelect({ queueId, refreshParent }: Props) {
         mb={10}
         onChange={setCompoundKey}
         onSearchChange={trackOnSearchChange}
+        placeholder="Add a track to the queue"
         searchable
       />
 
