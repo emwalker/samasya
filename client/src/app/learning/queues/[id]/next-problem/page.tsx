@@ -9,7 +9,7 @@ import {
   Box, Button, Card, Group, LoadingOverlay, Title,
 } from '@mantine/core'
 import queueService, { OutcomeType, NextTaskResponse } from '@/services/queues'
-import { placeholderOrganizationTrackId } from '@/constants'
+import { placeholderRepoTrackId } from '@/constants'
 import { handleError } from '@/app/handleResponse'
 import { notifications } from '@mantine/notifications'
 import TitleAndButton from '@/components/TitleAndButton'
@@ -49,7 +49,7 @@ export default function Page(props: Props) {
     if (queueId == null || taskId == null || approachId == null) return
 
     const outcomeResponse = await queueService.addOutcome({
-      queueId, approachId, organizationTrackId: placeholderOrganizationTrackId, outcome,
+      queueId, approachId, repoTrackId: placeholderRepoTrackId, outcome,
     })
 
     if (outcomeResponse.data?.message === 'ok') {

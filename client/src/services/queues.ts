@@ -146,7 +146,7 @@ export type OutcomeType = 'completed' | 'needsRetry' | 'tooHard'
 export type AddOutcomePayload = {
   queueId: string,
   approachId: string,
-  organizationTrackId: string,
+  repoTrackId: string,
   outcome: OutcomeType,
 }
 

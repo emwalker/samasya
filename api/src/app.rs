@@ -97,8 +97,7 @@ pub async fn router(config: Config, db: SqlitePool) -> Result<Router> {
 mod tests {
     use crate::{
         types::{Cadence, OutcomeType, QueueStrategy},
-        PLACEHOLDER_ORGANIZATION_CATEGORY_ID, PLACEHOLDER_ORGANIZATION_TRACK_ID,
-        PLACEHOLDER_USER_ID,
+        PLACEHOLDER_REPO_CATEGORY_ID, PLACEHOLDER_REPO_TRACK_ID, PLACEHOLDER_USER_ID,
     };
 
     use super::*;
@@ -264,7 +263,7 @@ mod tests {
         );
         assert_eq!(data.target_approach.summary, "Unspecified");
         assert!(!data.outcomes.is_empty());
-        assert!(data.tracks.is_empty());
+        assert!(!data.tracks.is_empty());
     }
 
     #[sqlx::test(fixtures("seeds", "simple"))]
@@ -335,7 +334,7 @@ mod tests {
         let payload = AddOutcomePayload {
             queue_id: queue_id.into(),
             approach_id: "3a8c4401-4ef4-48d6-b192-99ad9cd5ea37".into(),
-            organization_track_id: PLACEHOLDER_ORGANIZATION_TRACK_ID.into(),
+            repo_track_id: PLACEHOLDER_REPO_TRACK_ID.into(),
             outcome: OutcomeType::Completed,
         };
         let payload = serde_json::to_string(&payload).unwrap();
@@ -388,8 +387,8 @@ mod tests {
         let queue_id = "2df309a7-8ece-4a14-a5f5-49699d2cba54";
         let payload = queues::AddTrackPayload {
             queue_id: String::from(queue_id),
-            category_id: String::from(PLACEHOLDER_ORGANIZATION_CATEGORY_ID),
-            track_id: String::from(PLACEHOLDER_ORGANIZATION_TRACK_ID),
+            category_id: String::from(PLACEHOLDER_REPO_CATEGORY_ID),
+            track_id: String::from(PLACEHOLDER_REPO_TRACK_ID),
         };
         let payload = serde_json::to_string(&payload).unwrap();
 
@@ -419,20 +418,20 @@ mod tests {
 
         sqlx::query(
             "insert into queue_tracks
-                (id, queue_id, organization_category_id, organization_track_id)
+                (id, queue_id, repo_category_id, repo_track_id)
                 values (?, ?, ?, ?)",
         )
         .bind(&new_id)
         .bind(queue_id)
-        .bind(PLACEHOLDER_ORGANIZATION_CATEGORY_ID)
-        .bind(PLACEHOLDER_ORGANIZATION_TRACK_ID)
+        .bind(PLACEHOLDER_REPO_CATEGORY_ID)
+        .bind(PLACEHOLDER_REPO_TRACK_ID)
         .execute(&pool)
         .await
         .unwrap();
 
         let payload = queues::RemoveTrackPayload {
             queue_id: String::from(queue_id),
-            track_id: String::from(PLACEHOLDER_ORGANIZATION_TRACK_ID),
+            track_id: String::from(PLACEHOLDER_REPO_TRACK_ID),
         };
         let payload = serde_json::to_string(&payload).unwrap();
 

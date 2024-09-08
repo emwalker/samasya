@@ -6,7 +6,7 @@ use crate::{
         ApiError, ApiJson, ApiOk, ApiResponse, Approach, Cadence, Clock, OutcomeType, Queue,
         QueueStrategy, Result, Search, Task, Timestamp,
     },
-    ApiContext, PLACEHOLDER_ORGANIZATION_ID, PLACEHOLDER_USER_ID,
+    ApiContext, PLACEHOLDER_REPO_ID, PLACEHOLDER_USER_ID,
 };
 use axum::{
     extract::{Path, Query},
@@ -206,7 +206,7 @@ pub async fn fetch(
          from outcomes o
          join approaches ap on o.approach_id = ap.id
          join tasks t on ap.task_id = t.id
-         join organization_tracks ot on o.organization_track_id = ot.id
+         join repo_tracks ot on o.repo_track_id = ot.id
          where o.user_id = ? and o.queue_id = ?
          order by o.added_at desc
          limit 15",
@@ -238,9 +238,9 @@ pub async fn fetch(
             ot.name track_name,
             oc.id category_id,
             oc.name category_name
-         from organization_tracks ot
-         join organization_categories oc on ot.organization_category_id = oc.id
-         join queue_tracks qt on qt.organization_track_id = ot.id
+         from repo_tracks ot
+         join repo_categories oc on ot.repo_category_id = oc.id
+         join queue_tracks qt on qt.repo_track_id = ot.id
          where qt.queue_id = ?",
     )
     .bind(&queue_id)
@@ -486,7 +486,7 @@ pub struct AddOutcomeData {
 pub struct AddOutcomePayload {
     pub queue_id: String,
     pub approach_id: String,
-    pub organization_track_id: String,
+    pub repo_track_id: String,
     pub outcome: OutcomeType,
 }
 
@@ -496,7 +496,7 @@ pub async fn add_outcome(
     ApiJson(AddOutcomePayload {
         queue_id,
         approach_id,
-        organization_track_id,
+        repo_track_id,
         outcome,
     }): ApiJson<AddOutcomePayload>,
 ) -> Result<ApiJson<ApiResponse<AddOutcomeData>>> {
@@ -532,7 +532,7 @@ pub async fn add_outcome(
 
     let (outcome_id,) = sqlx::query_as::<_, (String,)>(
         "insert into outcomes (
-            user_id, id, added_at, approach_id, queue_id, organization_track_id,
+            user_id, id, added_at, approach_id, queue_id, repo_track_id,
             outcome, progress
          )
          values (?, ?, ?, ?, ?, ?, ?, ?)
@@ -543,7 +543,7 @@ pub async fn add_outcome(
     .bind(added_at)
     .bind(&approach_id)
     .bind(&queue_id)
-    .bind(&organization_track_id)
+    .bind(&repo_track_id)
     .bind(&outcome)
     .bind(progress)
     .fetch_one(&ctx.db)
@@ -578,10 +578,10 @@ pub async fn available_tracks(
                 ot.id track_id,
                 oc.name category_name,
                 oc.id category_id
-             from organization_tracks ot
-             join organization_categories oc on ot.organization_category_id = oc.id
-             left join queue_tracks qt on qt.queue_id = $1 and qt.organization_track_id = ot.id
-             where ot.organization_id = $2
+             from repo_tracks ot
+             join repo_categories oc on ot.repo_category_id = oc.id
+             left join queue_tracks qt on qt.queue_id = $1 and qt.repo_track_id = ot.id
+             where ot.repo_id = $2
                 and (
                     lower(ot.name) like '%'||lower($3)||'%'
                     or lower(oc.name) like '%'||lower($3)||'%'
@@ -590,7 +590,7 @@ pub async fn available_tracks(
              limit 10",
         )
         .bind(&queue_id)
-        .bind(PLACEHOLDER_ORGANIZATION_ID)
+        .bind(PLACEHOLDER_REPO_ID)
         .bind(&search.q)
         .fetch_all(&ctx.db)
         .await?
@@ -624,7 +624,7 @@ pub async fn add_track(
 
     sqlx::query(
         "insert into queue_tracks
-            (id, queue_id, organization_category_id, organization_track_id)
+            (id, queue_id, repo_category_id, repo_track_id)
             values (?, ?, ?, ?)
             on conflict do nothing",
     )
@@ -658,7 +658,7 @@ pub async fn remove_track(
 
     sqlx::query(
         "delete from queue_tracks
-         where queue_id = ? and organization_track_id = ?",
+         where queue_id = ? and repo_track_id = ?",
     )
     .bind(&queue_id)
     .bind(&payload.track_id)

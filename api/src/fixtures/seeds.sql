@@ -27,28 +27,6 @@ CREATE TABLE organization_roles (
   unique(role_name, organization_id, user_id)
 );
 INSERT INTO organization_roles VALUES('0e8efe8b-5429-4a78-9e39-59b35aeee19b','editor','407a4662-8f72-4883-a87c-f6e3649b2b89','04e229c9-795e-4f3a-a79e-ec18b5c28b99','2024-09-02 23:27:36');
-CREATE TABLE organization_categories (
-  id primary key not null,
-  organization_id text not null default '407a4662-8f72-4883-a87c-f6e3649b2b89',
-  name text check( trim(name) != '' ) not null,
-  added_at datetime not null default current_timestamp,
-  foreign key(organization_id) references organizations(id),
-  unique(organization_id, name)
-);
-INSERT INTO organization_categories VALUES('9f31bf67-29b6-43c9-8b4c-3bdb77e959a7','407a4662-8f72-4883-a87c-f6e3649b2b89','Unspecified','2024-09-02 23:27:36');
-INSERT INTO organization_categories VALUES('f56be999-86d8-4394-a69c-4882e3bfad70','407a4662-8f72-4883-a87c-f6e3649b2b89','Programming language','2024-09-02 23:27:36');
-CREATE TABLE organization_tracks (
-  id text primary key not null,
-  organization_id text not null default '407a4662-8f72-4883-a87c-f6e3649b2b89',
-  organization_category_id text not null,
-  name text check( trim(name) != '' ) not null,
-  added_at datetime not null default current_timestamp,
-  foreign key(organization_id) references organizations(id),
-  foreign key(organization_category_id) references organization_categories(id),
-  unique(organization_id, organization_category_id, name)
-);
-INSERT INTO organization_tracks VALUES('e10fa49d-57a2-41a8-af68-7ea1b0b470ca','407a4662-8f72-4883-a87c-f6e3649b2b89','9f31bf67-29b6-43c9-8b4c-3bdb77e959a7','Unspecified','2024-09-02 23:27:36');
-INSERT INTO organization_tracks VALUES('af3f8556-654a-45a7-9c16-cf745a0e0f50','407a4662-8f72-4883-a87c-f6e3649b2b89','f56be999-86d8-4394-a69c-4882e3bfad70','Rust','2024-09-02 23:27:36');
 CREATE TABLE repos (
   id text primary key not null,
   organization_id text not null default '407a4662-8f72-4883-a87c-f6e3649b2b89',
@@ -63,6 +41,28 @@ CREATE TABLE repos (
   unique(organization_id, name_slug)
 );
 INSERT INTO repos VALUES('bfeea3c3-1160-488f-aac7-16919b6da713','407a4662-8f72-4883-a87c-f6e3649b2b89','04e229c9-795e-4f3a-a79e-ec18b5c28b99','experiments','Experiments','2024-09-02 23:27:36');
+CREATE TABLE repo_categories (
+  id primary key not null,
+  repo_id text not null default 'bfeea3c3-1160-488f-aac7-16919b6da713',
+  name text check( trim(name) != '' ) not null,
+  added_at datetime not null default current_timestamp,
+  foreign key(repo_id) references repos(id),
+  unique(repo_id, name)
+);
+INSERT INTO repo_categories VALUES('9f31bf67-29b6-43c9-8b4c-3bdb77e959a7','bfeea3c3-1160-488f-aac7-16919b6da713','Unspecified','2024-09-02 23:27:36');
+INSERT INTO repo_categories VALUES('f56be999-86d8-4394-a69c-4882e3bfad70','bfeea3c3-1160-488f-aac7-16919b6da713','Programming languages','2024-09-02 23:27:36');
+CREATE TABLE repo_tracks (
+  id text primary key not null,
+  repo_id text not null default 'bfeea3c3-1160-488f-aac7-16919b6da713',
+  repo_category_id text not null,
+  name text check( trim(name) != '' ) not null,
+  added_at datetime not null default current_timestamp,
+  foreign key(repo_id) references repos(id),
+  foreign key(repo_category_id) references repo_categories(id),
+  unique(repo_id, repo_category_id, name)
+);
+INSERT INTO repo_tracks VALUES('e10fa49d-57a2-41a8-af68-7ea1b0b470ca','bfeea3c3-1160-488f-aac7-16919b6da713','9f31bf67-29b6-43c9-8b4c-3bdb77e959a7','Unspecified','2024-09-02 23:27:36');
+INSERT INTO repo_tracks VALUES('af3f8556-654a-45a7-9c16-cf745a0e0f50','bfeea3c3-1160-488f-aac7-16919b6da713','f56be999-86d8-4394-a69c-4882e3bfad70','Rust','2024-09-02 23:27:36');
 CREATE TABLE task_versions (
   id number primary key not null,
   task_id text not null,
@@ -283,28 +283,29 @@ INSERT INTO queues VALUES('34b1de9d-ac94-433c-8369-0e121e97af43','04e229c9-795e-
 CREATE TABLE queue_tracks (
   id primary key not null,
   queue_id text not null,
-  organization_category_id text not null,
-  organization_track_id text not null,
+  repo_category_id text not null,
+  repo_track_id text not null,
   added_at timestamp not null default current_timestamp,
   foreign key(queue_id) references queues(id),
-  foreign key(organization_category_id) references organization_categories(id),
-  foreign key(organization_track_id) references organization_tracks(id),
+  foreign key(repo_category_id) references repo_categories(id),
+  foreign key(repo_track_id) references repo_tracks(id),
   -- If we allow more than one track per category, we'd need to cover a cross product of
   -- tasks x (category, selected tracks). E.g., we might need to show the same problem for
   -- both Rust and C++, or allow gaps in coverage.  Let's keep things simple by limiting ourselves
   -- to one track per category.
-  unique(queue_id, organization_category_id)
+  unique(queue_id, repo_category_id)
 );
+INSERT INTO queue_tracks VALUES('302c69da-2154-466a-ab39-a8a81d5ca7f8','34b1de9d-ac94-433c-8369-0e121e97af43','f56be999-86d8-4394-a69c-4882e3bfad70','af3f8556-654a-45a7-9c16-cf745a0e0f50','2024-09-08 00:16:33');
 CREATE TABLE outcomes (
   id text primary key not null,
   queue_id text not null,
   user_id text not null,
   approach_id text not null,
-  organization_track_id text not null,
+  repo_track_id text not null,
   outcome string check(outcome in ('completed', 'needsRetry', 'tooHard')) not null,
   progress number not null default 0,
   added_at timestamp not null default current_timestamp,
-  foreign key(organization_track_id) references organization_tracks(id),
+  foreign key(repo_track_id) references repo_tracks(id),
   foreign key(queue_id) references queues(id),
   foreign key(approach_id) references approaches(id),
   foreign key(user_id) references users(id)
