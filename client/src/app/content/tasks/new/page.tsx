@@ -75,12 +75,12 @@ export default function Page() {
   return (
     <main>
       <div>
-        <h1>Add a problem</h1>
+        <h1>Add a task</h1>
 
         <div className={classes.input}>
           <TextInput
             onChange={summaryOnChange}
-            placeholder="Short summary of the problem"
+            placeholder="Short summary of task that can be shown in lists"
             type="text"
             value={summary}
           />

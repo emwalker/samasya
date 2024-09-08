@@ -4,7 +4,12 @@ export type SkillType = {
   description: string | null,
 }
 
-export type TaskAction = 'acquireSkill' | 'completeProblem'
+export type TaskAction =
+  'acquireAbility'
+  | 'acquireSkill'
+  | 'answerQuestion'
+  | 'completeProblem'
+  | 'completeSet'
 
 export interface TaskType {
   id: string,

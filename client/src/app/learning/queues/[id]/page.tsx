@@ -19,7 +19,7 @@ import {
   Title,
 } from '@mantine/core'
 import moment from 'moment'
-import { actionText, outcomeText } from '@/helpers'
+import { actionText, cadenceText, outcomeText, queueStrategyText } from '@/helpers'
 import { ApiResponse } from '@/types'
 
 function progressColor(correct: number) {
@@ -122,8 +122,8 @@ export default function Page(props: Props) {
           <Box mt={20}>
             <Group>
               <Badge color="blue.3">{actionText(data.targetTask.action)}</Badge>
-              <Badge color="blue.2">{data.queue.cadence}</Badge>
-              <Badge color="blue.5">{data.queue.strategy}</Badge>
+              <Badge color="blue.2">{cadenceText(data.queue.cadence)}</Badge>
+              <Badge color="blue.5">{queueStrategyText(data.queue.strategy)}</Badge>
             </Group>
           </Box>
 

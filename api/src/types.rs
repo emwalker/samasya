@@ -260,9 +260,10 @@ pub struct Skill {
 #[derive(Clone, Debug, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub enum TaskAction {
+    AcquireAbility,
     AcquireSkill,
+    AnswerQuestion,
     CompleteProblem,
-    CompleteQuestion,
     CompleteSet,
 }
 
@@ -271,9 +272,10 @@ impl FromStr for TaskAction {
 
     fn from_str(s: &str) -> std::result::Result<Self, Self::Err> {
         match s {
+            "acquireAbility" => Ok(Self::AcquireAbility),
             "acquireSkill" => Ok(Self::AcquireSkill),
+            "answerQuestion" => Ok(Self::AnswerQuestion),
             "completeProblem" => Ok(Self::CompleteProblem),
-            "completeQuestion" => Ok(Self::CompleteQuestion),
             "completeSet" => Ok(Self::CompleteSet),
             _ => Err(ApiError::UnprocessableEntity(format!(
                 "unknown action: {s}"
@@ -285,9 +287,10 @@ impl FromStr for TaskAction {
 impl Display for TaskAction {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let value = match self {
+            Self::AcquireAbility => "acquireAbility",
             Self::AcquireSkill => "acquireSkill",
+            Self::AnswerQuestion => "answerQuestion",
             Self::CompleteProblem => "completeProblem",
-            Self::CompleteQuestion => "completeQuestion",
             Self::CompleteSet => "completeSet",
         };
         write!(f, "{}", value)

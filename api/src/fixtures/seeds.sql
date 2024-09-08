@@ -78,10 +78,11 @@ CREATE TABLE tasks (
   author_id text not null default '04e229c9-795e-4f3a-a79e-ec18b5c28b99',
   action text check(
     action in (
+      'acquireAbility',
       'acquireSkill',
+      'answerQuestion',
       'completeProblem',
-      'completeQuestion',
-      'completeQuestionSet'
+      'completeSet'
     )
   ) not null,
   summary text not null,
@@ -146,7 +147,7 @@ INSERT INTO tasks VALUES('8c95f096-91aa-4d9e-a612-401d325becd4','bfeea3c3-1160-4
 INSERT INTO tasks VALUES('54209a1a-ae03-4ff5-aa67-072873577406','bfeea3c3-1160-488f-aac7-16919b6da713','04e229c9-795e-4f3a-a79e-ec18b5c28b99','acquireSkill','Understanding the circumference of a circle','2024-09-02 23:27:36',NULL,NULL);
 INSERT INTO tasks VALUES('5ec87192-2893-4981-9b1d-7456ae92af93','bfeea3c3-1160-488f-aac7-16919b6da713','04e229c9-795e-4f3a-a79e-ec18b5c28b99','acquireSkill','Understanding the length of a line','2024-09-02 23:27:36',NULL,NULL);
 INSERT INTO tasks VALUES('909052bb-8d7d-4b90-86f5-ccc443140a18','bfeea3c3-1160-488f-aac7-16919b6da713','04e229c9-795e-4f3a-a79e-ec18b5c28b99','acquireSkill','Working with liters','2024-09-02 23:27:36',NULL,NULL);
-INSERT INTO tasks VALUES('c7299bc0-8604-4469-bec7-c449ba1bf060','bfeea3c3-1160-488f-aac7-16919b6da713','04e229c9-795e-4f3a-a79e-ec18b5c28b99','acquireSkill','Ability to complete David Tolnay''s Rust Quiz without mistakes','2024-09-02 23:27:36',NULL,NULL);
+INSERT INTO tasks VALUES('c7299bc0-8604-4469-bec7-c449ba1bf060','bfeea3c3-1160-488f-aac7-16919b6da713','04e229c9-795e-4f3a-a79e-ec18b5c28b99','acquireAbility','Ability to complete David Tolnay''s Rust Quiz without mistakes','2024-09-02 23:27:36',NULL,NULL);
 INSERT INTO tasks VALUES('5bfdf4f7-c0bf-48eb-aa89-5643314738ec','bfeea3c3-1160-488f-aac7-16919b6da713','04e229c9-795e-4f3a-a79e-ec18b5c28b99','completeProblem','Problem to be solved','2024-09-05 00:01:53',NULL,NULL);
 CREATE TABLE approaches (
   id text primary key,
