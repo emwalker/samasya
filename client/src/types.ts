@@ -4,12 +4,15 @@ export type SkillType = {
   description: string | null,
 }
 
-export type TaskAction =
-  'acquireAbility'
-  | 'acquireSkill'
-  | 'answerQuestion'
-  | 'completeProblem'
-  | 'completeSet'
+export const taskActions = [
+  'acquireAbility',
+  'acquireSkill',
+  'answerQuestion',
+  'completeProblem',
+  'completeSet',
+]
+
+export type TaskAction = typeof taskActions[number]
 
 export interface TaskType {
   id: string,

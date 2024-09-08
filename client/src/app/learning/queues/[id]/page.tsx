@@ -19,7 +19,12 @@ import {
   Title,
 } from '@mantine/core'
 import moment from 'moment'
-import { actionText, cadenceText, outcomeText, queueStrategyText } from '@/helpers'
+import {
+  actionText,
+  cadenceText,
+  outcomeText,
+  queueStrategyText,
+} from '@/helpers'
 import { ApiResponse } from '@/types'
 
 function progressColor(correct: number) {

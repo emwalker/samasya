@@ -8,6 +8,7 @@ use axum::{
 };
 use serde::{Deserialize, Serialize};
 use tracing::info;
+use uuid::Uuid;
 
 #[derive(Debug, Deserialize, Serialize, sqlx::FromRow)]
 #[serde(rename_all = "camelCase")]
@@ -143,7 +144,7 @@ pub async fn add(
     ApiJson(payload): ApiJson<AddPayload>,
 ) -> Result<ApiJson<ApiResponse<AddData>>> {
     info!("adding problem: {:?}", payload);
-    let added_task_id = uuid::Uuid::new_v4().to_string();
+    let added_task_id = Uuid::new_v4().to_string();
     let (summary, question_prompt, question_url) = ensure_valid_problem_update(&payload)?;
 
     sqlx::query(
@@ -160,6 +161,16 @@ pub async fn add(
     .bind(&question_url)
     .execute(&ctx.db)
     .await?;
+
+    let new_approach_id = Uuid::new_v4().to_string();
+
+    sqlx::query("insert into approaches (id, task_id, unspecified, summary) values (?, ?, ?, ?)")
+        .bind(&new_approach_id)
+        .bind(&added_task_id)
+        .bind(true)
+        .bind("Unspecified")
+        .execute(&ctx.db)
+        .await?;
 
     Ok(ApiJson(ApiResponse::data(AddData { added_task_id })))
 }

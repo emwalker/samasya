@@ -552,7 +552,17 @@ mod tests {
         assert_eq!(response.status(), StatusCode::OK);
         let body = response.to_bytes().await;
         let response: ApiResponse<tasks::AddData> = serde_json::from_slice(&body).unwrap();
-        assert!(!response.data.unwrap().added_task_id.is_empty());
+        let new_task_id = response.data.unwrap().added_task_id;
+
+        // Adds a default approach.
+        let (count,) = sqlx::query_as::<_, (i64,)>(
+            "select count(0) from approaches where task_id = ? and unspecified",
+        )
+        .bind(&new_task_id)
+        .fetch_one(&pool)
+        .await
+        .unwrap();
+        assert_eq!(count, 1);
     }
 
     #[sqlx::test(fixtures("seeds"))]

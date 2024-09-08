@@ -1,4 +1,9 @@
-import { Cadence, OutcomeType, QueueStrategy, TaskAction } from './types'
+import {
+  Cadence,
+  OutcomeType,
+  QueueStrategy,
+  TaskAction,
+} from './types'
 
 export function actionText(action: TaskAction) {
   if (action === 'acquireAbility') return 'Ability'
