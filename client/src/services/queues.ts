@@ -14,6 +14,7 @@ export type OutcomeRow = {
   id: string,
   outcome: OutcomeType,
   progress: number,
+  taskId: string,
   taskSummary: string,
   trackName: string,
 }

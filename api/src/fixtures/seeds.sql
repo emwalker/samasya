@@ -152,8 +152,26 @@ INSERT INTO tasks VALUES('5bfdf4f7-c0bf-48eb-aa89-5643314738ec','bfeea3c3-1160-4
 INSERT INTO tasks VALUES('15e8a1db-59e0-44bd-8fe6-ae79313f3971','bfeea3c3-1160-488f-aac7-16919b6da713','04e229c9-795e-4f3a-a79e-ec18b5c28b99','completeProblem','23. Merge k Sorted Lists','2024-09-08 18:33:49',NULL,'https://leetcode.com/problems/merge-k-sorted-lists/description/');
 INSERT INTO tasks VALUES('b22150f7-550e-49ab-9085-f02d447ff867','bfeea3c3-1160-488f-aac7-16919b6da713','04e229c9-795e-4f3a-a79e-ec18b5c28b99','completeProblem','88. Merge Sorted Array','2024-09-08 18:58:08',NULL,'https://leetcode.com/problems/merge-sorted-array/description/');
 INSERT INTO tasks VALUES('ec3b30d7-5cb8-4396-8da4-702985518910','bfeea3c3-1160-488f-aac7-16919b6da713','04e229c9-795e-4f3a-a79e-ec18b5c28b99','completeProblem','977. Squares of a Sorted Array','2024-09-08 19:01:49',NULL,'https://leetcode.com/problems/squares-of-a-sorted-array/description/');
-INSERT INTO tasks VALUES('c0b54ac2-30b8-4102-88e4-3e4cb48ff653','bfeea3c3-1160-488f-aac7-16919b6da713','04e229c9-795e-4f3a-a79e-ec18b5c28b99','completeSet','Basic operations on sorted arrays','2024-09-08 19:10:34','In this question set, we work through relatively simple problems involving sorted arrays.',NULL);
+INSERT INTO tasks VALUES('c0b54ac2-30b8-4102-88e4-3e4cb48ff653','bfeea3c3-1160-488f-aac7-16919b6da713','04e229c9-795e-4f3a-a79e-ec18b5c28b99','completeSet','Basic operations on sorted arrays and lists','2024-09-08 19:10:34','In this question set, we work through relatively simple problems involving sorted arrays.',NULL);
 INSERT INTO tasks VALUES('02911bb3-f9d9-4782-99f5-fd99cad7d58a','bfeea3c3-1160-488f-aac7-16919b6da713','04e229c9-795e-4f3a-a79e-ec18b5c28b99','completeProblem','21. Merge Two Sorted Lists','2024-09-08 19:37:31',NULL,'https://leetcode.com/problems/merge-two-sorted-lists/description/');
+INSERT INTO tasks VALUES('4ccfb7d6-33ac-4a9d-8a5b-836b1d1010c9','bfeea3c3-1160-488f-aac7-16919b6da713','04e229c9-795e-4f3a-a79e-ec18b5c28b99','completeProblem','26. Remove Duplicates from Sorted Array','2024-09-08 20:42:59',NULL,'https://leetcode.com/problems/remove-duplicates-from-sorted-array/description/');
+INSERT INTO tasks VALUES('805d7cac-c2bb-4660-8845-f64295a4143c','bfeea3c3-1160-488f-aac7-16919b6da713','04e229c9-795e-4f3a-a79e-ec18b5c28b99','completeProblem','4. Median of Two Sorted Arrays','2024-09-08 20:44:02',NULL,'https://leetcode.com/problems/median-of-two-sorted-arrays/description/');
+INSERT INTO tasks VALUES('57e5dfc2-13c2-44cc-a6e5-b53c95847fc0','bfeea3c3-1160-488f-aac7-16919b6da713','04e229c9-795e-4f3a-a79e-ec18b5c28b99','completeSet','Advanced operations on sorted arrays and lists','2024-09-08 20:44:53','Here we go through a series of harder challenges involving sorted arrays and lists.',NULL);
+INSERT INTO tasks VALUES('a7363b4a-f56c-4fd6-b089-adcde780d266','bfeea3c3-1160-488f-aac7-16919b6da713','04e229c9-795e-4f3a-a79e-ec18b5c28b99','completeProblem','2855. Minimum Right Shifts to Sort the Array','2024-09-08 20:46:32',NULL,'https://leetcode.com/problems/minimum-right-shifts-to-sort-the-array/description/');
+INSERT INTO tasks VALUES('0e7b3a15-b703-4279-afc9-6ab872b23f4c','bfeea3c3-1160-488f-aac7-16919b6da713','04e229c9-795e-4f3a-a79e-ec18b5c28b99','completeProblem','2089. Find Target Indices After Sorting Array','2024-09-08 20:47:52',NULL,'https://leetcode.com/problems/find-target-indices-after-sorting-array/description/');
+INSERT INTO tasks VALUES('3455f0dc-df42-405c-a06a-b858b22d26f8','bfeea3c3-1160-488f-aac7-16919b6da713','04e229c9-795e-4f3a-a79e-ec18b5c28b99','completeProblem','1636. Sort Array by Increasing Frequency','2024-09-08 20:48:38',NULL,'https://leetcode.com/problems/sort-array-by-increasing-frequency/description/');
+INSERT INTO tasks VALUES('572fc922-8011-479e-99bf-03283fcc2920','bfeea3c3-1160-488f-aac7-16919b6da713','04e229c9-795e-4f3a-a79e-ec18b5c28b99','completeProblem','922. Sort Array By Parity II','2024-09-08 20:49:23',NULL,'https://leetcode.com/problems/sort-array-by-parity-ii/description/');
+INSERT INTO tasks VALUES('f3c47bf7-29bb-4c5f-8f6c-90e42c8f0ce3','bfeea3c3-1160-488f-aac7-16919b6da713','04e229c9-795e-4f3a-a79e-ec18b5c28b99','completeProblem','905. Sort Array By Parity','2024-09-08 20:50:00',NULL,'https://leetcode.com/problems/sort-array-by-parity/description/');
+INSERT INTO tasks VALUES('4081c895-39cd-4798-9ea5-be28d46fca8a','bfeea3c3-1160-488f-aac7-16919b6da713','04e229c9-795e-4f3a-a79e-ec18b5c28b99','completeProblem','1287. Element Appearing More Than 25% In Sorted Array','2024-09-08 20:50:45',NULL,'https://leetcode.com/problems/element-appearing-more-than-25-in-sorted-array/description/');
+INSERT INTO tasks VALUES('dd681aed-d622-4ae9-80dc-0212ee5bd9ee','bfeea3c3-1160-488f-aac7-16919b6da713','04e229c9-795e-4f3a-a79e-ec18b5c28b99','completeProblem','1752. Check if Array Is Sorted and Rotated','2024-09-08 20:51:07',NULL,'https://leetcode.com/problems/check-if-array-is-sorted-and-rotated/description/');
+INSERT INTO tasks VALUES('1002d189-7542-4c3a-ad07-e5d5b14cda4b','bfeea3c3-1160-488f-aac7-16919b6da713','04e229c9-795e-4f3a-a79e-ec18b5c28b99','completeProblem','108. Convert Sorted Array to Binary Search Tree','2024-09-08 20:52:08',NULL,'https://leetcode.com/problems/convert-sorted-array-to-binary-search-tree/description/');
+INSERT INTO tasks VALUES('23789feb-08bf-49c0-bdaa-d85dc4489e5b','bfeea3c3-1160-488f-aac7-16919b6da713','04e229c9-795e-4f3a-a79e-ec18b5c28b99','completeProblem','944. Delete Columns to Make Sorted','2024-09-08 20:52:45',NULL,'https://leetcode.com/problems/delete-columns-to-make-sorted/description/');
+INSERT INTO tasks VALUES('06879a84-f5a7-4ac2-a82c-d9ebea942251','bfeea3c3-1160-488f-aac7-16919b6da713','04e229c9-795e-4f3a-a79e-ec18b5c28b99','completeProblem','83. Remove Duplicates from Sorted List','2024-09-08 20:53:16',NULL,'https://leetcode.com/problems/remove-duplicates-from-sorted-list/description/');
+INSERT INTO tasks VALUES('048cf285-64c6-4858-ae64-0a7cd8822370','bfeea3c3-1160-488f-aac7-16919b6da713','04e229c9-795e-4f3a-a79e-ec18b5c28b99','completeSet','Basic state machines','2024-09-08 21:23:40','In this question set, we work through basic simulations and state machines that model things going on in the world.',NULL);
+INSERT INTO tasks VALUES('effcbfb3-5ef8-41d5-ae77-0d835a2b039c','bfeea3c3-1160-488f-aac7-16919b6da713','04e229c9-795e-4f3a-a79e-ec18b5c28b99','completeProblem','2960. Count Tested Devices After Test Operations','2024-09-08 21:23:58',NULL,'https://leetcode.com/problems/count-tested-devices-after-test-operations/description/');
+INSERT INTO tasks VALUES('54105084-dd63-45d1-bc8f-7288165550c7','bfeea3c3-1160-488f-aac7-16919b6da713','04e229c9-795e-4f3a-a79e-ec18b5c28b99','completeSet','Intermediate problems involving tree data structures','2024-09-08 21:25:31','In this question set, we work through moderately challenging problems involving tree data structures.',NULL);
+INSERT INTO tasks VALUES('a21cab5c-ab5e-43a2-aea6-94afc7bf88f4','bfeea3c3-1160-488f-aac7-16919b6da713','04e229c9-795e-4f3a-a79e-ec18b5c28b99','completeProblem','427. Construct Quad Tree','2024-09-08 21:25:45',NULL,'https://leetcode.com/problems/construct-quad-tree/description/');
+INSERT INTO tasks VALUES('b5615f6a-30d0-4be4-b4da-2ccfbe98c8f5','bfeea3c3-1160-488f-aac7-16919b6da713','04e229c9-795e-4f3a-a79e-ec18b5c28b99','completeProblem','109. Convert Sorted List to Binary Search Tree','2024-09-08 21:38:20',NULL,'https://leetcode.com/problems/convert-sorted-list-to-binary-search-tree/description/');
 CREATE TABLE approaches (
   id text primary key,
   task_id text not null,
@@ -235,6 +253,24 @@ INSERT INTO approaches VALUES('cdbbfbae-f764-40f4-928d-ff1287981dc8','b22150f7-5
 INSERT INTO approaches VALUES('57983f2d-a72a-4635-b191-ac82b4d6ad1c','ec3b30d7-5cb8-4396-8da4-702985518910','Unspecified',1,'2024-09-08 19:01:49');
 INSERT INTO approaches VALUES('79368449-52f3-4fd9-abe2-3d7cfc7df21d','c0b54ac2-30b8-4102-88e4-3e4cb48ff653','Unspecified',1,'2024-09-08 19:10:34');
 INSERT INTO approaches VALUES('d57be927-b0b5-4c15-a8e8-482dcbf53573','02911bb3-f9d9-4782-99f5-fd99cad7d58a','Unspecified',1,'2024-09-08 19:37:31');
+INSERT INTO approaches VALUES('c9f652ac-8248-4fcd-9d5c-c68933e675f5','4ccfb7d6-33ac-4a9d-8a5b-836b1d1010c9','Unspecified',1,'2024-09-08 20:42:59');
+INSERT INTO approaches VALUES('2949c35e-240c-4678-b14a-8d2fed5c84c7','805d7cac-c2bb-4660-8845-f64295a4143c','Unspecified',1,'2024-09-08 20:44:02');
+INSERT INTO approaches VALUES('f2592042-a3a9-4c00-8d61-89d046f3e68d','57e5dfc2-13c2-44cc-a6e5-b53c95847fc0','Unspecified',1,'2024-09-08 20:44:53');
+INSERT INTO approaches VALUES('1f4b3c17-65d7-4280-8f0e-f36f0b0bebfe','a7363b4a-f56c-4fd6-b089-adcde780d266','Unspecified',1,'2024-09-08 20:46:32');
+INSERT INTO approaches VALUES('b62f88a8-4003-417f-b314-32490d416a1a','0e7b3a15-b703-4279-afc9-6ab872b23f4c','Unspecified',1,'2024-09-08 20:47:52');
+INSERT INTO approaches VALUES('7f14067b-45b8-4922-8566-bd1efc2dbb63','3455f0dc-df42-405c-a06a-b858b22d26f8','Unspecified',1,'2024-09-08 20:48:38');
+INSERT INTO approaches VALUES('39751f5c-9a7b-4968-aab4-b7fae792b74c','572fc922-8011-479e-99bf-03283fcc2920','Unspecified',1,'2024-09-08 20:49:23');
+INSERT INTO approaches VALUES('ad3ac821-4c82-4531-8e90-96ae7ff514b7','f3c47bf7-29bb-4c5f-8f6c-90e42c8f0ce3','Unspecified',1,'2024-09-08 20:50:00');
+INSERT INTO approaches VALUES('48e9c8ca-b792-4f43-b96a-f7d8308f260f','4081c895-39cd-4798-9ea5-be28d46fca8a','Unspecified',1,'2024-09-08 20:50:45');
+INSERT INTO approaches VALUES('4db3e886-dabb-47d0-b10d-74d29b20893b','dd681aed-d622-4ae9-80dc-0212ee5bd9ee','Unspecified',1,'2024-09-08 20:51:07');
+INSERT INTO approaches VALUES('279110ba-91c2-4ab8-9723-a1ab656c4dad','1002d189-7542-4c3a-ad07-e5d5b14cda4b','Unspecified',1,'2024-09-08 20:52:08');
+INSERT INTO approaches VALUES('c418aa0f-6cd3-4b53-809a-a97962545a26','23789feb-08bf-49c0-bdaa-d85dc4489e5b','Unspecified',1,'2024-09-08 20:52:45');
+INSERT INTO approaches VALUES('8ebd65e6-6842-43ec-84d1-4e6ccff33323','06879a84-f5a7-4ac2-a82c-d9ebea942251','Unspecified',1,'2024-09-08 20:53:16');
+INSERT INTO approaches VALUES('f8c8b3f8-b26d-4da3-9082-a19a747936bf','048cf285-64c6-4858-ae64-0a7cd8822370','Unspecified',1,'2024-09-08 21:23:40');
+INSERT INTO approaches VALUES('48219a00-abb6-4513-a305-76460eab5c26','effcbfb3-5ef8-41d5-ae77-0d835a2b039c','Unspecified',1,'2024-09-08 21:23:58');
+INSERT INTO approaches VALUES('67a52c91-d7b0-4723-b8f0-328a02e406ee','54105084-dd63-45d1-bc8f-7288165550c7','Unspecified',1,'2024-09-08 21:25:31');
+INSERT INTO approaches VALUES('0de1c44e-f136-4e6f-a093-d37ddc4e78b0','a21cab5c-ab5e-43a2-aea6-94afc7bf88f4','Unspecified',1,'2024-09-08 21:25:45');
+INSERT INTO approaches VALUES('b69e48d6-7bc0-49c4-96a9-547726f11f92','b5615f6a-30d0-4be4-b4da-2ccfbe98c8f5','Unspecified',1,'2024-09-08 21:38:20');
 CREATE TABLE approach_prereqs (
   id text primary key not null,
   approach_id text not null,
@@ -281,6 +317,22 @@ INSERT INTO approach_prereqs VALUES('01536e74-83be-4b23-b36c-bc6f6565fc39','8135
 INSERT INTO approach_prereqs VALUES('0fb15550-aef7-4c94-8cba-b94ade42e22f','79368449-52f3-4fd9-abe2-3d7cfc7df21d','cdbbfbae-f764-40f4-928d-ff1287981dc8','2024-09-08 19:30:50');
 INSERT INTO approach_prereqs VALUES('0f6959e5-34d4-4e24-bb56-cbf598286599','79368449-52f3-4fd9-abe2-3d7cfc7df21d','57983f2d-a72a-4635-b191-ac82b4d6ad1c','2024-09-08 19:34:29');
 INSERT INTO approach_prereqs VALUES('d4d53337-4354-4394-95d5-e4eaef70f444','79368449-52f3-4fd9-abe2-3d7cfc7df21d','d57be927-b0b5-4c15-a8e8-482dcbf53573','2024-09-08 19:37:49');
+INSERT INTO approach_prereqs VALUES('975cbc61-929c-406d-ba0f-c7847c26cb95','79368449-52f3-4fd9-abe2-3d7cfc7df21d','c9f652ac-8248-4fcd-9d5c-c68933e675f5','2024-09-08 20:43:18');
+INSERT INTO approach_prereqs VALUES('d7f58824-b3cd-46ec-998d-1a34b52b68d1','f2592042-a3a9-4c00-8d61-89d046f3e68d','2949c35e-240c-4678-b14a-8d2fed5c84c7','2024-09-08 20:45:02');
+INSERT INTO approach_prereqs VALUES('fa5ff189-b68f-48a2-a64f-feb4597de0f6','f2592042-a3a9-4c00-8d61-89d046f3e68d','dd8cae1a-833a-425d-8dcb-46e6de411efb','2024-09-08 20:45:13');
+INSERT INTO approach_prereqs VALUES('df60e08f-c369-45b1-ac68-01bac5aa31c8','79368449-52f3-4fd9-abe2-3d7cfc7df21d','1f4b3c17-65d7-4280-8f0e-f36f0b0bebfe','2024-09-08 20:46:43');
+INSERT INTO approach_prereqs VALUES('ab41be6d-18c9-466f-bc02-a323475e3d27','79368449-52f3-4fd9-abe2-3d7cfc7df21d','b62f88a8-4003-417f-b314-32490d416a1a','2024-09-08 20:48:04');
+INSERT INTO approach_prereqs VALUES('b7b83e5b-6b24-4bd5-bd06-9cac6b204c50','79368449-52f3-4fd9-abe2-3d7cfc7df21d','7f14067b-45b8-4922-8566-bd1efc2dbb63','2024-09-08 20:48:51');
+INSERT INTO approach_prereqs VALUES('6f2762d7-5ecc-450d-87c5-c2592a1ce79d','79368449-52f3-4fd9-abe2-3d7cfc7df21d','39751f5c-9a7b-4968-aab4-b7fae792b74c','2024-09-08 20:49:31');
+INSERT INTO approach_prereqs VALUES('dd43fab9-ecb4-4e52-8815-c356accfb458','79368449-52f3-4fd9-abe2-3d7cfc7df21d','ad3ac821-4c82-4531-8e90-96ae7ff514b7','2024-09-08 20:50:20');
+INSERT INTO approach_prereqs VALUES('166b783c-8daf-441f-bb0d-0f97dd5b5469','79368449-52f3-4fd9-abe2-3d7cfc7df21d','48e9c8ca-b792-4f43-b96a-f7d8308f260f','2024-09-08 20:50:52');
+INSERT INTO approach_prereqs VALUES('5c126a68-b9a3-4ab4-a17e-f07827548ebe','79368449-52f3-4fd9-abe2-3d7cfc7df21d','4db3e886-dabb-47d0-b10d-74d29b20893b','2024-09-08 20:51:14');
+INSERT INTO approach_prereqs VALUES('a0b2355e-353c-4fbb-9c5c-5d3e54ceffc0','79368449-52f3-4fd9-abe2-3d7cfc7df21d','279110ba-91c2-4ab8-9723-a1ab656c4dad','2024-09-08 20:52:24');
+INSERT INTO approach_prereqs VALUES('4c1c1937-c0ca-449d-9f91-2c06779ed908','79368449-52f3-4fd9-abe2-3d7cfc7df21d','c418aa0f-6cd3-4b53-809a-a97962545a26','2024-09-08 20:52:51');
+INSERT INTO approach_prereqs VALUES('40d07afd-292f-4543-91e3-6577d3ef47c9','79368449-52f3-4fd9-abe2-3d7cfc7df21d','8ebd65e6-6842-43ec-84d1-4e6ccff33323','2024-09-08 20:53:23');
+INSERT INTO approach_prereqs VALUES('fccbe285-442b-40f2-8cd4-9b2715165a19','f8c8b3f8-b26d-4da3-9082-a19a747936bf','48219a00-abb6-4513-a305-76460eab5c26','2024-09-08 21:24:08');
+INSERT INTO approach_prereqs VALUES('38bde80b-8177-4678-ab7b-0573edcee5ca','67a52c91-d7b0-4723-b8f0-328a02e406ee','0de1c44e-f136-4e6f-a093-d37ddc4e78b0','2024-09-08 21:25:55');
+INSERT INTO approach_prereqs VALUES('94f2bbaa-a795-48a3-adba-4af953d7b634','67a52c91-d7b0-4723-b8f0-328a02e406ee','b69e48d6-7bc0-49c4-96a9-547726f11f92','2024-09-08 21:38:39');
 CREATE TABLE queues (
   id text primary key not null,
   user_id text not null default '04e229c9-795e-4f3a-a79e-ec18b5c28b99',
@@ -294,6 +346,7 @@ CREATE TABLE queues (
   foreign key(user_id) references users(id)
 );
 INSERT INTO queues VALUES('34b1de9d-ac94-433c-8369-0e121e97af43','04e229c9-795e-4f3a-a79e-ec18b5c28b99','spacedRepetitionV1','hours','David Tolnay''s Rust quiz','81359cd2-ec5f-498f-b9c4-281a1d034e59','2024-09-05 00:14:05');
+INSERT INTO queues VALUES('6af9f952-ac11-4020-a23d-072685da38da','04e229c9-795e-4f3a-a79e-ec18b5c28b99','spacedRepetitionV1','hours','Basic operations on sorted arrays and lists','79368449-52f3-4fd9-abe2-3d7cfc7df21d','2024-09-08 21:00:19');
 CREATE TABLE queue_tracks (
   id primary key not null,
   queue_id text not null,
@@ -311,6 +364,7 @@ CREATE TABLE queue_tracks (
 );
 INSERT INTO queue_tracks VALUES('302c69da-2154-466a-ab39-a8a81d5ca7f8','34b1de9d-ac94-433c-8369-0e121e97af43','f56be999-86d8-4394-a69c-4882e3bfad70','af3f8556-654a-45a7-9c16-cf745a0e0f50','2024-09-08 00:16:33');
 INSERT INTO queue_tracks VALUES('6a4511cf-4002-4f27-9054-253bc85c0e8c','34b1de9d-ac94-433c-8369-0e121e97af43','9f31bf67-29b6-43c9-8b4c-3bdb77e959a7','e10fa49d-57a2-41a8-af68-7ea1b0b470ca','2024-09-08 00:58:02');
+INSERT INTO queue_tracks VALUES('1869c90b-ca20-445b-9f2c-5d292d8b90bc','6af9f952-ac11-4020-a23d-072685da38da','f56be999-86d8-4394-a69c-4882e3bfad70','af3f8556-654a-45a7-9c16-cf745a0e0f50','2024-09-08 21:05:47');
 CREATE TABLE outcomes (
   id text primary key not null,
   queue_id text not null,
@@ -427,6 +481,11 @@ INSERT INTO outcomes VALUES('97fd4131-272f-4335-bf1b-617d3e56803f','34b1de9d-ac9
 INSERT INTO outcomes VALUES('d2db1532-2a25-450b-8472-7c88c518c1aa','34b1de9d-ac94-433c-8369-0e121e97af43','04e229c9-795e-4f3a-a79e-ec18b5c28b99','e9b8f589-6b1b-4c05-b243-b202289a5891','af3f8556-654a-45a7-9c16-cf745a0e0f50','completed',3,'2024-09-08T19:08:05.078181684+00:00');
 INSERT INTO outcomes VALUES('de9749d5-d4b7-40b9-9e35-8c6291a64164','34b1de9d-ac94-433c-8369-0e121e97af43','04e229c9-795e-4f3a-a79e-ec18b5c28b99','ef3741d5-fe61-4b4c-bb02-796808eb2f42','af3f8556-654a-45a7-9c16-cf745a0e0f50','completed',3,'2024-09-08T19:08:22.945063971+00:00');
 INSERT INTO outcomes VALUES('6b4e9c9f-e47b-4db4-b4fa-d82dd94180f7','34b1de9d-ac94-433c-8369-0e121e97af43','04e229c9-795e-4f3a-a79e-ec18b5c28b99','f4766946-df88-41cf-8ddd-e52c0d739667','af3f8556-654a-45a7-9c16-cf745a0e0f50','completed',3,'2024-09-08T19:08:34.542245572+00:00');
+INSERT INTO outcomes VALUES('435163d0-d4a7-4d03-a862-d7f6689ad8cc','6af9f952-ac11-4020-a23d-072685da38da','04e229c9-795e-4f3a-a79e-ec18b5c28b99','1f4b3c17-65d7-4280-8f0e-f36f0b0bebfe','af3f8556-654a-45a7-9c16-cf745a0e0f50','completed',1,'2024-09-08T21:17:47.958618251+00:00');
+INSERT INTO outcomes VALUES('1b3a7bd5-6303-4b55-bb45-863ae9c54e52','6af9f952-ac11-4020-a23d-072685da38da','04e229c9-795e-4f3a-a79e-ec18b5c28b99','279110ba-91c2-4ab8-9723-a1ab656c4dad','af3f8556-654a-45a7-9c16-cf745a0e0f50','tooHard',0,'2024-09-08T21:39:50.480887840+00:00');
+INSERT INTO outcomes VALUES('8de79652-4470-41e2-8cd8-6298246c6279','6af9f952-ac11-4020-a23d-072685da38da','04e229c9-795e-4f3a-a79e-ec18b5c28b99','39751f5c-9a7b-4968-aab4-b7fae792b74c','af3f8556-654a-45a7-9c16-cf745a0e0f50','completed',1,'2024-09-08T22:14:11.324946432+00:00');
+INSERT INTO outcomes VALUES('82035ac9-6b7f-486c-91d4-c1e5bffbe64c','34b1de9d-ac94-433c-8369-0e121e97af43','04e229c9-795e-4f3a-a79e-ec18b5c28b99','0175e72c-7fe6-463d-ba23-27aafd5c4404','af3f8556-654a-45a7-9c16-cf745a0e0f50','completed',4,'2024-09-08T22:21:47.949161051+00:00');
+INSERT INTO outcomes VALUES('465ef096-b460-4ccd-ab45-4e6ee3f1d7ae','6af9f952-ac11-4020-a23d-072685da38da','04e229c9-795e-4f3a-a79e-ec18b5c28b99','48e9c8ca-b792-4f43-b96a-f7d8308f260f','af3f8556-654a-45a7-9c16-cf745a0e0f50','completed',1,'2024-09-08T22:32:20.287470530+00:00');
 CREATE UNIQUE INDEX task_versions_uniq_idx on task_versions
   (task_id, ifnull(parent_version_id, 0));
 COMMIT;

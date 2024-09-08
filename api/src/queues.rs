@@ -121,20 +121,21 @@ pub async fn update(
 #[derive(Debug, Deserialize, Serialize, sqlx::FromRow)]
 #[serde(rename_all = "camelCase")]
 pub struct QueueOutcomeRow {
-    approach_summary: String,
-    added_at: String,
-    id: String,
-    progress: u32,
-    outcome: String,
-    task_summary: String,
-    track_name: String,
+    pub approach_summary: String,
+    pub added_at: String,
+    pub id: String,
+    pub progress: u32,
+    pub outcome: String,
+    pub task_id: String,
+    pub task_summary: String,
+    pub track_name: String,
 }
 
 #[derive(Debug, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct QueueOutcome {
-    outcome: QueueOutcomeRow,
-    task_available_at: String,
+    pub outcome: QueueOutcomeRow,
+    pub task_available_at: String,
 }
 
 #[derive(Debug, Deserialize, Serialize)]
@@ -197,6 +198,7 @@ pub async fn fetch(
     let outcomes = sqlx::query_as::<_, QueueOutcomeRow>(
         "select
             t.summary task_summary,
+            t.id task_id,
             ap.summary approach_summary,
             o.id,
             o.added_at,

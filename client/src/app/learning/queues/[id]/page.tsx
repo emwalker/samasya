@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useEffect, useState } from 'react'
+import Link from 'next/link'
 import queueService, {
   FetchData,
   OutcomeType,
@@ -26,6 +27,7 @@ import {
   queueStrategyText,
 } from '@/helpers'
 import { ApiResponse } from '@/types'
+import classes from './page.module.css'
 
 function progressColor(correct: number) {
   if (correct < 2) return 'orange'
@@ -56,6 +58,7 @@ function OutcomeRow({
   const addedAt = moment(outcome.addedAt).fromNow()
   const outcomeLabel = outcomeText(outcome.outcome)
   const availableAt = moment(taskAvailableAt)
+  const taskHref = `/content/tasks/${outcome.taskId}`
   let availableAtText = 'Soon'
 
   if (availableAt.isAfter(new Date())) {
@@ -64,7 +67,9 @@ function OutcomeRow({
 
   return (
     <Table.Tr key={outcome.id}>
-      <Table.Td>{outcome.taskSummary}</Table.Td>
+      <Table.Td>
+        <Link className={classes.link} href={taskHref}>{outcome.taskSummary}</Link>
+      </Table.Td>
       <Table.Td align="center"><Badge color="blue.3">{outcome.trackName}</Badge></Table.Td>
       <Table.Td>{outcome.approachSummary}</Table.Td>
       <Table.Td>{addedAt}</Table.Td>

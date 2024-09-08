@@ -2,10 +2,19 @@
 
 import React, { useCallback, useState } from 'react'
 import { Box, Select } from '@mantine/core'
-import { ApiResponse, ApproachType, TaskType } from '@/types'
+import {
+  ApiResponse,
+  ApproachType,
+  TaskAction,
+  TaskType,
+} from '@/types'
 import taskService from '@/services/tasks'
 import { AvailableData } from '@/services/approaches'
 import { handleError } from '@/app/handleResponse'
+
+function showApproaches(action: TaskAction | null) {
+  return action === 'completeProblem'
+}
 
 type Props = {
   approachId: string | null,
@@ -23,6 +32,7 @@ export default function TaskApproachSelect({
   searchTasks,
 }: Props) {
   const [tasks, setTasks] = useState<TaskType[]>([])
+  const [action, setAction] = useState<TaskAction | null>(null)
   const [approaches, setApproaches] = useState<ApproachType[]>([])
   const taskOptions = tasks.map(({ id, summary }) => ({ value: id, label: summary }))
   const approachOptions = approaches.map(({ id, summary }) => ({ value: id, label: summary }))
@@ -42,12 +52,14 @@ export default function TaskApproachSelect({
 
     const response = await taskService.fetch(currTaskId)
     const initialApproaches = response.data?.approaches || []
+    const currAction = response?.data?.task?.action || null
     const initialApproachId = initialApproaches[0]?.id
 
     handleError(response, 'Problem getting task details')
     setApproaches(initialApproaches)
     setApproachId(initialApproachId)
     setTaskId(currTaskId)
+    setAction(currAction)
   }, [setApproachId, setApproaches, setTaskId])
 
   return (
@@ -64,7 +76,7 @@ export default function TaskApproachSelect({
         searchable
       />
 
-      {taskId && (
+      {taskId && showApproaches(action) && (
         <Select
           clearable
           data={approachOptions}

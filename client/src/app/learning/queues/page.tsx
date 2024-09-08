@@ -9,7 +9,7 @@ import classes from './page.module.css'
 
 function Queue({ id, summary }: QueueType) {
   return (
-    <Card key={id} className={classes.card}>
+    <Card mt={10} key={id} className={classes.card}>
       <Link href={`/learning/queues/${id}`}>{summary}</Link>
     </Card>
   )

@@ -265,7 +265,7 @@ mod tests {
             "Ability to complete David Tolnay's Rust Quiz without mistakes"
         );
         assert_eq!(data.target_approach.summary, "Unspecified");
-        assert!(!data.outcomes.is_empty());
+        assert!(!data.outcomes.first().unwrap().outcome.task_id.is_empty());
         assert!(!data.tracks.is_empty());
     }
 
