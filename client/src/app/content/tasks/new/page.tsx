@@ -57,7 +57,7 @@ function AddButton({
     } else {
       handleError(response, 'Failed to add task')
     }
-  }, [repoId, summary, questionPrompt, questionUrl, router])
+  }, [repoId, summary, questionPrompt, questionUrl, action, router])
 
   return (
     <Button disabled={disabled} onClick={onClick}>Add</Button>

@@ -6,12 +6,12 @@ import {
   Table,
   Title,
 } from '@mantine/core'
+import Link from 'next/link'
 import approachService, { FetchData } from '@/services/approaches'
 import { handleError } from '@/app/handleResponse'
 import { actionText, actionColor } from '@/helpers'
 import { TaskAction } from '@/types'
 import AddPrereqTask from '../AddPrereqTask'
-import Link from 'next/link'
 
 type PrereqProps = {
   taskId: string,

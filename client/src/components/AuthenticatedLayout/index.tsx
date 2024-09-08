@@ -1,9 +1,22 @@
+'use client'
+
 import React from 'react'
-import { Group, Title, Box } from '@mantine/core'
 import {
+  Box,
+  Group,
+  rem,
+  TextInput,
+  Title,
+  Tooltip,
+} from '@mantine/core'
+import {
+  IconChartArrows,
+  IconCheckbox,
+  IconHome2,
   IconPlant2,
 } from '@tabler/icons-react'
 import Link from 'next/link'
+import { usePathname } from 'next/navigation'
 import classes from './index.module.css'
 import '@/app/global.css'
 
@@ -11,7 +24,36 @@ type Props = {
   children: React.ReactNode
 }
 
+const asideLinks = [
+  { icon: IconHome2, label: 'Home', href: '/' },
+  { icon: IconCheckbox, label: 'Tasks', href: '/content/tasks' },
+  { icon: IconChartArrows, label: 'Queues', href: '/learning/queues' },
+]
+
 function AuthenticatedLayout({ children }: Props) {
+  const path = usePathname()
+
+  const mainLinks = asideLinks.map((link) => (
+    <Tooltip
+      label={link.label}
+      position="right"
+      withArrow
+      transitionProps={{ duration: 0 }}
+      key={link.label}
+    >
+      <Link
+        href={link.href}
+        className={classes.link}
+        data-active={link.href === path || undefined}
+      >
+        <Group>
+          <link.icon style={{ width: rem(22), height: rem(22) }} stroke={1.5} />
+          {link.label}
+        </Group>
+      </Link>
+    </Tooltip>
+  ))
+
   return (
     <div className={classes.container}>
       <nav className={classes.navbar}>
@@ -23,15 +65,19 @@ function AuthenticatedLayout({ children }: Props) {
             </Link>
           </Group>
 
-          <div className={classes.searchBox}>
-            <span>Search box</span>
-          </div>
+          <TextInput
+            className={classes.searchBox}
+            placeholder="Search"
+            radius="xl"
+          />
         </div>
       </nav>
 
       <main className={classes.main}>
         <div className={classes.content}>
-          <div className={classes.leftColumn} />
+          <div className={classes.aside}>
+            {mainLinks}
+          </div>
 
           <Box className={classes.results}>
             {children}

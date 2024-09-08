@@ -86,11 +86,11 @@ function EditForm({ task }: EditFormProps) {
         color: 'blue',
         position: 'top-center',
       })
-      router.push(`/content/tasks`)
+      router.push('/content/tasks')
     } else {
       handleError(response, 'Failed to remove task')
     }
-  }, [])
+  }, [router, task])
 
   const questionPromptExists = questionPrompt.length > 0
   const questionUrlExists = questionUrl.length > 0
