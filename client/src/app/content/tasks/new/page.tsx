@@ -22,6 +22,7 @@ import { actionText } from '@/helpers'
 const actionOptions = taskActions.map((action) => ({ value: action, label: actionText(action) }))
 
 type AddButtonProps = {
+  action: TaskAction,
   disabled: boolean,
   summary: string,
   questionPrompt: string | null,
@@ -29,6 +30,7 @@ type AddButtonProps = {
 }
 
 function AddButton({
+  action,
   disabled,
   questionPrompt,
   questionUrl,
@@ -39,7 +41,7 @@ function AddButton({
 
   const onClick = useCallback(async () => {
     const payload: AddPayload = {
-      repoId, summary, action: 'completeProblem', questionPrompt, questionUrl,
+      repoId, summary, action, questionPrompt, questionUrl,
     }
     const response = await taskService.add(repoId, payload)
     const addedTaskId = response?.data?.addedTaskId || null
@@ -51,14 +53,14 @@ function AddButton({
         position: 'top-center',
         color: 'blue',
       })
-      router.push(`/api/v1/tasks/${addedTaskId}`)
+      router.push(`/content/tasks/${addedTaskId}`)
     } else {
       handleError(response, 'Failed to add task')
     }
   }, [repoId, summary, questionPrompt, questionUrl, router])
 
   return (
-    <Button disabled={disabled} onClick={onClick} type="submit">Add</Button>
+    <Button disabled={disabled} onClick={onClick}>Add</Button>
   )
 }
 
@@ -96,6 +98,7 @@ export default function Page() {
       <TitleAndButton title={`Add ${actionText(action).toLocaleLowerCase()}`}>
         <Group>
           <AddButton
+            action={action}
             disabled={disabled}
             summary={summary}
             questionUrl={questionUrl}

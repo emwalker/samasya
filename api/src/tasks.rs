@@ -190,7 +190,7 @@ pub async fn update(
     Path(task_id): Path<String>,
     ApiJson(payload): ApiJson<UpdatePayload>,
 ) -> Result<ApiOk> {
-    info!("updating problem: {:?}", payload);
+    info!("updating task: {:?}", payload);
 
     fn maybe_none(value: Option<String>) -> Option<String> {
         value.filter(|value| !value.trim().is_empty())
@@ -216,6 +216,17 @@ pub async fn update(
     .bind(&task_id)
     .execute(&ctx.db)
     .await?;
+
+    Ok(ApiJson::ok())
+}
+
+pub async fn remove(ctx: Extension<ApiContext>, Path(task_id): Path<String>) -> Result<ApiOk> {
+    info!("deleting task: {:?}", task_id);
+
+    sqlx::query("delete from tasks where id = $1")
+        .bind(&task_id)
+        .execute(&ctx.db)
+        .await?;
 
     Ok(ApiJson::ok())
 }

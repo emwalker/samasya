@@ -18,7 +18,7 @@ export interface TaskType {
   id: string,
   summary: string,
   action: TaskAction,
-  questionText: string | null,
+  questionPrompt: string | null,
   questionUrl: string | null,
 }
 

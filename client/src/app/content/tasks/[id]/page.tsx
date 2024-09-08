@@ -69,7 +69,7 @@ export default function Page(props: Props) {
 
           <Box mb={30}>
             {task.questionUrl && <QuestionUrlPrompt questionUrl={task.questionUrl} />}
-            {task.questionText && <MarkdownPreview markdown={task.questionText} />}
+            {task.questionPrompt && <MarkdownPreview markdown={task.questionPrompt} />}
           </Box>
 
           {showApproach(task) && (

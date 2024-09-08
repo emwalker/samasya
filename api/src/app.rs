@@ -5,7 +5,7 @@ use crate::{
 };
 use axum::{
     response::IntoResponse,
-    routing::{get, post, put},
+    routing::{delete, get, post, put},
     Extension, Router,
 };
 use hyper::StatusCode;
@@ -79,6 +79,7 @@ pub async fn router(config: Config, db: SqlitePool) -> Result<Router> {
         .route("/api/v1/tasks", get(tasks::list))
         .route("/api/v1/tasks", post(tasks::add))
         .route("/api/v1/tasks/:id", get(tasks::fetch))
+        .route("/api/v1/tasks/:id", delete(tasks::remove))
         .route("/api/v1/tasks/:id", put(tasks::update))
         .route("/api/v1/tasks/:id/prereqs/add", post(tasks::prereqs::add))
         .route(
@@ -563,6 +564,28 @@ mod tests {
         .await
         .unwrap();
         assert_eq!(count, 1);
+    }
+
+    #[sqlx::test(fixtures("seeds"))]
+    async fn remove_task(pool: SqlitePool) {
+        let router = setup(&pool).await;
+        let task_id = "5bfdf4f7-c0bf-48eb-aa89-5643314738ec";
+
+        let response = router
+            .oneshot(
+                Request::builder()
+                    .uri(format!("/api/v1/tasks/{task_id}"))
+                    .method("DELETE")
+                    .body(Body::empty())
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+
+        assert_eq!(response.status(), StatusCode::OK);
+        let body = response.to_bytes().await;
+        let response: ApiResponse<String> = serde_json::from_slice(&body).unwrap();
+        assert_eq!(response.data.unwrap(), "ok");
     }
 
     #[sqlx::test(fixtures("seeds"))]

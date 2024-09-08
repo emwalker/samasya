@@ -11,6 +11,7 @@ import { handleError } from '@/app/handleResponse'
 import { actionText, actionColor } from '@/helpers'
 import { TaskAction } from '@/types'
 import AddPrereqTask from '../AddPrereqTask'
+import Link from 'next/link'
 
 type PrereqProps = {
   taskId: string,
@@ -29,7 +30,7 @@ function Prereq({
 }: PrereqProps) {
   return (
     <Table.Tr key={`${taskId}:${approachId}`}>
-      <Table.Td>{taskSummary}</Table.Td>
+      <Table.Td><Link href={`/content/tasks/${taskId}`}>{taskSummary}</Link></Table.Td>
       <Table.Td>{approachSummary}</Table.Td>
       <Table.Td align="center">
         <Badge color={actionColor(taskAction)}>{actionText(taskAction)}</Badge>

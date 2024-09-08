@@ -144,7 +144,7 @@ export default function Page(props: Props) {
           </Box>
 
           <Card mb={20} shadow="xl">
-            {task.questionText}
+            {task.questionPrompt}
             {task.questionUrl && <QuestionUrlPrompt questionUrl={task.questionUrl} />}
           </Card>
 

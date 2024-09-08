@@ -56,8 +56,9 @@ type EditFormProps = {
 }
 
 function EditForm({ task }: EditFormProps) {
+  const router = useRouter()
   const [summary, setSummary] = useState(task.summary)
-  const [questionPrompt, setQuestionPrompt] = useState(task.questionText || '')
+  const [questionPrompt, setQuestionPrompt] = useState(task.questionPrompt || '')
   const [questionUrl, setQuestionUrl] = useState(task.questionUrl || '')
 
   const summaryOnChange = useCallback(
@@ -74,6 +75,22 @@ function EditForm({ task }: EditFormProps) {
     (event: ChangeEvent<HTMLInputElement>) => setQuestionUrl(event.target.value),
     [setQuestionUrl],
   )
+
+  const removeTask = useCallback(async () => {
+    const response = await taskService.remove(task.id)
+
+    if (response?.data === 'ok') {
+      notifications.show({
+        title: 'Removed task',
+        message: 'The task has been removed',
+        color: 'blue',
+        position: 'top-center',
+      })
+      router.push(`/content/tasks`)
+    } else {
+      handleError(response, 'Failed to remove task')
+    }
+  }, [])
 
   const questionPromptExists = questionPrompt.length > 0
   const questionUrlExists = questionUrl.length > 0
@@ -129,9 +146,11 @@ function EditForm({ task }: EditFormProps) {
         value={questionUrl || ''}
       />
 
-      <p>
-        <small>Either a question prompt or a question url should be provided, but not both.</small>
-      </p>
+      <small>Either a question prompt or a question url should be provided, but not both.</small>
+
+      <Box mt={30}>
+        <Button color="red" onClick={removeTask}>Remove</Button>
+      </Box>
     </Box>
   )
 }

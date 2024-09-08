@@ -67,6 +67,13 @@ async function add(repoId: string, payload: AddPayload): Promise<ApiResponse<Add
   return response.json()
 }
 
+async function remove(taskId: string): Promise<ApiResponse<string>> {
+  const response = await fetch(`http://localhost:8000/api/v1/tasks/${taskId}`, {
+    method: 'DELETE',
+  })
+  return response.json()
+}
+
 export type AddPrereqPayload = {
   taskId: string,
   approachId: string,
@@ -105,5 +112,11 @@ async function removePrereq(payload: RemoveTaskPayload): Promise<ApiResponse<str
 }
 
 export default {
-  fetch: fetchTask, list, update, add, addPrereq, removePrereq,
+  add,
+  addPrereq,
+  fetch: fetchTask,
+  list,
+  remove,
+  removePrereq,
+  update,
 }
