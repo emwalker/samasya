@@ -1,10 +1,15 @@
 'use client'
 
-import React, { useEffect, useState } from 'react'
-import { useSearchParams } from "next/navigation"
-import { Badge, Box, Card, Group, Title } from '@mantine/core'
+import React, { Suspense, useEffect, useState } from 'react'
+import { useSearchParams } from 'next/navigation'
+import {
+  Badge,
+  Box,
+  Card,
+  Group,
+  Title,
+} from '@mantine/core'
 import Link from 'next/link'
-import classes from './page.module.css'
 import searchService, {
   SearchData,
   SearchItemType,
@@ -12,6 +17,7 @@ import searchService, {
 } from '@/services/search'
 import { ApiResponse } from '@/types'
 import { handleError } from '../handleResponse'
+import classes from './page.module.css'
 
 function colorFor(type: SearchItemTypeEnum) {
   if (type === 'queue') return 'cyan.4'
@@ -37,7 +43,7 @@ function Result({ summary, type, id }: SearchItemType) {
   )
 }
 
-export default function Page() {
+function SearchPage() {
   const params = useSearchParams()
   const [response, setResponse] = useState<ApiResponse<SearchData> | null>(null)
   const searchString = params.get('q') || ''
@@ -59,5 +65,13 @@ export default function Page() {
 
       {results.map(Result)}
     </Box>
+  )
+}
+
+export default function Page() {
+  return (
+    <Suspense>
+      <SearchPage />
+    </Suspense>
   )
 }

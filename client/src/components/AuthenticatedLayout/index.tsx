@@ -1,11 +1,10 @@
 'use client'
 
-import React from 'react'
+import React, { Suspense } from 'react'
 import {
   Box,
   Group,
   rem,
-  TextInput,
   Title,
   Tooltip,
 } from '@mantine/core'
@@ -66,7 +65,9 @@ function AuthenticatedLayout({ children }: Props) {
             </Link>
           </Group>
 
-          <SearchBox />
+          <Suspense>
+            <SearchBox />
+          </Suspense>
         </div>
       </nav>
 

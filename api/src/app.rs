@@ -707,7 +707,7 @@ mod tests {
         let response = router
             .oneshot(
                 Request::builder()
-                    .uri(format!("/api/v1/search?q=array"))
+                    .uri("/api/v1/search?q=array".to_string())
                     .method("GET")
                     .body(Body::empty())
                     .unwrap(),

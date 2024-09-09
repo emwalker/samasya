@@ -1,7 +1,12 @@
-import React, { ChangeEvent, useCallback, useState } from 'react'
-import { useSearchParams } from 'next/navigation'
+'use client'
+
+import React, {
+  ChangeEvent,
+  useCallback,
+  useState,
+} from 'react'
+import { useSearchParams, useRouter } from 'next/navigation'
 import { TextInput } from '@mantine/core'
-import { useRouter } from 'next/navigation'
 import classes from './index.module.css'
 
 export default function SearchBox() {
