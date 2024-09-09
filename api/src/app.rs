@@ -1,5 +1,5 @@
 use crate::{
-    approaches, queues, tasks,
+    approaches, queues, search, tasks,
     types::{ApiErrorData, ApiErrorLevel, ApiJson, ApiResponse, Result},
     ApiContext, Config,
 };
@@ -76,6 +76,7 @@ pub async fn router(config: Config, db: SqlitePool) -> Result<Router> {
             post(queues::remove_track),
         )
         .route("/api/v1/repos/:id/tasks", post(tasks::add))
+        .route("/api/v1/search", get(search::search))
         .route("/api/v1/tasks", get(tasks::list))
         .route("/api/v1/tasks", post(tasks::add))
         .route("/api/v1/tasks/:id", get(tasks::fetch))
@@ -97,13 +98,12 @@ pub async fn router(config: Config, db: SqlitePool) -> Result<Router> {
 
 #[cfg(test)]
 mod tests {
+    use super::*;
     use crate::{
         types::{Cadence, OutcomeType, QueueStrategy, TaskAction},
         PLACEHOLDER_REPO_CATEGORY_ID, PLACEHOLDER_REPO_ID, PLACEHOLDER_REPO_TRACK_ID,
         PLACEHOLDER_USER_ID,
     };
-
-    use super::*;
     use axum::{
         body::{Body, HttpBody},
         http::{Request, StatusCode},
@@ -698,5 +698,27 @@ mod tests {
         let data: approaches::FetchData = response.data.unwrap();
         assert_eq!(data.approach.id, approach_id);
         assert_eq!(data.task.id, data.approach.task_id);
+    }
+
+    #[sqlx::test(fixtures("seeds"))]
+    async fn search(pool: SqlitePool) {
+        let router = setup(&pool).await;
+
+        let response = router
+            .oneshot(
+                Request::builder()
+                    .uri(format!("/api/v1/search?q=array"))
+                    .method("GET")
+                    .body(Body::empty())
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+
+        assert_eq!(response.status(), StatusCode::OK);
+        let body = response.to_bytes().await;
+        let response: ApiResponse<search::SearchData> = serde_json::from_slice(&body).unwrap();
+        let data: search::SearchData = response.data.unwrap();
+        assert!(!data.results.is_empty());
     }
 }

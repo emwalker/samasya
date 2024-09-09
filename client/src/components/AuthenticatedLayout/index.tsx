@@ -19,6 +19,7 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import classes from './index.module.css'
 import '@/app/global.css'
+import SearchBox from '../SearchBox'
 
 type Props = {
   children: React.ReactNode
@@ -65,11 +66,7 @@ function AuthenticatedLayout({ children }: Props) {
             </Link>
           </Group>
 
-          <TextInput
-            className={classes.searchBox}
-            placeholder="Search"
-            radius="xl"
-          />
+          <SearchBox />
         </div>
       </nav>
 

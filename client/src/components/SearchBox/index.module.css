@@ -1,0 +1,11 @@
+.searchBox {
+    flex-basis: var(--middle-col-width);
+    max-width: var(--middle-col-width);
+  
+    @media (max-width: $mantine-breakpoint-lg) {
+      flex-basis: 100%;
+      max-width: none;
+      margin-right: var(--mantine-spacing-lg);
+    }
+  }
+  

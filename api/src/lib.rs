@@ -6,6 +6,7 @@ use std::{env, sync::Arc};
 pub mod app;
 pub mod approaches;
 pub mod queues;
+pub mod search;
 pub mod sqlx;
 pub mod tasks;
 pub mod types;
