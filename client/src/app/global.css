@@ -1,6 +1,6 @@
 :root {
   --left-col-width: rem(200);
-  --middle-col-width: rem(900);
+  --middle-col-width: rem(1000);
 
   @media (max-width: $mantine-breakpoint-xl) {
     --left-col-width: rem(200);
