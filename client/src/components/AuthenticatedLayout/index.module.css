@@ -63,6 +63,7 @@
   flex-basis: var(--left-col-width);
   font-size: 32pt;
   align-items: center;
+  padding-left: rem(10);
 
   @media (max-width: $mantine-breakpoint-xs) {
     margin-bottom: var(--mantine-spacing-md);
@@ -107,6 +108,7 @@
   font-weight: 500;
   height: rem(44px);
   line-height: rem(44px);
+  padding-left: rem(10);
 
   &:hover {
     background-color: light-dark(var(--mantine-color-gray-1), var(--mantine-color-dark-5));
